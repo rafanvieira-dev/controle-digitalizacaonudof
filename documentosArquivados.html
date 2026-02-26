@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Documentos Arquivados</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+<header>
+<h1>Documentos Arquivados</h1>
+</header>
+
+<input type="text" id="pesquisa" placeholder="Pesquisar..." onkeyup="filtrar()">
+<div id="listaArquivados"></div>
+
+<button onclick="voltar()">Voltar</button>
+</div>
+
+<script type="module" src="firebase.js"></script>
+<script type="module" src="arquivados.js"></script>
+
+</body>
+</html>
