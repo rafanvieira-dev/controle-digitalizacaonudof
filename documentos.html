@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Documentos</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h2>CONTROLE DE DOCUMENTOS</h2>
+
+<div class="menu">
+  <a href="guia.html">GUIAS</a>
+  <a href="documentos.html">DOCUMENTOS</a>
+</div>
+
+<h3>Novo Documento</h3>
+<form id="formDocumento">
+  <input type="text" id="guiaDoc" placeholder="Nº Guia" required>
+  <input type="text" id="nomeDoc" placeholder="Nome Documento" required>
+  <input type="text" id="tipoDoc" placeholder="Tipo Documento">
+  <input type="number" id="paginasDoc" placeholder="Qtd Páginas">
+  <input type="text" id="obsDoc" placeholder="Observação">
+  <button type="submit">Adicionar</button>
+</form>
+
+<table>
+<thead>
+<tr>
+<th>Nº Guia</th>
+<th>Documento</th>
+<th>Tipo</th>
+<th>Páginas</th>
+<th>Status</th>
+<th>Observação</th>
+</tr>
+</thead>
+<tbody id="tabelaDocumentos"></tbody>
+</table>
+
+<script src="script.js"></script>
+</body>
+</html>
