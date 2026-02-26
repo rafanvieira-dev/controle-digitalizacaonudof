@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Guias</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h2>CONTROLE DE GUIAS</h2>
+
+<div class="menu">
+  <a href="guia.html">GUIAS</a>
+  <a href="documentos.html">DOCUMENTOS</a>
+</div>
+
+<h3>Nova Guia</h3>
+<form id="formGuia">
+  <input type="text" id="numeroGuia" placeholder="Nº Guia" required>
+  <input type="text" id="unidade" placeholder="Unidade Solicitante" required>
+  <input type="date" id="dataRecebimento" required>
+  <input type="text" id="observacao" placeholder="Observação">
+  <button type="submit">Adicionar</button>
+</form>
+
+<table>
+<thead>
+<tr>
+<th>Nº Guia</th>
+<th>Hora Entrada</th>
+<th>Unidade</th>
+<th>Data Receb.</th>
+<th>Status</th>
+<th>Nº Caixa</th>
+<th>Data Arquiv.</th>
+<th>Obs</th>
+</tr>
+</thead>
+<tbody id="tabelaGuias"></tbody>
+</table>
+
+<script src="script.js"></script>
+</body>
+</html>
