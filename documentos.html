@@ -1,43 +1,59 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>Documentos</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adicionar Documentos</title>
 </head>
 <body>
+  <h1>Adicionar Documentos à Guia</h1>
+  <form id="formDocumento">
+    <label for="guiaDoc">Número da Guia:</label>
+    <input type="text" id="guiaDoc" required>
 
-<h2>CONTROLE DE DOCUMENTOS</h2>
+    <label for="nomeDoc">Nome do Documento:</label>
+    <input type="text" id="nomeDoc" required>
 
-<div class="menu">
-  <a href="guia.html">GUIAS</a>
-  <a href="documentos.html">DOCUMENTOS</a>
-</div>
+    <label for="tipoDoc">Tipo de Documento:</label>
+    <input type="text" id="tipoDoc" required>
 
-<h3>Novo Documento</h3>
-<form id="formDocumento">
-  <input type="text" id="guiaDoc" placeholder="Nº Guia" required>
-  <input type="text" id="nomeDoc" placeholder="Nome Documento" required>
-  <input type="text" id="tipoDoc" placeholder="Tipo Documento">
-  <input type="number" id="paginasDoc" placeholder="Qtd Páginas">
-  <input type="text" id="obsDoc" placeholder="Observação">
-  <button type="submit">Adicionar</button>
-</form>
+    <label for="paginasDoc">Número de Páginas:</label>
+    <input type="number" id="paginasDoc" required>
 
-<table>
-<thead>
-<tr>
-<th>Nº Guia</th>
-<th>Documento</th>
-<th>Tipo</th>
-<th>Páginas</th>
-<th>Status</th>
-<th>Observação</th>
-</tr>
-</thead>
-<tbody id="tabelaDocumentos"></tbody>
-</table>
+    <label for="obsDoc">Observação:</label>
+    <textarea id="obsDoc"></textarea>
 
-<script src="script.js"></script>
+    <button type="submit">Salvar Documento</button>
+  </form>
+
+  <script>
+    const guias = JSON.parse(localStorage.getItem("guias")) || [];
+    const documentos = JSON.parse(localStorage.getItem("documentos")) || [];
+
+    document.getElementById("formDocumento").addEventListener("submit", function(e){
+      e.preventDefault();
+
+      const numeroGuia = document.getElementById("guiaDoc").value;
+      const guia = guias.find(g => g.numeroGuia === numeroGuia);
+
+      if (!guia) {
+        alert("Guia não encontrada!");
+        return;
+      }
+
+      const novoDocumento = {
+        numeroGuia: numeroGuia,
+        nome: document.getElementById("nomeDoc").value,
+        tipo: document.getElementById("tipoDoc").value,
+        paginas: document.getElementById("paginasDoc").value,
+        status: "Pendente",
+        observacao: document.getElementById("obsDoc").value,
+      };
+
+      documentos.push(novoDocumento);
+      localStorage.setItem("documentos", JSON.stringify(documentos));
+      alert("Documento salvo!");
+    });
+  </script>
 </body>
 </html>
