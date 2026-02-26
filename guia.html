@@ -12,7 +12,7 @@
         <h1>Nova Guia</h1>
     </header>
 
-    <form id="formGuia">
+    <form>
         <label>Nº da Guia</label>
         <input type="text" id="numeroGuia" required>
 
@@ -25,20 +25,20 @@
         <label>Data de Recebimento</label>
         <input type="date" id="dataRecebimento" required>
 
-        <button type="submit">Salvar Guia</button>
+        <button type="button" onclick="salvarGuia()">Salvar Guia</button>
         <button type="button" onclick="voltar()">Voltar</button>
     </form>
 </div>
 
-<script src="script.js"></script>
 <script>
-document.getElementById("horaEntrada").value = new Date().toLocaleTimeString("pt-BR");
-
-document.getElementById("formGuia").addEventListener("submit", function(e) {
-    e.preventDefault();
-    salvarGuia();
-});
+    // Preenche hora automaticamente
+    document.getElementById("horaEntrada").value = 
+        new Date().toLocaleTimeString("pt-BR");
 </script>
+
+<!-- Firebase -->
+<script type="module" src="firebase.js"></script>
+<script type="module" src="guia.js"></script>
 
 </body>
 </html>
