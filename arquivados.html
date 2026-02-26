@@ -1,35 +1,50 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>Guias Arquivadas</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guias Arquivadas</title>
 </head>
 <body>
+  <h1>Guias Arquivadas</h1>
+  <table id="tabelaArquivados">
+    <thead>
+      <tr>
+        <th>Número da Guia</th>
+        <th>Hora de Entrada</th>
+        <th>Unidade</th>
+        <th>Data de Recebimento</th>
+        <th>Status</th>
+        <th>Data de Arquivamento</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Guias Arquivadas serão inseridas aqui -->
+    </tbody>
+  </table>
 
-<h2>GUIAS ARQUIVADAS</h2>
+  <script>
+    const guias = JSON.parse(localStorage.getItem("guias")) || [];
 
-<div class="menu">
-  <a href="index.html">GUIAS</a>
-  <a href="documentos.html">DOCUMENTOS</a>
-  <a href="arquivados.html">ARQUIVADOS</a>
-</div>
+    function renderizarArquivados() {
+      const tabela = document.getElementById("tabelaArquivados").getElementsByTagName('tbody')[0];
+      tabela.innerHTML = "";
 
-<table>
-<thead>
-<tr>
-<th>Nº Guia</th>
-<th>Hora Entrada</th>
-<th>Unidade</th>
-<th>Data Receb.</th>
-<th>Nº Caixa</th>
-<th>Data Arquiv.</th>
-<th>Observação</th>
-</tr>
-</thead>
-<tbody id="tabelaArquivados"></tbody>
-</table>
+      guias.filter(g => g.status === "Arquivada").forEach(g => {
+        tabela.innerHTML += `
+          <tr>
+            <td>${g.numeroGuia}</td>
+            <td>${g.horaEntrada}</td>
+            <td>${g.unidade}</td>
+            <td>${g.dataRecebimento}</td>
+            <td>${g.status}</td>
+            <td>${g.dataArquivamento}</td>
+          </tr>
+        `;
+      });
+    }
 
-<script src="script.js"></script>
+    renderizarArquivados();
+  </script>
 </body>
 </html>
