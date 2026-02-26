@@ -102,6 +102,33 @@ if (document.getElementById("formDocumento")) {
           <td>${d.observacao}</td>
         </tr>
       `;
+      /* ---------------- ARQUIVADOS ---------------- */
+
+if (document.getElementById("tabelaArquivados")) {
+
+  function renderizarArquivados(){
+    const tabela = document.getElementById("tabelaArquivados");
+    tabela.innerHTML = "";
+
+    guias
+      .filter(g => g.status === "Arquivada")
+      .forEach(g => {
+        tabela.innerHTML += `
+          <tr>
+            <td>${g.numeroGuia}</td>
+            <td>${g.horaEntrada}</td>
+            <td>${g.unidade}</td>
+            <td>${g.dataRecebimento}</td>
+            <td>${g.numeroCaixa}</td>
+            <td>${g.dataArquivamento}</td>
+            <td>${g.observacao}</td>
+          </tr>
+        `;
+      });
+  }
+
+  renderizarArquivados();
+}
     });
   }
 
