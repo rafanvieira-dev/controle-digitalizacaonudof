@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guia - Detalhes</title>
+</head>
+<body>
+  <h1>Detalhes da Guia</h1>
+  
+  <div id="infoGuia">
+    <!-- As informações da guia serão renderizadas aqui -->
+  </div>
+
+  <button onclick="window.location.href='documentos.html'">Adicionar Documentos</button>
+  <button onclick="window.location.href='arquivados.html'">Arquivar Guia</button>
+
+  <script>
+    // Recupera a guia selecionada do localStorage
+    const guias = JSON.parse(localStorage.getItem("guias")) || [];
+    const numeroGuia = new URLSearchParams(window.location.search).get("numeroGuia");
+
+    const guia = guias.find(g => g.numeroGuia === numeroGuia);
+    if (guia) {
+      document.getElementById('infoGuia').innerHTML = `
+        <p><strong>Número da Guia:</strong> ${guia.numeroGuia}</p>
+        <p><strong>Hora de Entrada:</strong> ${guia.horaEntrada}</p>
+        <p><strong>Unidade:</strong> ${guia.unidade}</p>
+        <p><strong>Data de Recebimento:</strong> ${guia.dataRecebimento}</p>
+        <p><strong>Status:</strong> ${guia.status}</p>
+      `;
+    }
+  </script>
+</body>
+</html>
