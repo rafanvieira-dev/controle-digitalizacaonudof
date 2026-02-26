@@ -7,6 +7,7 @@
 </head>
 <body>
   <h1>Guias Arquivadas</h1>
+  
   <table id="tabelaArquivados">
     <thead>
       <tr>
@@ -16,16 +17,19 @@
         <th>Data de Recebimento</th>
         <th>Status</th>
         <th>Data de Arquivamento</th>
+        <th>Pasta</th>
       </tr>
     </thead>
     <tbody>
-      <!-- Guias Arquivadas serão inseridas aqui -->
+      <!-- As guias arquivadas serão inseridas aqui -->
     </tbody>
   </table>
 
   <script>
+    // Recupera as guias arquivadas do localStorage
     const guias = JSON.parse(localStorage.getItem("guias")) || [];
 
+    // Função para renderizar as guias arquivadas
     function renderizarArquivados() {
       const tabela = document.getElementById("tabelaArquivados").getElementsByTagName('tbody')[0];
       tabela.innerHTML = "";
@@ -39,6 +43,7 @@
             <td>${g.dataRecebimento}</td>
             <td>${g.status}</td>
             <td>${g.dataArquivamento}</td>
+            <td>${g.pasta}</td>
           </tr>
         `;
       });
