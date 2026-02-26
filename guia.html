@@ -1,27 +1,31 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <link rel="stylesheet" href="style.css">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Guia - Detalhes</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>Detalhes da Guia</h1>
-  
+
   <div id="infoGuia">
-    <!-- As informações da guia serão renderizadas aqui -->
+    <!-- Informações da guia serão exibidas aqui -->
   </div>
 
   <button onclick="window.location.href='documentos.html'">Adicionar Documentos</button>
-  <button onclick="arquivarGuia()">Arquivar Guia</button>
+
+  <!-- Exibir status e possibilidade de arquivar -->
+  <button id="arquivarBtn" onclick="arquivarGuia()">Arquivar Guia</button>
+
+  <button onclick="window.location.href='index.html'">Voltar</button>
 
   <script>
-    // Recupera as guias e a guia atual a partir do localStorage
-    const guias = JSON.parse(localStorage.getItem("guias")) || [];
+    let guias = JSON.parse(localStorage.getItem("guias")) || [];
     const numeroGuia = new URLSearchParams(window.location.search).get("numeroGuia");
 
     const guia = guias.find(g => g.numeroGuia === numeroGuia);
+
     if (guia) {
       document.getElementById('infoGuia').innerHTML = `
         <p><strong>Número da Guia:</strong> ${guia.numeroGuia}</p>
@@ -29,12 +33,17 @@
         <p><strong>Unidade:</strong> ${guia.unidade}</p>
         <p><strong>Data de Recebimento:</strong> ${guia.dataRecebimento}</p>
         <p><strong>Status:</strong> ${guia.status}</p>
+        ${guia.status === "Arquivada" ? `<p><strong>Data de Arquivamento:</strong> ${guia.dataArquivamento}</p><p><strong>Pasta:</strong> ${guia.pasta}</p>` : ''}
       `;
     }
 
-    // Função para arquivar a guia
     function arquivarGuia() {
       if (!guia) return;
+
+      if (guia.status === "Arquivada") {
+        alert("A guia já está arquivada!");
+        return;
+      }
 
       const pasta = prompt("Digite o número da pasta para arquivamento:");
       const dataArquivamento = new Date().toLocaleString();
@@ -49,7 +58,7 @@
       localStorage.setItem("guias", JSON.stringify(guias));
 
       alert("Guia arquivada com sucesso!");
-      window.location.href = "arquivados.html"; // Redireciona para a página de arquivados
+      window.location.reload(); // Atualiza a página
     }
   </script>
 </body>
