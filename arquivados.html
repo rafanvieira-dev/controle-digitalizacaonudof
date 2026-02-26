@@ -1,53 +1,42 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <link rel="stylesheet" href="style.css">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Guias Arquivadas</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>Guias Arquivadas</h1>
-  
-  <table id="tabelaArquivados">
-    <thead>
-      <tr>
-        <th>Número da Guia</th>
-        <th>Hora de Entrada</th>
-        <th>Unidade</th>
-        <th>Data de Recebimento</th>
-        <th>Status</th>
-        <th>Data de Arquivamento</th>
-        <th>Pasta</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- As guias arquivadas serão inseridas aqui -->
-    </tbody>
-  </table>
+
+  <ul id="tabelaArquivados">
+    <!-- Guias arquivadas serão exibidas aqui -->
+  </ul>
+
+  <button onclick="window.location.href='index.html'">Voltar</button>
 
   <script>
-    // Recupera as guias arquivadas do localStorage
     const guias = JSON.parse(localStorage.getItem("guias")) || [];
 
-    // Função para renderizar as guias arquivadas
     function renderizarArquivados() {
-      const tabela = document.getElementById("tabelaArquivados").getElementsByTagName('tbody')[0];
+      const tabela = document.getElementById('tabelaArquivados');
       tabela.innerHTML = "";
 
       guias.filter(g => g.status === "Arquivada").forEach(g => {
-        tabela.innerHTML += `
-          <tr>
-            <td>${g.numeroGuia}</td>
-            <td>${g.horaEntrada}</td>
-            <td>${g.unidade}</td>
-            <td>${g.dataRecebimento}</td>
-            <td>${g.status}</td>
-            <td>${g.dataArquivamento}</td>
-            <td>${g.pasta}</td>
-          </tr>
+        const item = document.createElement('li');
+        item.innerHTML = `
+          <p><strong>Número da Guia:</strong> ${g.numeroGuia}</p>
+          <p><strong>Status:</strong> ${g.status}</p>
+          <p><strong>Data de Arquivamento:</strong> ${g.dataArquivamento}</p>
+          <p><strong>Pasta:</strong> ${g.pasta}</p>
+          <button onclick="visualizarDocumentos('${g.numeroGuia}')">Ver Documentos</button>
         `;
+        tabela.appendChild(item);
       });
+    }
+
+    function visualizarDocumentos(numeroGuia) {
+      window.location.href = `documentos.html?numeroGuia=${numeroGuia}`;
     }
 
     renderizarArquivados();
