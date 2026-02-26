@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Nova Guia - Sistema Controle de Digitalização NUDOF</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Nova Guia</h1>
+    </header>
+
+    <form id="formGuia">
+        <label>Nº da Guia</label>
+        <input type="text" id="numeroGuia" required>
+
+        <label>Hora de Entrada</label>
+        <input type="text" id="horaEntrada" readonly>
+
+        <label>Unidade Solicitante</label>
+        <input type="text" id="unidade" required>
+
+        <label>Data de Recebimento</label>
+        <input type="date" id="dataRecebimento" required>
+
+        <button type="submit">Salvar Guia</button>
+        <button type="button" onclick="voltar()">Voltar</button>
+    </form>
+</div>
+
+<script src="script.js"></script>
+<script>
+document.getElementById("horaEntrada").value = new Date().toLocaleTimeString("pt-BR");
+
+document.getElementById("formGuia").addEventListener("submit", function(e) {
+    e.preventDefault();
+    salvarGuia();
+});
+</script>
+
+</body>
+</html>
