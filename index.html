@@ -1,44 +1,246 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>Guias</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Guias e Documentos</title>
+  <link rel="stylesheet" href="style.css"> <!-- Seu arquivo CSS -->
 </head>
 <body>
 
-<h2>CONTROLE DE GUIAS</h2>
+  <!-- Formulário de Cadastro de Guias -->
+  <h2>Cadastro de Guia</h2>
+  <form id="formGuia">
+    <label for="numeroGuia">Número da Guia:</label>
+    <input type="text" id="numeroGuia" required>
+    
+    <label for="unidade">Unidade:</label>
+    <input type="text" id="unidade" required>
+    
+    <label for="dataRecebimento">Data de Recebimento:</label>
+    <input type="date" id="dataRecebimento" required>
+    
+    <label for="observacao">Observação:</label>
+    <textarea id="observacao"></textarea>
 
-<div class="menu">
-  <a href="guia.html">GUIAS</a>
-  <a href="documentos.html">DOCUMENTOS</a>
-</div>
+    <button type="submit">Salvar Guia</button>
+  </form>
 
-<h3>Nova Guia</h3>
-<form id="formGuia">
-  <input type="text" id="numeroGuia" placeholder="Nº Guia" required>
-  <input type="text" id="unidade" placeholder="Unidade Solicitante" required>
-  <input type="date" id="dataRecebimento" required>
-  <input type="text" id="observacao" placeholder="Observação">
-  <button type="submit">Adicionar</button>
-</form>
+  <!-- Tabela de Guias Cadastradas -->
+  <h3>Guias Cadastradas</h3>
+  <table id="tabelaGuias">
+    <thead>
+      <tr>
+        <th>Número da Guia</th>
+        <th>Hora de Entrada</th>
+        <th>Unidade</th>
+        <th>Data de Recebimento</th>
+        <th>Status</th>
+        <th>Número da Caixa</th>
+        <th>Data de Arquivamento</th>
+        <th>Observação</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- As guias serão renderizadas aqui -->
+    </tbody>
+  </table>
 
-<table>
-<thead>
-<tr>
-<th>Nº Guia</th>
-<th>Hora Entrada</th>
-<th>Unidade</th>
-<th>Data Receb.</th>
-<th>Status</th>
-<th>Nº Caixa</th>
-<th>Data Arquiv.</th>
-<th>Obs</th>
-</tr>
-</thead>
-<tbody id="tabelaGuias"></tbody>
-</table>
+  <!-- Formulário de Cadastro de Documentos -->
+  <h2>Cadastro de Documento</h2>
+  <form id="formDocumento">
+    <label for="guiaDoc">Número da Guia:</label>
+    <input type="text" id="guiaDoc" required>
+    
+    <label for="nomeDoc">Nome do Documento:</label>
+    <input type="text" id="nomeDoc" required>
+    
+    <label for="tipoDoc">Tipo de Documento:</label>
+    <input type="text" id="tipoDoc" required>
+    
+    <label for="paginasDoc">Número de Páginas:</label>
+    <input type="number" id="paginasDoc" required>
+    
+    <label for="obsDoc">Observação:</label>
+    <textarea id="obsDoc"></textarea>
 
-<script src="script.js"></script>
+    <button type="submit">Salvar Documento</button>
+  </form>
+
+  <!-- Tabela de Documentos Cadastrados -->
+  <h3>Documentos Cadastrados</h3>
+  <table id="tabelaDocumentos">
+    <thead>
+      <tr>
+        <th>Número da Guia</th>
+        <th>Nome do Documento</th>
+        <th>Tipo de Documento</th>
+        <th>Número de Páginas</th>
+        <th>Status</th>
+        <th>Observação</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Os documentos serão renderizados aqui -->
+    </tbody>
+  </table>
+
+  <!-- Tabela de Arquivados -->
+  <h3>Guias Arquivadas</h3>
+  <table id="tabelaArquivados">
+    <thead>
+      <tr>
+        <th>Número da Guia</th>
+        <th>Hora de Entrada</th>
+        <th>Unidade</th>
+        <th>Data de Recebimento</th>
+        <th>Número da Caixa</th>
+        <th>Data de Arquivamento</th>
+        <th>Observação</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- As guias arquivadas serão renderizadas aqui -->
+    </tbody>
+  </table>
+
+  <!-- Adicionando o código JavaScript -->
+  <script>
+    let guias = JSON.parse(localStorage.getItem("guias")) || [];
+    let documentos = JSON.parse(localStorage.getItem("documentos")) || [];
+
+    function salvar() {
+      localStorage.setItem("guias", JSON.stringify(guias));
+      localStorage.setItem("documentos", JSON.stringify(documentos));
+    }
+
+    /* ---------------- INÍCIO ---------------- */
+
+    if (document.getElementById("formGuia")) {
+      document.getElementById("formGuia").addEventListener("submit", function(e){
+        e.preventDefault();
+
+        const numeroGuia = document.getElementById("numeroGuia").value;
+
+        if(guias.some(g => g.numeroGuia === numeroGuia)){
+          alert("Guia já cadastrada!");
+          return;
+        }
+
+        guias.push({
+          numeroGuia,
+          horaEntrada: new Date().toLocaleString(),
+          unidade: document.getElementById("unidade").value,
+          dataRecebimento: document.getElementById("dataRecebimento").value,
+          status: "Em Andamento",
+          numeroCaixa: "",
+          dataArquivamento: "",
+          observacao: document.getElementById("observacao").value
+        });
+
+        salvar();
+        renderizarGuias();
+        this.reset();
+      });
+
+      function renderizarGuias(){
+        const tabela = document.getElementById("tabelaGuias").getElementsByTagName('tbody')[0];
+        tabela.innerHTML = "";
+
+        guias.forEach(g => {
+          tabela.innerHTML += `
+            <tr>
+              <td>${g.numeroGuia}</td>
+              <td>${g.horaEntrada}</td>
+              <td>${g.unidade}</td>
+              <td>${g.dataRecebimento}</td>
+              <td>${g.status}</td>
+              <td>${g.numeroCaixa}</td>
+              <td>${g.dataArquivamento}</td>
+              <td>${g.observacao}</td>
+            </tr>
+          `;
+        });
+      }
+
+      renderizarGuias();
+    }
+
+    /* ---------------- DOCUMENTOS ---------------- */
+
+    if (document.getElementById("formDocumento")) {
+      document.getElementById("formDocumento").addEventListener("submit", function(e){
+        e.preventDefault();
+
+        const guiaDoc = document.getElementById("guiaDoc").value;
+
+        if(!guias.some(g => g.numeroGuia === guiaDoc)){
+          alert("Guia não encontrada!");
+          return;
+        }
+
+        documentos.push({
+          numeroGuia: guiaDoc,
+          nome: document.getElementById("nomeDoc").value,
+          tipo: document.getElementById("tipoDoc").value,
+          paginas: document.getElementById("paginasDoc").value,
+          status: "Pendente",
+          observacao: document.getElementById("obsDoc").value
+        });
+
+        salvar();
+        renderizarDocumentos();
+        this.reset();
+      });
+
+      function renderizarDocumentos(){
+        const tabela = document.getElementById("tabelaDocumentos").getElementsByTagName('tbody')[0];
+        tabela.innerHTML = "";
+
+        documentos.forEach(d => {
+          tabela.innerHTML += `
+            <tr>
+              <td>${d.numeroGuia}</td>
+              <td>${d.nome}</td>
+              <td>${d.tipo}</td>
+              <td>${d.paginas}</td>
+              <td>${d.status}</td>
+              <td>${d.observacao}</td>
+            </tr>
+          `;
+        });
+      }
+
+      renderizarDocumentos();
+    }
+
+    /* ---------------- ARQUIVADOS ---------------- */
+
+    if (document.getElementById("tabelaArquivados")) {
+      function renderizarArquivados(){
+        const tabela = document.getElementById("tabelaArquivados").getElementsByTagName('tbody')[0];
+        tabela.innerHTML = "";
+
+        guias
+          .filter(g => g.status === "Arquivada")
+          .forEach(g => {
+            tabela.innerHTML += `
+              <tr>
+                <td>${g.numeroGuia}</td>
+                <td>${g.horaEntrada}</td>
+                <td>${g.unidade}</td>
+                <td>${g.dataRecebimento}</td>
+                <td>${g.numeroCaixa}</td>
+                <td>${g.dataArquivamento}</td>
+                <td>${g.observacao}</td>
+              </tr>
+            `;
+          });
+      }
+
+      renderizarArquivados();
+    }
+  </script>
+
 </body>
 </html>
