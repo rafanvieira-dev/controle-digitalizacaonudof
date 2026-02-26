@@ -13,10 +13,10 @@
   </div>
 
   <button onclick="window.location.href='documentos.html'">Adicionar Documentos</button>
-  <button onclick="window.location.href='arquivados.html'">Arquivar Guia</button>
+  <button onclick="arquivarGuia()">Arquivar Guia</button>
 
   <script>
-    // Recupera a guia selecionada do localStorage
+    // Recupera as guias e a guia atual a partir do localStorage
     const guias = JSON.parse(localStorage.getItem("guias")) || [];
     const numeroGuia = new URLSearchParams(window.location.search).get("numeroGuia");
 
@@ -29,6 +29,26 @@
         <p><strong>Data de Recebimento:</strong> ${guia.dataRecebimento}</p>
         <p><strong>Status:</strong> ${guia.status}</p>
       `;
+    }
+
+    // Função para arquivar a guia
+    function arquivarGuia() {
+      if (!guia) return;
+
+      const pasta = prompt("Digite o número da pasta para arquivamento:");
+      const dataArquivamento = new Date().toLocaleString();
+
+      guia.status = "Arquivada";
+      guia.pasta = pasta;
+      guia.dataArquivamento = dataArquivamento;
+
+      // Atualiza o localStorage com a guia arquivada
+      const index = guias.findIndex(g => g.numeroGuia === guia.numeroGuia);
+      guias[index] = guia;
+      localStorage.setItem("guias", JSON.stringify(guias));
+
+      alert("Guia arquivada com sucesso!");
+      window.location.href = "arquivados.html"; // Redireciona para a página de arquivados
     }
   </script>
 </body>
