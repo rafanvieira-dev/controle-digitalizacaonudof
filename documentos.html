@@ -2,23 +2,30 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Inserir Documentos</title>
+<title>Documentos da Guia</title>
 <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<div class="container">
-<header>
-<h1>Inserir Documentos em Guia</h1>
-</header>
+<h2>Documentos da Guia</h2>
 
-<div id="listaGuias"></div>
+<a href="index.html" class="voltar">⬅ Voltar</a>
 
-<button onclick="voltar()">Voltar</button>
+<div class="formulario-doc">
+    <form id="formDocumento">
+        <input type="text" id="nomeDocumento" placeholder="Nome do Documento" required>
+        <button type="submit" id="btnAdicionar">Adicionar Documento</button>
+    </form>
 </div>
 
-<script type="module" src="firebase.js"></script>
-<script type="module" src="documentos.js"></script>
+<p id="contadorDocs">0 / 7 documentos</p>
+
+<h3>Lista de Documentos</h3>
+<ul id="listaDocumentos"></ul>
+
+<script src="firebase.js"></script>
+<script src="documentos.js"></script>
 
 </body>
 </html>
