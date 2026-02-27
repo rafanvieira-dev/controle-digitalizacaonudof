@@ -1,3 +1,4 @@
+console.log("auth carregado");
 import { auth } from "./firebase.js";
 import {
     GoogleAuthProvider,
