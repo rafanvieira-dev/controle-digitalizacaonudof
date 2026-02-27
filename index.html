@@ -14,7 +14,10 @@
 
     <!-- LOGIN -->
     <div id="loginArea" class="menu">
-        <button id="btnGoogle">Entrar com Google Institucional</button>
+        <input type="email" id="email" placeholder="Seu email" required>
+        <input type="password" id="senha" placeholder="Sua senha" required>
+        <button id="btnLogin">Entrar</button>
+        <button id="btnCadastrar">Cadastrar</button>
         <p id="erroLogin" style="color:red;"></p>
     </div>
 
@@ -28,8 +31,61 @@
     </div>
 </div>
 
-<script type="module" src="firebase.js"></script>
-<script type="module" src="auth.js"></script>
+<script type="module">
+import { auth } from "./firebase.js";
+import { 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const loginArea = document.getElementById("loginArea");
+const menuSistema = document.getElementById("menuSistema");
+const erroLogin = document.getElementById("erroLogin");
+
+const email = document.getElementById("email");
+const senha = document.getElementById("senha");
+
+const btnLogin = document.getElementById("btnLogin");
+const btnCadastrar = document.getElementById("btnCadastrar");
+const btnLogout = document.getElementById("btnLogout");
+
+// Verifica se usuário está logado
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        loginArea.style.display = "none";
+        menuSistema.style.display = "block";
+    } else {
+        loginArea.style.display = "block";
+        menuSistema.style.display = "none";
+    }
+});
+
+// Login
+btnLogin.addEventListener("click", async () => {
+    try {
+        await signInWithEmailAndPassword(auth, email.value, senha.value);
+    } catch (error) {
+        erroLogin.textContent = error.message;
+    }
+});
+
+// Cadastro
+btnCadastrar.addEventListener("click", async () => {
+    try {
+        await createUserWithEmailAndPassword(auth, email.value, senha.value);
+        alert("Usuário criado com sucesso!");
+    } catch (error) {
+        erroLogin.textContent = error.message;
+    }
+});
+
+// Logout
+btnLogout.addEventListener("click", async () => {
+    await signOut(auth);
+});
+</script>
 
 </body>
 </html>
