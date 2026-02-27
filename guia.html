@@ -5,6 +5,7 @@
 <title>Nova Guia - Sistema Controle de Digitalização NUDOF</title>
 <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
 <div class="container">
@@ -13,6 +14,7 @@
     </header>
 
     <form>
+
         <label>Nº da Guia</label>
         <input type="text" id="numeroGuia" required>
 
@@ -27,14 +29,11 @@
 
         <button type="button" onclick="salvarGuia()">Salvar Guia</button>
         <button type="button" onclick="voltar()">Voltar</button>
+
     </form>
 </div>
 
-<script>
-document.getElementById("horaEntrada").value =
-    new Date().toLocaleTimeString("pt-BR");
-</script>
-
+<!-- Módulos Firebase primeiro -->
 <script type="module" src="firebase.js"></script>
 <script type="module" src="guia.js"></script>
 
