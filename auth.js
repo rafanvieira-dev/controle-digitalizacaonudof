@@ -33,4 +33,19 @@ onAuthStateChanged(auth, (user) => {
     loginArea.style.display = "flex";
     menuSistema.style.display = "none";
   }
+};
+
+firebase.auth().onAuthStateChanged(user => {
+
+    if (user) {
+
+        if (!user.email.endsWith("@defensoria.rj.def.br")) {
+            firebase.auth().signOut();
+            window.location.href = "login.html";
+        }
+
+    } else {
+        window.location.href = "login.html";
+    }
+
 });
