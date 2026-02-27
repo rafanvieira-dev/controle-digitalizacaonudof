@@ -1,6 +1,6 @@
 import { db } from "./firebase.js";
 import { collection, addDoc } 
-from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 window.salvarGuia = async function () {
 
