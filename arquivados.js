@@ -9,6 +9,22 @@ onAuthStateChanged(auth, (user) => {
   else carregarArquivados();
 });
 
+async function listarDocumentosParaArquivar(guiaId) {
+
+    const snapshot = await db.collection("documentos")
+        .where("guiaId", "==", guiaId)
+        .get();
+
+    const lista = document.getElementById("listaArquivamento");
+    lista.innerHTML = "";
+
+    snapshot.forEach(doc => {
+        const li = document.createElement("li");
+        li.textContent = doc.data().nomeDocumento;
+        lista.appendChild(li);
+    });
+}
+
 async function carregarArquivados() {
 
   const lista = document.getElementById("listaArquivados");
