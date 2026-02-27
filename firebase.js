@@ -3,12 +3,13 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth
 import { getFirestore } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
+  apiKey: "AIzaSyDs1mj1e6SKK-qwa_wXLGYI3CIitsO6SNk",
   authDomain: "controledigitalizacaodoc.firebaseapp.com",
   projectId: "controledigitalizacaodoc",
-  storageBucket: "controledigitalizacaodoc.appspot.com",
+  storageBucket: "controledigitalizacaodoc.firebasestorage.app",
   messagingSenderId: "1057595169300",
-  appId: "1:1057595169300:web:86c34690b376b2649da501"
+  appId: "1:1057595169300:web:86c34690b376b2649da501",
+  measurementId: "G-KW7LDBSK4J"
 };
 
 const app = initializeApp(firebaseConfig);
