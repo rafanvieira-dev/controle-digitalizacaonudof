@@ -1,6 +1,12 @@
 import { db } from "./firebase.js";
-import { collection, getDocs, addDoc } 
-from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { 
+  collection, 
+  getDocs, 
+  addDoc,
+  query,
+  where,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const listaGuias = document.getElementById("listaGuias");
 const areaDocumentos = document.getElementById("areaDocumentos");
@@ -11,102 +17,88 @@ const contador = document.getElementById("contadorDocs");
 
 let guiaSelecionada = null;
 
-// 🔹 CARREGAR GUIAS
 async function carregarGuias() {
-    const snapshot = await getDocs(collection(db, "guias"));
+
+    const q = query(
+        collection(db, "guias"),
+        where("status", "==", "RECEBIDA")
+    );
+
+    const snapshot = await getDocs(q);
     listaGuias.innerHTML = "";
 
-    snapshot.forEach(doc => {
-        const dados = doc.data();
+    snapshot.forEach(docSnap => {
+        const dados = docSnap.data();
 
-        const li = document.createElement("li");
-        li.innerHTML = `
-            <strong>${dados.numero}</strong>
-            - <a href="#" data-id="${doc.id}" data-numero="${dados.numero}">
-                Inserir Documentos
-              </a>
+        listaGuias.innerHTML += `
+            <li>
+                <strong>${dados.numeroGuia}</strong>
+                - <a href="#" data-id="${docSnap.id}" data-numero="${dados.numeroGuia}">
+                    Inserir Documentos
+                </a>
+            </li>
         `;
-
-        listaGuias.appendChild(li);
     });
 }
 
-// 🔹 SELECIONAR GUIA
 listaGuias.addEventListener("click", async (e) => {
     if (e.target.tagName === "A") {
         e.preventDefault();
 
         guiaSelecionada = e.target.dataset.id;
-
         tituloGuia.innerText = "Guia: " + e.target.dataset.numero;
-
         areaDocumentos.style.display = "block";
 
         carregarDocumentos();
     }
 });
 
-// 🔹 CARREGAR DOCUMENTOS
 async function carregarDocumentos() {
+
     const snapshot = await getDocs(
         collection(db, "guias", guiaSelecionada, "documentos")
     );
 
     listaDocumentos.innerHTML = "";
 
-    snapshot.forEach(doc => {
-        const dados = doc.data();
+    snapshot.forEach(docSnap => {
+        const d = docSnap.data();
 
-        const li = document.createElement("li");
-        li.innerHTML = `
-            <strong>${dados.nome}</strong><br>
-            Processo SEI: ${dados.numeroProcesso}<br>
-            Data de Recebimento: ${dados.dataRecebimento}<br>
-            Guia de Remessa: ${dados.guiaRemessa}<br>
-            Status: ${dados.status}
-            <hr>
+        listaDocumentos.innerHTML += `
+            <li>
+                <strong>${d.nomeDocumento}</strong><br>
+                Processo SEI: ${d.numeroProcesso}<br>
+                Data: ${d.dataRecebimento}<br>
+                Guia Remessa: ${d.guiaRemessa}
+                <hr>
+            </li>
         `;
-
-        listaDocumentos.appendChild(li);
     });
 
     contador.innerText = `${snapshot.size} / 7 documentos`;
-
     form.style.display = snapshot.size >= 7 ? "none" : "block";
 }
 
-// 🔹 ADICIONAR DOCUMENTO
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    if (!guiaSelecionada) {
-        alert("Selecione uma guia primeiro.");
-        return;
-    }
-
-    const nome = document.getElementById("nomeDocumento").value;
-    const numeroProcesso = document.getElementById("numeroProcesso").value;
-    const dataRecebimento = document.getElementById("dataRecebimento").value;
-    const guiaRemessa = document.getElementById("guiaRemessa").value;
 
     const snapshot = await getDocs(
         collection(db, "guias", guiaSelecionada, "documentos")
     );
 
     if (snapshot.size >= 7) {
-        alert("Limite máximo de 7 documentos atingido.");
+        alert("Limite máximo atingido.");
         return;
     }
 
     await addDoc(
         collection(db, "guias", guiaSelecionada, "documentos"),
         {
-            nome: nome,
-            numeroProcesso: numeroProcesso,
-            dataRecebimento: dataRecebimento,
-            guiaRemessa: guiaRemessa,
-            status: "recebido", // 🔥 fluxo correto
-            criadoEm: new Date()
+            nomeDocumento: nomeDocumento.value,
+            numeroProcesso: numeroProcesso.value,
+            dataRecebimento: dataRecebimento.value,
+            guiaRemessa: guiaRemessa.value,
+            criadoEm: serverTimestamp()
         }
     );
 
