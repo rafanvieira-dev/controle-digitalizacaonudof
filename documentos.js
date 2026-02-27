@@ -1,9 +1,6 @@
 import { db } from "./firebase.js";
-import { 
-    collection, 
-    getDocs, 
-    addDoc 
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, getDocs, addDoc } 
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const listaGuias = document.getElementById("listaGuias");
 const areaDocumentos = document.getElementById("areaDocumentos");
@@ -13,7 +10,6 @@ const listaDocumentos = document.getElementById("listaDocumentos");
 const contador = document.getElementById("contadorDocs");
 
 let guiaSelecionada = null;
-let numeroGuiaSelecionada = "";
 
 // 🔹 CARREGAR GUIAS
 async function carregarGuias() {
@@ -41,9 +37,8 @@ listaGuias.addEventListener("click", async (e) => {
         e.preventDefault();
 
         guiaSelecionada = e.target.dataset.id;
-        numeroGuiaSelecionada = e.target.dataset.numero;
 
-        tituloGuia.innerText = "Guia: " + numeroGuiaSelecionada;
+        tituloGuia.innerText = "Guia: " + e.target.dataset.numero;
 
         areaDocumentos.style.display = "block";
 
@@ -77,11 +72,7 @@ async function carregarDocumentos() {
 
     contador.innerText = `${snapshot.size} / 7 documentos`;
 
-    if (snapshot.size >= 7) {
-        form.style.display = "none";
-    } else {
-        form.style.display = "block";
-    }
+    form.style.display = snapshot.size >= 7 ? "none" : "block";
 }
 
 // 🔹 ADICIONAR DOCUMENTO
@@ -114,7 +105,7 @@ form.addEventListener("submit", async (e) => {
             numeroProcesso: numeroProcesso,
             dataRecebimento: dataRecebimento,
             guiaRemessa: guiaRemessa,
-            status: "recebido", // 🔹 Vai direto para recebidos
+            status: "recebido", // 🔥 fluxo correto
             criadoEm: new Date()
         }
     );
@@ -123,5 +114,4 @@ form.addEventListener("submit", async (e) => {
     carregarDocumentos();
 });
 
-// 🔹 INICIAR
 carregarGuias();
