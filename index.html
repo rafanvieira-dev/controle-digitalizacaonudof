@@ -12,31 +12,22 @@
         <h1>Sistema Controle de Digitalização NUDOF</h1>
     </header>
 
-    <!-- ================= LOGIN ================= -->
+    <!-- LOGIN -->
     <div id="loginArea" class="menu">
-
-        <form id="formLogin">
-            <input type="email" id="email" placeholder="E-mail institucional" required>
-            <input type="password" id="senha" placeholder="Senha" required>
-            <button type="submit">Entrar</button>
-        </form>
-
+        <button id="btnGoogle">Entrar com Google Institucional</button>
         <p id="erroLogin" style="color:red;"></p>
-
     </div>
 
-    <!-- ================= MENU DO SISTEMA ================= -->
+    <!-- MENU SISTEMA -->
     <div id="menuSistema" class="menu" style="display:none;">
         <button onclick="location.href='guia.html'">Nova Guia</button>
         <button onclick="location.href='documentos.html'">Inserir Documentos</button>
         <button onclick="location.href='documentosRecebidos.html'">Arquivar Guias</button>
         <button onclick="location.href='documentosArquivados.html'">Documentos Arquivados</button>
-        <button class="btn-danger" id="btnLogout">Sair</button>
+        <button id="btnLogout" class="btn-danger">Sair</button>
     </div>
-
 </div>
 
-<!-- Firebase -->
 <script type="module" src="firebase.js"></script>
 <script type="module" src="auth.js"></script>
 
