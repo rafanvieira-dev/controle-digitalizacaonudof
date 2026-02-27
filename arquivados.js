@@ -1,6 +1,13 @@
 import { db, auth } from "./firebase.js";
-import { collection, getDocs } 
-from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { 
+  collection, 
+  getDocs,
+  query,
+  where,
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
 import { onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
@@ -9,78 +16,29 @@ onAuthStateChanged(auth, (user) => {
   else carregarArquivados();
 });
 
-async function listarDocumentosParaArquivar(guiaId) {
-
-    const snapshot = await db.collection("documentos")
-        .where("guiaId", "==", guiaId)
-        .get();
-
-    const lista = document.getElementById("listaArquivamento");
-    lista.innerHTML = "";
-
-    snapshot.forEach(doc => {
-        const li = document.createElement("li");
-        li.textContent = doc.data().nomeDocumento;
-        lista.appendChild(li);
-    });
-}
-
 async function carregarArquivados() {
 
   const lista = document.getElementById("listaArquivados");
   lista.innerHTML = "";
 
-  const snapshot = await getDocs(collection(db, "guias"));
+  const q = query(
+    collection(db, "guias"),
+    where("status", "==", "ARQUIVADA")
+  );
 
-  let pastas = {};
+  const snapshot = await getDocs(q);
 
   snapshot.forEach(docSnap => {
     const guia = docSnap.data();
 
-    if (guia.status === "Arquivada") {
-
-      const data = guia.arquivamento?.dataArquivamento || "Sem Data";
-
-      if (!pastas[data]) {
-        pastas[data] = [];
-      }
-
-      pastas[data].push({
-        id: docSnap.id,
-        ...guia
-      });
-    }
-  });
-
-  montarPastas(pastas);
-}
-
-function montarPastas(pastas) {
-
-  const lista = document.getElementById("listaArquivados");
-
-  Object.keys(pastas).sort().forEach(data => {
-
     lista.innerHTML += `
-      <div class="pasta">
-        <h3>📂 ${data}</h3>
-        <div id="pasta-${data.replaceAll('/','-')}"></div>
+      <div>
+        <button onclick="mostrarDetalhes('${docSnap.id}')">
+          Guia Nº ${guia.numeroGuia}
+        </button>
+        <div id="detalhe-${docSnap.id}" style="display:none;"></div>
       </div>
     `;
-
-    const divPasta = document.getElementById("pasta-"+data.replaceAll('/','-'));
-
-    pastas[data].forEach(guia => {
-
-      divPasta.innerHTML += `
-        <div class="guia-arquivada">
-          <button onclick="mostrarDetalhes('${guia.id}')">
-            📄 Guia Nº ${guia.numeroGuia}
-          </button>
-          <div id="detalhe-${guia.id}" style="display:none;"></div>
-        </div>
-      `;
-    });
   });
 }
 
@@ -94,7 +52,9 @@ window.mostrarDetalhes = async function(idGuia) {
   }
 
   detalheDiv.style.display = "block";
-  detalheDiv.innerHTML = "Carregando...";
+
+  const guiaDoc = await getDoc(doc(db, "guias", idGuia));
+  const guiaData = guiaDoc.data();
 
   const docsSnapshot = await getDocs(
     collection(db, "guias", idGuia, "documentos")
@@ -102,50 +62,31 @@ window.mostrarDetalhes = async function(idGuia) {
 
   let documentosHTML = "";
 
-  docsSnapshot.forEach(doc => {
-    const d = doc.data();
+  docsSnapshot.forEach(docSnap => {
+    const d = docSnap.data();
+
     documentosHTML += `
       <tr>
         <td>${d.nomeDocumento}</td>
+        <td>${d.numeroProcesso}</td>
         <td>${d.guiaRemessa}</td>
-        <td>${d.numeroSEI}</td>
         <td>${d.dataRecebimento}</td>
       </tr>
     `;
   });
 
-  const guiaSnapshot = await getDocs(collection(db, "guias"));
-  let guiaData;
-
-  guiaSnapshot.forEach(doc => {
-    if (doc.id === idGuia) {
-      guiaData = doc.data();
-    }
-  });
-
   detalheDiv.innerHTML = `
-    <div class="detalhes-box">
-      <h4>Dados da Guia</h4>
-      <p><strong>Nº Guia:</strong> ${guiaData.numeroGuia}</p>
-      <p><strong>Unidade:</strong> ${guiaData.unidade}</p>
-      <p><strong>Data Recebimento:</strong> ${guiaData.dataRecebimento}</p>
-
-      <h4>Arquivamento</h4>
-      <p><strong>Data Arquivamento:</strong> ${guiaData.arquivamento?.dataArquivamento}</p>
-      <p><strong>Caixa:</strong> ${guiaData.arquivamento?.caixaGuia}</p>
-      <p><strong>Observação:</strong> ${guiaData.arquivamento?.observacao}</p>
-
-      <h4>Documentos</h4>
-      <table>
-        <tr>
-          <th>Nome</th>
-          <th>Guia Remessa</th>
-          <th>SEI</th>
-          <th>Data</th>
-        </tr>
-        ${documentosHTML}
-      </table>
-    </div>
+    <p><strong>Unidade:</strong> ${guiaData.unidade}</p>
+    <p><strong>Data Arquivamento:</strong> ${guiaData.arquivamento?.dataArquivamento}</p>
+    <table>
+      <tr>
+        <th>Nome</th>
+        <th>Processo</th>
+        <th>Remessa</th>
+        <th>Data</th>
+      </tr>
+      ${documentosHTML}
+    </table>
   `;
 };
 
