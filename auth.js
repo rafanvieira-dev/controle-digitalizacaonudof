@@ -33,7 +33,7 @@ onAuthStateChanged(auth, (user) => {
     loginArea.style.display = "flex";
     menuSistema.style.display = "none";
   }
-};
+});
 
 firebase.auth().onAuthStateChanged(user => {
 
