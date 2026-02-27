@@ -3,7 +3,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth
 import { getFirestore } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDs1mj1e6SKK-qwa_wXLGYI3CIitsO6SNk",
+  apiKey: "SUA_API_KEY",
   authDomain: "controledigitalizacaodoc.firebaseapp.com",
   projectId: "controledigitalizacaodoc",
   storageBucket: "controledigitalizacaodoc.appspot.com",
