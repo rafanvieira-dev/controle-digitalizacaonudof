@@ -1,49 +1,46 @@
-// Inicialização
-const auth = firebase.auth();
-const provider = new firebase.auth.GoogleAuthProvider();
+import { auth } from "./firebase.js";
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut } 
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// Login com Google
-function loginGoogle() {
-    auth.signInWithPopup(provider)
-        .then((result) => {
+const form = document.getElementById("formLogin");
+const loginArea = document.getElementById("loginArea");
+const menuSistema = document.getElementById("menuSistema");
+const erroMsg = document.getElementById("erroLogin");
+const btnLogout = document.getElementById("btnLogout");
 
-            const user = result.user;
+// LOGIN
+form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-            // Permitir apenas email institucional
-            if (!user.email.endsWith("@defensoria.rj.def.br")) {
-                alert("Acesso permitido apenas com e-mail institucional.");
-                auth.signOut();
-                return;
-            }
+    const email = document.getElementById("email").value.trim();
+    const senha = document.getElementById("senha").value;
 
-            window.location.href = "index.html";
+    erroMsg.innerText = "";
 
-        })
-        .catch((error) => {
-            console.error("Erro no login:", error);
-        });
-}
-
-// Logout
-function logout() {
-    auth.signOut().then(() => {
-        window.location.href = "login.html";
-    });
-}
-
-// Proteção de páginas internas
-auth.onAuthStateChanged((user) => {
-
-    if (window.location.pathname.includes("login.html")) return;
-
-    if (!user) {
-        window.location.href = "login.html";
+    if (!email.endsWith("@defensoria.rj.def.br")) {
+        erroMsg.innerText = "Utilize apenas e-mail institucional.";
         return;
     }
 
-    if (!user.email.endsWith("@defensoria.rj.def.br")) {
-        auth.signOut();
-        window.location.href = "login.html";
+    try {
+        await signInWithEmailAndPassword(auth, email, senha);
+    } catch (error) {
+        erroMsg.innerText = "E-mail ou senha inválidos.";
     }
+});
 
+// MONITORAR LOGIN
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        loginArea.style.display = "none";
+        menuSistema.style.display = "block";
+    } else {
+        loginArea.style.display = "block";
+        menuSistema.style.display = "none";
+    }
+});
+
+// LOGOUT
+btnLogout?.addEventListener("click", async () => {
+    await signOut(auth);
 });
