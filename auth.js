@@ -1,31 +1,34 @@
 import { auth } from "./firebase.js";
-import { signInWithEmailAndPassword, onAuthStateChanged, signOut } 
-from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+    GoogleAuthProvider,
+    signInWithPopup,
+    onAuthStateChanged,
+    signOut
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const form = document.getElementById("formLogin");
+const provider = new GoogleAuthProvider();
+
+const btnGoogle = document.getElementById("btnGoogle");
+const btnLogout = document.getElementById("btnLogout");
 const loginArea = document.getElementById("loginArea");
 const menuSistema = document.getElementById("menuSistema");
 const erroMsg = document.getElementById("erroLogin");
-const btnLogout = document.getElementById("btnLogout");
 
-// LOGIN
-form?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById("email").value.trim();
-    const senha = document.getElementById("senha").value;
-
-    erroMsg.innerText = "";
-
-    if (!email.endsWith("@defensoria.rj.def.br")) {
-        erroMsg.innerText = "Utilize apenas e-mail institucional.";
-        return;
-    }
+// LOGIN GOOGLE
+btnGoogle?.addEventListener("click", async () => {
 
     try {
-        await signInWithEmailAndPassword(auth, email, senha);
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+
+        // 🔒 Restringir domínio institucional
+        if (!user.email.endsWith("@defensoria.rj.def.br")) {
+            erroMsg.innerText = "Utilize apenas e-mail institucional.";
+            await signOut(auth);
+        }
+
     } catch (error) {
-        erroMsg.innerText = "E-mail ou senha inválidos.";
+        erroMsg.innerText = "Erro ao autenticar.";
     }
 });
 
