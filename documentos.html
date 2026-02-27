@@ -2,30 +2,46 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Documentos da Guia</title>
+<title>Documentos por Guia</title>
 <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<h2>Documentos da Guia</h2>
+<h2>Guias Cadastradas</h2>
 
 <a href="index.html" class="voltar">⬅ Voltar</a>
 
-<div class="formulario-doc">
+<ul id="listaGuias"></ul>
+
+<hr>
+
+<div id="areaDocumentos" style="display:none;">
+
+    <h3 id="tituloGuia"></h3>
+
     <form id="formDocumento">
+
         <input type="text" id="nomeDocumento" placeholder="Nome do Documento" required>
-        <button type="submit" id="btnAdicionar">Adicionar Documento</button>
+
+        <input type="text" id="numeroProcesso" placeholder="Nº do Processo SEI" required>
+
+        <input type="date" id="dataRecebimento" required>
+
+        <input type="text" id="guiaRemessa" placeholder="Guia de Remessa" required>
+
+        <button type="submit">Adicionar Documento</button>
+
     </form>
+
+    <p id="contadorDocs">0 / 7 documentos</p>
+
+    <h3>Lista de Documentos</h3>
+    <ul id="listaDocumentos"></ul>
+
 </div>
 
-<p id="contadorDocs">0 / 7 documentos</p>
-
-<h3>Lista de Documentos</h3>
-<ul id="listaDocumentos"></ul>
-
-<script src="firebase.js"></script>
-<script src="documentos.js"></script>
+<script type="module" src="documentos.js"></script>
 
 </body>
 </html>
