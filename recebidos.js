@@ -3,7 +3,9 @@ import {
   collection, 
   getDocs, 
   updateDoc, 
-  doc 
+  doc,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 import { onAuthStateChanged } 
@@ -19,31 +21,33 @@ async function carregar() {
   const lista = document.getElementById("listaRecebidas");
   lista.innerHTML = "";
 
-  const snapshot = await getDocs(collection(db, "guias"));
+  const q = query(
+    collection(db, "guias"),
+    where("status", "==", "RECEBIDA")
+  );
+
+  const snapshot = await getDocs(q);
 
   snapshot.forEach(docSnap => {
     const guia = docSnap.data();
 
-    if (guia.status === "Ativa") {
-
-      lista.innerHTML += `
-        <div style="margin-bottom:20px;">
-          <strong>Guia Nº ${guia.numeroGuia}</strong>
-          <button onclick="arquivar('${docSnap.id}')">Arquivar</button>
-        </div>
-      `;
-    }
+    lista.innerHTML += `
+      <div>
+        <strong>Guia Nº ${guia.numeroGuia}</strong>
+        <button onclick="arquivar('${docSnap.id}')">Arquivar</button>
+      </div>
+    `;
   });
 }
 
 window.arquivar = async function(idGuia) {
 
   const dataArquivamento = prompt("Data do Arquivamento:");
-  const caixaGuia = prompt("Nº da Caixa Localização Guia:");
+  const caixaGuia = prompt("Nº da Caixa:");
   const observacao = prompt("Observação:");
 
   await updateDoc(doc(db, "guias", idGuia), {
-    status: "Arquivada",
+    status: "ARQUIVADA",
     arquivamento: {
       dataArquivamento,
       caixaGuia,
