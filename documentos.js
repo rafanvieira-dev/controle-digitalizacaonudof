@@ -1,78 +1,68 @@
-import { db, auth } from "./firebase.js";
-import { 
-  collection, 
-  getDocs, 
-  addDoc 
-} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+// Pega o ID da guia pela URL
+const urlParams = new URLSearchParams(window.location.search);
+const guiaId = urlParams.get("id");
 
-import { onAuthStateChanged } 
-from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+const form = document.getElementById("formDocumento");
+const lista = document.getElementById("listaDocumentos");
+const contador = document.getElementById("contadorDocs");
+const botao = document.getElementById("btnAdicionar");
 
-onAuthStateChanged(auth, (user) => {
-  if (!user) window.location.href = "index.html";
-  else carregarGuias();
+// Carrega documentos ao abrir página
+window.addEventListener("DOMContentLoaded", () => {
+    if (guiaId) {
+        carregarDocumentos();
+    }
 });
 
-async function carregarGuias() {
+// Adicionar documento sem popup
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  const lista = document.getElementById("listaGuias");
-  lista.innerHTML = "";
+    const nomeDocumento = document.getElementById("nomeDocumento").value.trim();
 
-  const snapshot = await getDocs(collection(db, "guias"));
+    if (!nomeDocumento) return;
 
-  snapshot.forEach(docSnap => {
-    const guia = docSnap.data();
+    const snapshot = await db.collection("documentos")
+        .where("guiaId", "==", guiaId)
+        .get();
 
-    if (guia.status === "Ativa") {
-
-      lista.innerHTML += `
-        <div style="margin-bottom:20px;">
-          <strong>Guia Nº ${guia.numeroGuia}</strong>
-          <button onclick="mostrarFormulario('${docSnap.id}')">Inserir Documento</button>
-          <div id="form-${docSnap.id}" style="display:none;"></div>
-        </div>
-      `;
+    if (snapshot.size >= 7) {
+        botao.disabled = true;
+        return;
     }
-  });
+
+    await db.collection("documentos").add({
+        nomeDocumento: nomeDocumento,
+        guiaId: guiaId,
+        criadoEm: new Date()
+    });
+
+    document.getElementById("nomeDocumento").value = "";
+
+    carregarDocumentos();
+});
+
+// Função para listar documentos
+async function carregarDocumentos() {
+
+    const snapshot = await db.collection("documentos")
+        .where("guiaId", "==", guiaId)
+        .orderBy("criadoEm", "asc")
+        .get();
+
+    lista.innerHTML = "";
+
+    snapshot.forEach(doc => {
+        const li = document.createElement("li");
+        li.textContent = doc.data().nomeDocumento;
+        lista.appendChild(li);
+    });
+
+    contador.innerText = snapshot.size + " / 7 documentos";
+
+    if (snapshot.size >= 7) {
+        botao.disabled = true;
+    } else {
+        botao.disabled = false;
+    }
 }
-
-window.mostrarFormulario = function(idGuia) {
-
-  const div = document.getElementById("form-" + idGuia);
-
-  div.style.display = "block";
-
-  div.innerHTML = `
-    <input type="text" placeholder="Nome do Documento" id="nome-${idGuia}">
-    <input type="text" placeholder="Guia de Remessa" id="remessa-${idGuia}">
-    <input type="text" placeholder="Nº Processo SEI" id="sei-${idGuia}">
-    <input type="date" id="data-${idGuia}">
-    <button onclick="salvarDocumento('${idGuia}')">Salvar Documento</button>
-  `;
-};
-
-window.salvarDocumento = async function(idGuia) {
-
-  const docsRef = collection(db, "guias", idGuia, "documentos");
-  const snapshot = await getDocs(docsRef);
-
-  if (snapshot.size >= 6) {
-    alert("Limite máximo de 6 documentos atingido.");
-    return;
-  }
-
-  await addDoc(docsRef, {
-    nomeDocumento: document.getElementById("nome-"+idGuia).value,
-    guiaRemessa: document.getElementById("remessa-"+idGuia).value,
-    numeroSEI: document.getElementById("sei-"+idGuia).value,
-    dataRecebimento: document.getElementById("data-"+idGuia).value,
-    criadoEm: new Date()
-  });
-
-  alert("Documento inserido com sucesso!");
-  carregarGuias();
-};
-
-window.voltar = function() {
-  window.location.href = "index.html";
-};
