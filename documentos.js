@@ -1,9 +1,17 @@
-import { db } from "./firebase.js";
+import { db, auth } from "./firebase.js";
 import {
   collection,
   getDocs,
-  addDoc
+  addDoc,
+  deleteDoc,
+  doc,
+  getDoc,
+  query,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+import { onAuthStateChanged } from
+"https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
 const listaGuias = document.getElementById("listaGuias");
 const areaDocumentos = document.getElementById("areaDocumentos");
@@ -13,91 +21,164 @@ const listaDocumentos = document.getElementById("listaDocumentos");
 const contador = document.getElementById("contadorDocs");
 
 let guiaSelecionada = null;
+let isAdmin = false;
 
-async function carregarGuias() {
-    const snapshot = await getDocs(collection(db, "guias"));
-    listaGuias.innerHTML = "";
+onAuthStateChanged(auth, async (user) => {
 
-    snapshot.forEach(doc => {
-        const dados = doc.data();
+  if (!user) {
+    window.location.href = "index.html";
+  } else {
 
-        const li = document.createElement("li");
-        li.innerHTML = `
-            <strong>${dados.numero}</strong>
-            - <a href="#" data-id="${doc.id}" data-numero="${dados.numero}">
-                Inserir Documentos
-              </a>
-        `;
-        listaGuias.appendChild(li);
-    });
-}
+    const userDoc = await getDoc(doc(db, "usuarios", user.uid));
 
-listaGuias.addEventListener("click", async (e) => {
-    if (e.target.tagName === "A") {
-        e.preventDefault();
-        guiaSelecionada = e.target.dataset.id;
-        tituloGuia.innerText = "Guia: " + e.target.dataset.numero;
-        areaDocumentos.style.display = "block";
-        carregarDocumentos();
+    if (userDoc.exists() && userDoc.data().role === "admin") {
+      isAdmin = true;
     }
+
+    carregarGuias();
+  }
 });
 
-async function carregarDocumentos() {
-    const snapshot = await getDocs(
-        collection(db, "guias", guiaSelecionada, "documentos")
-    );
+// ======================
+// CARREGAR GUIAS ORGANIZADAS
+// ======================
+async function carregarGuias() {
 
-    listaDocumentos.innerHTML = "";
+  const q = query(collection(db, "guias"), orderBy("dataRecebimento", "desc"));
+  const snapshot = await getDocs(q);
 
-    snapshot.forEach(doc => {
-        const dados = doc.data();
+  listaGuias.innerHTML = "";
 
-        const li = document.createElement("li");
-        li.innerHTML = `
-            <strong>${dados.nome}</strong><br>
-            Processo SEI: ${dados.numeroProcesso}<br>
-            Data: ${dados.dataRecebimento}<br>
-            Guia Remessa: ${dados.guiaRemessa}
-            <hr>
-        `;
-        listaDocumentos.appendChild(li);
+  let guiasPorData = {};
+
+  snapshot.forEach(docSnap => {
+
+    const dados = docSnap.data();
+    const data = dados.dataRecebimento || "Sem Data";
+
+    if (!guiasPorData[data]) {
+      guiasPorData[data] = [];
+    }
+
+    guiasPorData[data].push({
+      id: docSnap.id,
+      ...dados
+    });
+  });
+
+  Object.keys(guiasPorData).forEach(data => {
+
+    const blocoData = document.createElement("div");
+    blocoData.classList.add("bloco-data");
+    blocoData.innerHTML = `<h3 class="titulo-data">Data: ${data}</h3>`;
+
+    const grid = document.createElement("div");
+    grid.classList.add("grid-guias");
+
+    guiasPorData[data].forEach(guia => {
+
+      const card = document.createElement("div");
+      card.classList.add("card-guia");
+
+      card.innerHTML = `
+        <h4>Guia Nº ${guia.numero}</h4>
+        <p><strong>Unidade:</strong> ${guia.unidade}</p>
+        <p><strong>Status:</strong> ${guia.status}</p>
+
+        <button onclick="selecionarGuia('${guia.id}', '${guia.numero}')">
+          Documentos
+        </button>
+
+        ${isAdmin ? `
+        <button class="btn-danger" onclick="excluirGuia('${guia.id}')">
+          Excluir
+        </button>
+        ` : ""}
+      `;
+
+      grid.appendChild(card);
     });
 
-    contador.innerText = `${snapshot.size} / 7 documentos`;
-    form.style.display = snapshot.size >= 7 ? "none" : "block";
+    blocoData.appendChild(grid);
+    listaGuias.appendChild(blocoData);
+  });
+}
+
+// ======================
+window.selecionarGuia = function(id, numero) {
+  guiaSelecionada = id;
+  tituloGuia.innerText = "Guia: " + numero;
+  areaDocumentos.style.display = "block";
+  carregarDocumentos();
+};
+
+async function carregarDocumentos() {
+
+  const snapshot = await getDocs(
+    collection(db, "guias", guiaSelecionada, "documentos")
+  );
+
+  listaDocumentos.innerHTML = "";
+
+  snapshot.forEach(docSnap => {
+    const dados = docSnap.data();
+
+    listaDocumentos.innerHTML += `
+      <li>
+        <strong>${dados.nome}</strong><br>
+        Processo: ${dados.numeroProcesso}<br>
+        Data: ${dados.dataRecebimento}
+        <hr>
+      </li>
+    `;
+  });
+
+  contador.innerText = `${snapshot.size} / 7 documentos`;
 }
 
 form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const nome = document.getElementById("nomeDocumento").value;
-    const numeroProcesso = document.getElementById("numeroProcesso").value;
-    const dataRecebimento = document.getElementById("dataRecebimento").value;
-    const guiaRemessa = document.getElementById("guiaRemessa").value;
+  const nome = document.getElementById("nomeDocumento").value;
+  const numeroProcesso = document.getElementById("numeroProcesso").value;
+  const dataRecebimento = document.getElementById("dataRecebimento").value;
+  const guiaRemessa = document.getElementById("guiaRemessa").value;
 
-    const snapshot = await getDocs(
-        collection(db, "guias", guiaSelecionada, "documentos")
-    );
-
-    if (snapshot.size >= 7) {
-        alert("Limite máximo atingido.");
-        return;
+  await addDoc(
+    collection(db, "guias", guiaSelecionada, "documentos"),
+    {
+      nome,
+      numeroProcesso,
+      dataRecebimento,
+      guiaRemessa,
+      status: "Recebido",
+      criadoEm: new Date()
     }
+  );
 
-    await addDoc(
-        collection(db, "guias", guiaSelecionada, "documentos"),
-        {
-            nome,
-            numeroProcesso,
-            dataRecebimento,
-            guiaRemessa,
-            status: "Recebido",
-            criadoEm: new Date()
-        }
-    );
-
-    form.reset();
-    carregarDocumentos();
+  form.reset();
+  carregarDocumentos();
 });
 
-carregarGuias();
+// ======================
+// EXCLUIR GUIA
+// ======================
+window.excluirGuia = async function(idGuia) {
+
+  const confirmar = confirm("Excluir guia e documentos?");
+  if (!confirmar) return;
+
+  const docsSnapshot = await getDocs(
+    collection(db, "guias", idGuia, "documentos")
+  );
+
+  for (const docSnap of docsSnapshot.docs) {
+    await deleteDoc(doc(db, "guias", idGuia, "documentos", docSnap.id));
+  }
+
+  await deleteDoc(doc(db, "guias", idGuia));
+
+  alert("Guia excluída!");
+  areaDocumentos.style.display = "none";
+  carregarGuias();
+};
