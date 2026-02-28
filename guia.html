@@ -1,41 +1,59 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>Nova Guia - Sistema Controle de Digitalização NUDOF</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>Nova Guia - NUDOF</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">NUDOF DIGITAL</div>
+            <nav>
+                <a href="index.html">Histórico de Guias</a>
+                <a href="guia.html">Nova Guia</a>
+                <a href="documentos.html">Inserir Documentos</a>
+                <a href="documentosRecebidos.html">Arquivar Guia</a>
+                <a href="documentosArquivados.html">Guias Arquivadas</a>
+                <button id="btnLogout" class="btn-sair">Sair</button>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <h2 class="page-title">Registar Nova Guia de Remessa</h2>
+            <div class="form-container">
+                <input type="text" id="numeroGuia" placeholder="Número da Guia (ex: 001/2024)">
+                <input type="text" id="unidade" placeholder="Unidade Solicitante">
+                <input type="date" id="dataRecebimento">
+                <button class="btn-primary" id="btnSalvarGuia">Salvar Guia</button>
+            </div>
+            <div id="feedback"></div>
+        </main>
+    </div>
 
-<div class="container">
-    <header>
-        <h1>Nova Guia</h1>
-    </header>
+    <script type="module">
+        import { db, auth } from "./firebase.js";
+        import { collection, addDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-    <form>
+        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; });
+        document.getElementById("btnLogout").addEventListener("click", () => signOut(auth));
 
-        <label>Nº da Guia</label>
-        <input type="text" id="numeroGuia" required>
+        document.getElementById("btnSalvarGuia").addEventListener("click", async () => {
+            const numero = document.getElementById("numeroGuia").value;
+            const unidade = document.getElementById("unidade").value;
+            const data = document.getElementById("dataRecebimento").value;
 
-        <label>Hora de Entrada</label>
-        <input type="text" id="horaEntrada" readonly>
+            if (!numero || !unidade || !data) return alert("Preencha todos os campos!");
 
-        <label>Unidade Solicitante</label>
-        <input type="text" id="unidade" required>
-
-        <label>Data de Recebimento</label>
-        <input type="date" id="dataRecebimento" required>
-
-        <button type="button" onclick="salvarGuia()">Salvar Guia</button>
-        <button type="button" onclick="voltar()">Voltar</button>
-
-    </form>
-</div>
-
-<!-- Módulos Firebase primeiro -->
-<script type="module" src="firebase.js"></script>
-<script type="module" src="guia.js"></script>
-
+            try {
+                await addDoc(collection(db, "guias"), {
+                    numero, unidade, dataRecebimento: data, 
+                    status: "Aberta", dataCriacao: new Date()
+                });
+                alert("Guia criada com sucesso!");
+                window.location.href = "documentos.html";
+            } catch (e) { alert("Erro ao salvar: " + e.message); }
+        });
+    </script>
 </body>
 </html>
