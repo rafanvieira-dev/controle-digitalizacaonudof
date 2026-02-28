@@ -1,12 +1,11 @@
 import { auth, db } from "./firebase.js";
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 // --- ELEMENTOS DA INTERFACE ---
 const loginSection = document.getElementById("loginSection");
 const appInterface = document.getElementById("appInterface");
 const mainDisplay = document.getElementById("mainDisplay");
-const pageTitle = document.getElementById("pageTitle");
 
 // --- MONITOR DE SESSÃO ---
 onAuthStateChanged(auth, (user) => {
@@ -14,17 +13,15 @@ onAuthStateChanged(auth, (user) => {
         if(loginSection) loginSection.style.display = "none";
         if(appInterface) appInterface.style.display = "flex";
         
-        // Verifica se estamos na index (onde existe o mainDisplay) para carregar as guias
-        if (mainDisplay) {
-            carregarGuiasAtivas();
-        }
+        // Se estivermos na index, carrega o histórico automaticamente
+        if (mainDisplay) carregarGuiasAtivas();
     } else {
         if(loginSection) loginSection.style.display = "flex";
         if(appInterface) appInterface.style.display = "none";
     }
 });
 
-// --- FUNÇÃO DE LOGIN ---
+// --- LOGIN E LOGOUT ---
 const btnLogin = document.getElementById("btnLogin");
 if (btnLogin) {
     btnLogin.onclick = async () => {
@@ -33,20 +30,17 @@ if (btnLogin) {
         try {
             await signInWithEmailAndPassword(auth, email, senha);
         } catch (error) {
-            alert("Erro: Verifique e-mail/senha ou conexão.");
-            console.error(error);
+            alert("Erro no login: Verifique suas credenciais.");
         }
     };
 }
 
-// --- FUNÇÃO DE LOGOUT ---
 const btnLogout = document.getElementById("btnLogout");
 if (btnLogout) {
     btnLogout.onclick = () => signOut(auth);
 }
 
-// --- LÓGICA DO BOTÃO "VER" (MODAL) ---
-// Tornamos a função global (window) para que o HTML consiga chamá-la no onclick do botão
+// --- FUNÇÃO GLOBAL PARA VER DETALHES (MODAL) ---
 window.verDetalhes = async function(guiaId, numeroGuia) {
     const modal = document.getElementById("modalDetalhes");
     const corpo = document.getElementById("modalCorpo");
@@ -55,21 +49,23 @@ window.verDetalhes = async function(guiaId, numeroGuia) {
     if (!modal || !corpo) return;
 
     titulo.innerText = "Documentos da Guia: " + numeroGuia;
-    corpo.innerHTML = "<p>A carregar documentos...</p>";
+    corpo.innerHTML = "<p>Carregando itens...</p>";
     modal.style.display = "block";
 
     try {
+        // Busca a subcoleção "documentos" dentro da guia selecionada
         const docsSnap = await getDocs(collection(db, "guias", guiaId, "documentos"));
+        
         if (docsSnap.empty) {
-            corpo.innerHTML = "<p>Esta guia ainda não possui documentos inseridos.</p>";
+            corpo.innerHTML = "<p style='padding:20px; text-align:center;'>Nenhum documento cadastrado nesta guia.</p>";
         } else {
             let html = `
                 <table class="sei-table">
                     <thead>
                         <tr>
                             <th>Documento</th>
-                            <th>Processo SEI</th>
-                            <th>Data</th>
+                            <th>Nº Processo SEI</th>
+                            <th>Data Rec.</th>
                         </tr>
                     </thead>
                     <tbody>`;
@@ -87,37 +83,32 @@ window.verDetalhes = async function(guiaId, numeroGuia) {
         }
     } catch (error) {
         console.error(error);
-        corpo.innerHTML = "<p>Erro ao carregar detalhes.</p>";
+        corpo.innerHTML = "<p>Erro ao carregar os documentos da guia.</p>";
     }
 };
 
-// --- FECHAR MODAL ---
+// --- CONTROLE DE FECHAMENTO DO MODAL ---
 const closeBtn = document.querySelector(".close-btn");
 if (closeBtn) {
-    closeBtn.onclick = () => {
-        document.getElementById("modalDetalhes").style.display = "none";
-    };
+    closeBtn.onclick = () => document.getElementById("modalDetalhes").style.display = "none";
 }
 
-// Fecha se clicar fora da caixa branca
 window.onclick = (event) => {
     const modal = document.getElementById("modalDetalhes");
-    if (event.target == modal) {
-        modal.style.display = "none";
-    }
+    if (event.target == modal) modal.style.display = "none";
 };
 
-// --- CARREGAR HISTÓRICO (COM BOTÃO VER) ---
+// --- CARREGAR HISTÓRICO (INDEX) ---
 async function carregarGuiasAtivas() {
     if (!mainDisplay) return;
-    mainDisplay.innerHTML = "<p>A carregar guias...</p>";
+    mainDisplay.innerHTML = "<p>Carregando guias ativas...</p>";
 
     try {
         const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
         const snap = await getDocs(q);
 
         if (snap.empty) {
-            mainDisplay.innerHTML = "<p>Nenhuma guia aberta encontrada.</p>";
+            mainDisplay.innerHTML = "<p>Não há guias abertas no momento.</p>";
             return;
         }
 
@@ -141,17 +132,16 @@ async function carregarGuiasAtivas() {
             html += `
                 <tr>
                     <td>${num}</td>
-                    <td>${g.unidade || "---"}</td>
-                    <td><span class="status-badge">${g.status || "Aberta"}</span></td>
+                    <td>${g.unidade}</td>
+                    <td><span class="status-badge">${g.status}</span></td>
                     <td>
-                        <button class="btn-ver" onclick="verDetalhes('${id}', '${num}')">👁 Ver Itens</button>
+                        <button class="btn-ver" onclick="verDetalhes('${id}', '${num}')">👁 Ver</button>
                     </td>
                 </tr>`;
         });
 
         mainDisplay.innerHTML = html + "</tbody></table>";
     } catch (error) {
-        console.error(error);
-        mainDisplay.innerHTML = "<p>Erro ao carregar dados do Histórico.</p>";
+        mainDisplay.innerHTML = "<p>Erro ao conectar com o banco de dados.</p>";
     }
 }
