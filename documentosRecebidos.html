@@ -14,8 +14,6 @@
         .form-grid-arquivar { display: flex; flex-direction: column; gap: 15px; text-align: left; }
         .input-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #34495e; }
         .input-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        
-        /* Tabela para os documentos dentro do modal */
         .tabela-docs-arquivamento { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
         .tabela-docs-arquivamento th, .tabela-docs-arquivamento td { padding: 8px; border: 1px solid #ccc; }
         .tabela-docs-arquivamento th { background: #f0f2f5; color: #003366; }
@@ -50,12 +48,10 @@
             <form id="formDadosArquivamento" class="form-grid-arquivar">
                 <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b6d4fe; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <h4 style="grid-column: span 2; margin-bottom: 5px; color: #003366;">1. Dados Físicos de Arquivamento</h4>
-                    
                     <div class="input-group">
                         <label>📦 Nº da Caixa da Guia:</label>
                         <input type="text" id="locCaixa" placeholder="Ex: Caixa 45 - Estante B" required>
                     </div>
-                    
                     <div class="input-group">
                         <label>📦 Nº da Caixa dos Documentos:</label>
                         <input type="text" id="locCaixaDocs" placeholder="Ex: Caixa 45 - Estante B" required>
@@ -87,20 +83,36 @@
             const container = document.getElementById("listaParaArquivar");
             const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
             const snap = await getDocs(q);
-            container.innerHTML = "";
             
             if(snap.empty) {
                 container.innerHTML = "<p>Não há guias pendentes de arquivamento.</p>";
                 return;
             }
 
-            snap.forEach(d => {
-                const g = d.data();
+            let guias = [];
+            snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
+            guias.sort((a, b) => (b.dataRecebimento || "").localeCompare(a.dataRecebimento || ""));
+
+            container.innerHTML = "";
+            let dataAtual = "";
+
+            guias.forEach(g => {
+                if (g.dataRecebimento !== dataAtual) {
+                    dataAtual = g.dataRecebimento;
+                    const dataFormatada = dataAtual ? dataAtual.split('-').reverse().join('/') : "Sem Data";
+                    const header = document.createElement("h3");
+                    header.innerHTML = `📅 Chegaram em: ${dataFormatada}`;
+                    header.style.color = "#003366";
+                    header.style.margin = "20px 0 10px 0";
+                    header.style.borderBottom = "2px solid #ccc";
+                    container.appendChild(header);
+                }
+
                 const num = g.numeroGuia || g.numero || "S/N";
                 const div = document.createElement("div");
                 div.className = "guia-card-arquivar";
                 div.innerHTML = `<div><strong>Guia ${num}</strong><br>Unidade: ${g.unidade}</div>
-                <button class="btn-ver" onclick="window.abrirArq('${d.id}', '${num}')" style="background:#27ae60; color:white; padding:10px 20px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📁 Iniciar Arquivamento</button>`;
+                <button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#27ae60; color:white; padding:10px 20px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📁 Iniciar Arquivamento</button>`;
                 container.appendChild(div);
             });
         }
@@ -111,29 +123,20 @@
             document.getElementById("tituloModalArquivar").innerText = "Arquivamento da Guia " + num;
             const areaDocs = document.getElementById("areaDocumentosArquivar");
             areaDocs.innerHTML = "<p>A carregar documentos...</p>";
-            
-            // Limpa os campos de caixa sempre que abrir uma nova guia
             document.getElementById("locCaixa").value = "";
             document.getElementById("locCaixaDocs").value = "";
-            
             document.getElementById("modalArquivar").style.display = "block";
 
             try {
                 const snap = await getDocs(collection(db, "guias", id, "documentos"));
-                
                 if (snap.empty) {
-                    areaDocs.innerHTML = "<p style='color:red;'>Erro: Esta guia não possui documentos. Insira documentos antes de arquivar.</p>";
+                    areaDocs.innerHTML = "<p style='color:red;'>Erro: Esta guia não possui documentos.</p>";
                     document.getElementById("btnConfirmarArq").disabled = true;
-                    document.getElementById("btnConfirmarArq").style.background = "#95a5a6";
                     return;
                 }
 
-                // ========================================================
-                // TRAVA DE SEGURANÇA: VERIFICA SE FALTA SEI EM ALGUM DOC
-                // ========================================================
                 let temDocumentoSemSei = false;
                 let documentosPendentes = [];
-
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
                     if (!d.numeroProcesso || d.numeroProcesso.trim() === "") {
@@ -148,18 +151,13 @@
                             <h4 style="margin-bottom: 10px; font-size: 1.1em;">⚠️ Arquivamento Bloqueado</h4>
                             <p>Não é possível arquivar esta guia pois existem documentos sem o <strong>Nº do Processo SEI original</strong> informado.</p>
                             <p style="margin-top: 10px; margin-bottom: 10px;"><strong>Documentos pendentes:</strong><br> - ${documentosPendentes.join("<br> - ")}</p>
-                            <p style="margin-top: 15px; font-weight: bold;">Feche esta janela, vá até a aba "📄 Inserir Documentos", clique em "Editar" nos documentos pendentes e informe o SEI antes de prosseguir com o arquivamento.</p>
                         </div>
                     `;
                     document.getElementById("btnConfirmarArq").disabled = true;
-                    document.getElementById("btnConfirmarArq").style.background = "#95a5a6"; // Deixa cinza
-                    return; // Interrompe a função aqui, não desenha a tabela
+                    document.getElementById("btnConfirmarArq").style.background = "#95a5a6";
+                    return; 
                 }
-                // ========================================================
-                // FIM DA TRAVA DE SEGURANÇA
-                // ========================================================
 
-                // Se passou da trava, libera o botão e monta a tabela normalmente
                 document.getElementById("btnConfirmarArq").disabled = false;
                 document.getElementById("btnConfirmarArq").style.background = "#27ae60";
                 
@@ -176,7 +174,6 @@
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
                     documentosDaGuia.push(docSnap.id);
-
                     html += `<tr>
                         <td><strong>${d.nomeDocumento}</strong></td>
                         <td>${d.numeroProcesso}</td>
@@ -186,15 +183,10 @@
                         <td><input type="text" id="obs_${docSnap.id}" placeholder="Opcional"></td>
                     </tr>`;
                 });
-                
                 areaDocs.innerHTML = html + "</tbody></table>";
-
-            } catch (error) {
-                areaDocs.innerHTML = "<p>Erro ao carregar documentos.</p>";
-            }
+            } catch (error) { areaDocs.innerHTML = "<p>Erro ao carregar documentos.</p>"; }
         };
 
-        // Copia automático da Caixa da Guia para a Caixa dos Documentos
         document.getElementById("locCaixa").addEventListener("input", function() {
             document.getElementById("locCaixaDocs").value = this.value;
         });
@@ -206,7 +198,6 @@
             btnSubmit.disabled = true;
 
             try {
-                // Atualiza a GUIA com os DOIS campos de caixa
                 await updateDoc(doc(db, "guias", guiaAtualId), {
                     status: "Arquivada",
                     locCaixaFinal: document.getElementById("locCaixa").value,
@@ -215,10 +206,8 @@
                     arquivadoPor: auth.currentUser.email
                 });
 
-                // Atualiza os documentos
                 const promessas = documentosDaGuia.map(docId => {
-                    const docRef = doc(db, "guias", guiaAtualId, "documentos", docId);
-                    return updateDoc(docRef, {
+                    return updateDoc(doc(db, "guias", guiaAtualId, "documentos", docId), {
                         paginasPdf: document.getElementById(`pags_${docId}`).value,
                         protocoloSeiDigitalizado: document.getElementById(`sei_${docId}`).value,
                         dataDigitalizacao: document.getElementById(`data_${docId}`).value,
@@ -227,12 +216,10 @@
                 });
 
                 await Promise.all(promessas);
-
                 alert("Guia e Documentos arquivados com sucesso!");
                 location.reload();
-
             } catch (error) {
-                alert("Erro ao arquivar. Tente novamente.");
+                alert("Erro ao arquivar.");
                 btnSubmit.innerText = "Confirmar Arquivamento e Digitalização";
                 btnSubmit.disabled = false;
             }
