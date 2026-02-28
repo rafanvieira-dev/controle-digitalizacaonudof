@@ -1,176 +1,35 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Segoe UI", sans-serif;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: "Segoe UI", Tahoma, sans-serif; }
+body { background-color: #f4f7f6; display: flex; height: 100vh; overflow: hidden; }
 
-body {
-    background: linear-gradient(135deg, #e6f0fa, #f4f8fb);
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+/* Estrutura Principal */
+.app-container { display: flex; width: 100%; height: 100vh; }
 
-.container {
-    width: 95%;
-    max-width: 1200px;
-    background: #ffffff;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    animation: fadeIn 0.5s ease-in-out;
+/* Menu Lateral */
+.sidebar { width: 250px; background-color: #2c3e50; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+.sidebar-header { padding: 20px; background: #1a252f; text-align: center; font-weight: bold; font-size: 1.1em; }
+.sidebar nav { display: flex; flex-direction: column; flex: 1; }
+.sidebar a, .sidebar button { 
+    padding: 15px 20px; color: #ecf0f1; text-decoration: none; border: none;
+    background: none; text-align: left; cursor: pointer; border-bottom: 1px solid #34495e; transition: 0.3s;
 }
+.sidebar a:hover, .sidebar button:hover { background: #34495e; border-left: 4px solid #3498db; }
+.btn-sair { color: #e74c3c !important; margin-top: auto; border-top: 1px solid #34495e; }
 
-header {
-    background: #003366;
-    color: white;
-    padding: 20px;
-    border-radius: 8px;
-    text-align: center;
-    margin-bottom: 30px;
-}
+/* Área de Conteúdo */
+.main-content { flex: 1; padding: 25px; overflow-y: auto; background: white; }
+.page-title { margin-bottom: 20px; color: #333; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
 
-header h1 {
-    font-size: 24px;
+/* Tabelas Excel */
+.data-group-header { 
+    background: #d9edf7; padding: 10px; font-weight: bold; margin-top: 25px; 
+    border: 1px solid #bce8f1; border-radius: 4px 4px 0 0; color: #31708f;
 }
+table.excel-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 0.9em; }
+table.excel-table th, table.excel-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+table.excel-table th { background: #f2f2f2; color: #333; }
+table.excel-table tr:hover { background: #f9f9f9; }
 
-button {
-    padding: 10px 18px;
-    border: none;
-    border-radius: 6px;
-    background: #0056b3;
-    color: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 500;
-}
-
-button:hover {
-    background: #007bff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-
-.btn-danger {
-    background: #b30000;
-}
-
-.btn-danger:hover {
-    background: #e60000;
-}
-
-input, select, textarea {
-    padding: 8px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    width: 100%;
-    margin-bottom: 15px;
-    transition: 0.3s;
-}
-
-input:focus, select:focus, textarea:focus {
-    border-color: #0056b3;
-    outline: none;
-    box-shadow: 0 0 5px rgba(0,86,179,0.3);
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-th, td {
-    padding: 10px;
-    text-align: center;
-    border-bottom: 1px solid #ddd;
-}
-
-th {
-    background: #003366;
-    color: white;
-}
-
-tr:hover {
-    background: #f1f7ff;
-}
-
-.menu {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.menu button {
-    width: 220px;
-    font-size: 16px;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-.pasta {
-  margin-bottom: 20px;
-  padding: 15px;
-  background: #f4f8ff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-.guia-arquivada {
-  margin: 8px 0;
-}
-
-.detalhes-box {
-  margin-top: 10px;
-  padding: 15px;
-  background: #ffffff;
-  border-left: 4px solid #003366;
-  border-radius: 6px;
-}
-/* ===== ORGANIZAÇÃO BONITA DAS GUIAS ===== */
-
-.bloco-data {
-    margin-bottom: 40px;
-}
-
-.titulo-data {
-    margin-bottom: 15px;
-    background: #003366;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-}
-
-.grid-guias {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
-}
-
-.card-guia {
-    background: #f4f8ff;
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transition: 0.3s;
-}
-
-.card-guia:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-}
-
-.card-guia h4 {
-    margin-bottom: 8px;
-    color: #003366;
-}
-
-.card-guia button {
-    margin-top: 8px;
-    width: 100%;
-}
+/* Formulários */
+.form-container { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
+input { padding: 8px; margin-bottom: 10px; width: 100%; border: 1px solid #ccc; border-radius: 4px; }
+button.btn-primary { background: #2980b9; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
