@@ -112,3 +112,16 @@ input, select, textarea {
     background-color: white; margin: 5% auto; padding: 25px;
     border-radius: 8px; width: 70%; max-height: 80vh; overflow-y: auto;
 }
+/* Esconde as seções por padrão para evitar o "pisca" de telas ao carregar */
+#loginSection, #appInterface {
+    display: none;
+}
+
+/* Estilo para a mensagem de carregamento inicial */
+.loading-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #003366;
+    display: flex; justify-content: center; align-items: center;
+    color: white; font-family: sans-serif; z-index: 9999;
+}
