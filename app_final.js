@@ -1,15 +1,18 @@
 import { auth, db } from "./firebase.js";
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-// --- ELEMENTOS ---
-const loginSection = document.getElementById("loginSection");
-const appInterface = document.getElementById("appInterface");
-const mainDisplay = document.getElementById("mainDisplay");
+// Variável global para saber quem está logado
+let usuarioLogadoEmail = "";
 
 // --- MONITOR DE SESSÃO ---
 onAuthStateChanged(auth, (user) => {
+    const loginSection = document.getElementById("loginSection");
+    const appInterface = document.getElementById("appInterface");
+    const mainDisplay = document.getElementById("mainDisplay");
+
     if (user) {
+        usuarioLogadoEmail = user.email; // Guarda o e-mail de quem logou
         if(loginSection) loginSection.style.display = "none";
         if(appInterface) appInterface.style.display = "flex";
         if (mainDisplay) carregarGuiasAtivas();
@@ -19,30 +22,30 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- LOGIN COM DIAGNÓSTICO DE ERRO ---
+// --- LOGIN ---
 const btnLogin = document.getElementById("btnLogin");
 if (btnLogin) {
     btnLogin.onclick = async () => {
         const email = document.getElementById("email").value.trim();
         const senha = document.getElementById("senha").value.trim();
-        
         try {
             await signInWithEmailAndPassword(auth, email, senha);
         } catch (error) {
             console.error("Erro Firebase:", error.code);
-            if (error.code === "auth/invalid-credential") {
-                alert("E-mail ou senha incorretos.");
-            } else if (error.code === "auth/network-request-failed") {
-                alert("Erro de rede: Verifique sua internet ou se o domínio está autorizado no Firebase.");
+            if (error.code === 'auth/network-request-failed') {
+                alert("ERRO DE CONEXÃO: O Firebase bloqueou o acesso. Verifique se o domínio 127.0.0.1 está autorizado no Console do Firebase ou se sua rede possui firewall.");
             } else {
-                alert("Erro ao entrar: " + error.code);
+                alert("Erro: E-mail ou senha incorretos.");
             }
         }
     };
 }
 
 // --- LOGOUT ---
-document.getElementById("btnLogout").onclick = () => signOut(auth);
+const btnLogout = document.getElementById("btnLogout");
+if (btnLogout) {
+    btnLogout.onclick = () => signOut(auth);
+}
 
 // --- FUNÇÃO VER DETALHES (MODAL) ---
 window.verDetalhes = async function(guiaId, numeroGuia) {
@@ -59,12 +62,12 @@ window.verDetalhes = async function(guiaId, numeroGuia) {
     try {
         const docsSnap = await getDocs(collection(db, "guias", guiaId, "documentos"));
         if (docsSnap.empty) {
-            corpo.innerHTML = "<p>Nenhum documento encontrado nesta guia.</p>";
+            corpo.innerHTML = "<p style='padding:20px;'>Nenhum documento nesta guia.</p>";
         } else {
             let html = `<table class="sei-table"><thead><tr><th>Documento</th><th>Processo SEI</th></tr></thead><tbody>`;
             docsSnap.forEach(doc => {
                 const d = doc.data();
-                html += `<tr><td>${d.nomeDocumento || "---"}</td><td>${d.numeroProcesso || "---"}</td></tr>`;
+                html += `<tr><td>${d.nomeDocumento}</td><td>${d.numeroProcesso}</td></tr>`;
             });
             corpo.innerHTML = html + "</tbody></table>";
         }
@@ -74,17 +77,19 @@ window.verDetalhes = async function(guiaId, numeroGuia) {
 };
 
 // --- FECHAR MODAL ---
-document.querySelector(".close-btn").onclick = () => {
-    document.getElementById("modalDetalhes").style.display = "none";
-};
+const closeBtn = document.querySelector(".close-btn");
+if (closeBtn) {
+    closeBtn.onclick = () => document.getElementById("modalDetalhes").style.display = "none";
+}
 
-// --- CARREGAR HISTÓRICO ---
+// --- CARREGAR HISTÓRICO (INDEX) ---
 async function carregarGuiasAtivas() {
+    const mainDisplay = document.getElementById("mainDisplay");
     if (!mainDisplay) return;
+    
     mainDisplay.innerHTML = "<p>Carregando...</p>";
 
     try {
-        // Busca apenas guias que NÃO estão arquivadas
         const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
         const snap = await getDocs(q);
 
@@ -93,27 +98,29 @@ async function carregarGuiasAtivas() {
             return;
         }
 
+        let guiasArray = [];
+        snap.forEach(d => guiasArray.push({ id: d.id, ...d.data() }));
+
+        // Ordenar: Mais recentes primeiro (pelo número)
+        guiasArray.sort((a, b) => (parseInt(b.numeroGuia || b.numero) - parseInt(a.numeroGuia || a.numero)));
+
         let html = `<table class="sei-table">
             <thead><tr><th>Nº Guia</th><th>Unidade</th><th>Status</th><th>Ação</th></tr></thead>
             <tbody>`;
 
-        snap.forEach(docSnap => {
-            const g = docSnap.data();
-            const id = docSnap.id;
-            // Verifica se o campo é 'numero' ou 'numeroGuia' para não vir vazio
-            const num = g.numero || g.numeroGuia || "S/N";
-            
+        guiasArray.forEach(g => {
+            const num = g.numeroGuia || g.numero || "S/N";
             html += `<tr>
                 <td>${num}</td>
                 <td>${g.unidade}</td>
                 <td><span class="status-badge">${g.status}</span></td>
-                <td><button class="btn-ver" onclick="verDetalhes('${id}', '${num}')">👁 Ver Itens</button></td>
+                <td><button class="btn-ver" onclick="verDetalhes('${g.id}', '${num}')">👁 Ver</button></td>
             </tr>`;
         });
 
         mainDisplay.innerHTML = html + "</tbody></table>";
     } catch (error) {
-        mainDisplay.innerHTML = "<p>Erro ao carregar o banco de dados.</p>";
         console.error(error);
+        mainDisplay.innerHTML = "<p>Erro ao conectar com o banco de dados.</p>";
     }
 }
