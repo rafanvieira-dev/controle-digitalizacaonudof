@@ -38,8 +38,8 @@
                         <label>Nome do Documento:</label>
                         <input type="text" id="nomeDocumento" placeholder="Ex: Ofício de Encaminhamento" required>
 
-                        <label>Nº do Processo SEI:</label>
-                        <input type="text" id="numeroProcesso" placeholder="00000.000/2026-00" required>
+                        <label>Nº do Processo SEI (Opcional nesta fase):</label>
+                        <input type="text" id="numeroProcesso" placeholder="Ex: 00000.000/2026-00">
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                             <div>
@@ -52,7 +52,10 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn-primary" id="btnSalvar">Gravar Documento na Guia</button>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit" class="btn-primary" id="btnSalvar">Gravar Documento na Guia</button>
+                            <button type="button" id="btnCancelarEdicao" onclick="window.cancelarEdicao()" style="display: none; background: #7f8c8d; color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">Cancelar Edição</button>
+                        </div>
                     </form>
                     <p id="contadorDocs">0 / 7 documentos cadastrados</p>
                 </div>
@@ -67,10 +70,11 @@
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { collection, getDocs, addDoc, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { collection, getDocs, addDoc, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         let guiaAtivaId = "";
+        let docEmEdicaoId = null; 
 
         onAuthStateChanged(auth, (user) => { 
             if (!user) window.location.href = "index.html"; 
@@ -99,13 +103,14 @@
 
         window.iniciarInclusao = async function(id, texto) {
             guiaAtivaId = id;
+            window.cancelarEdicao(); 
             document.getElementById("areaDocumentos").style.display = "block";
             document.getElementById("tituloGuia").innerText = texto;
             await atualizarListaDocumentos(id);
             document.getElementById("areaDocumentos").scrollIntoView({ behavior: 'smooth' });
         };
 
-        async function atualizarListaDocumentos(id) {
+        window.atualizarListaDocumentos = async function(id) {
             const container = document.getElementById("listaDocumentos");
             const contador = document.getElementById("contadorDocs");
             
@@ -116,38 +121,98 @@
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
                     const li = document.createElement("li");
-                    li.innerHTML = `<span><strong>${d.nomeDocumento}</strong></span> <span>SEI: ${d.numeroProcesso}</span>`;
+                    
+                    const infoDiv = document.createElement("div");
+                    // O texto foi alterado aqui
+                    const numSei = d.numeroProcesso ? d.numeroProcesso : "<span style='color:#e74c3c;'>Informar número processo SEI</span>";
+                    infoDiv.innerHTML = `<span><strong>${d.nomeDocumento}</strong></span> <span style="margin-left: 15px; color: #666;">SEI: ${numSei}</span>`;
+                    
+                    const btnEditar = document.createElement("button");
+                    btnEditar.innerHTML = "✏️ Editar";
+                    btnEditar.style.background = "#f39c12";
+                    btnEditar.style.color = "white";
+                    btnEditar.style.border = "none";
+                    btnEditar.style.padding = "6px 12px";
+                    btnEditar.style.borderRadius = "4px";
+                    btnEditar.style.cursor = "pointer";
+                    btnEditar.style.fontWeight = "bold";
+                    
+                    btnEditar.onclick = () => window.prepararEdicao(docSnap.id, d.nomeDocumento, d.numeroProcesso, d.dataRecebimento, d.guiaRemessa);
+
+                    li.appendChild(infoDiv);
+                    li.appendChild(btnEditar);
                     container.appendChild(li);
                 });
 
                 contador.innerText = `${snap.size} / 7 documentos cadastrados`;
-                if (snap.size >= 7) {
+                
+                if (snap.size >= 7 && !docEmEdicaoId) {
                     document.getElementById("btnSalvar").disabled = true;
                     document.getElementById("btnSalvar").innerText = "Limite de 7 atingido";
-                } else {
+                    document.getElementById("btnSalvar").style.background = "#95a5a6";
+                } else if (!docEmEdicaoId) {
                     document.getElementById("btnSalvar").disabled = false;
                     document.getElementById("btnSalvar").innerText = "Gravar Documento na Guia";
+                    document.getElementById("btnSalvar").style.background = "var(--primary)";
                 }
             } catch (e) { console.error(e); }
         }
 
+        window.prepararEdicao = function(id, nome, sei, data, guia) {
+            docEmEdicaoId = id;
+            document.getElementById("nomeDocumento").value = nome || "";
+            document.getElementById("numeroProcesso").value = sei || "";
+            document.getElementById("dataRecebimento").value = data || "";
+            document.getElementById("guiaRemessa").value = guia || "";
+
+            document.getElementById("btnSalvar").innerText = "🔄 Atualizar Documento";
+            document.getElementById("btnSalvar").disabled = false;
+            document.getElementById("btnSalvar").style.background = "#f39c12"; 
+            document.getElementById("btnCancelarEdicao").style.display = "block";
+            
+            document.getElementById("tituloGuia").scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.cancelarEdicao = function() {
+            docEmEdicaoId = null;
+            document.getElementById("formDocumento").reset();
+            
+            document.getElementById("btnSalvar").innerText = "Gravar Documento na Guia";
+            document.getElementById("btnSalvar").style.background = "var(--primary)";
+            document.getElementById("btnCancelarEdicao").style.display = "none";
+            
+            window.atualizarListaDocumentos(guiaAtivaId); 
+        };
+
         document.getElementById("formDocumento").onsubmit = async (e) => {
             e.preventDefault();
+            
             const docDados = {
                 nomeDocumento: document.getElementById("nomeDocumento").value,
                 numeroProcesso: document.getElementById("numeroProcesso").value,
                 dataRecebimento: document.getElementById("dataRecebimento").value,
                 guiaRemessa: document.getElementById("guiaRemessa").value,
-                criadoPor: auth.currentUser.email,
-                dataInsercao: new Date()
+                ultimaAtualizacao: new Date(),
+                atualizadoPor: auth.currentUser.email
             };
 
             try {
-                await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), docDados);
-                document.getElementById("formDocumento").reset();
-                await atualizarListaDocumentos(guiaAtivaId);
-                alert("Documento inserido!");
-            } catch (err) { alert("Erro ao salvar."); }
+                if (docEmEdicaoId) {
+                    const docRef = doc(db, "guias", guiaAtivaId, "documentos", docEmEdicaoId);
+                    await updateDoc(docRef, docDados);
+                    alert("Documento atualizado com sucesso!");
+                } else {
+                    docDados.dataInsercao = new Date();
+                    docDados.criadoPor = auth.currentUser.email;
+                    await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), docDados);
+                    alert("Documento inserido na guia!");
+                }
+                
+                window.cancelarEdicao(); 
+                
+            } catch (err) { 
+                alert("Erro ao salvar documento: " + err.message); 
+            }
         };
     </script>
 </body>
