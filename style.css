@@ -132,3 +132,45 @@ tr:hover {
   border-left: 4px solid #003366;
   border-radius: 6px;
 }
+/* ===== ORGANIZAÇÃO BONITA DAS GUIAS ===== */
+
+.bloco-data {
+    margin-bottom: 40px;
+}
+
+.titulo-data {
+    margin-bottom: 15px;
+    background: #003366;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.grid-guias {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.card-guia {
+    background: #f4f8ff;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: 0.3s;
+}
+
+.card-guia:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+}
+
+.card-guia h4 {
+    margin-bottom: 8px;
+    color: #003366;
+}
+
+.card-guia button {
+    margin-top: 8px;
+    width: 100%;
+}
