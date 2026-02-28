@@ -58,25 +58,24 @@
             const data = document.getElementById("dataRecebimento").value;
             const hora = document.getElementById("horaRecebimento").value;
 
-            if (!numero || !unidade || !data || !hora) return alert("Preencha todos os campos, incluindo a hora!");
+            if (!numero || !unidade || !data || !hora) return alert("Preencha todos os campos!");
 
             const btn = document.getElementById("btnSalvarGuia");
             btn.disabled = true;
-            btn.innerText = "Verificando duplicidade...";
+            btn.innerText = "Verificando...";
 
             try {
-                // Consulta para verificar se já existe uma guia com este número
+                // Trava de Duplicidade
                 const q = query(collection(db, "guias"), where("numero", "==", numero));
-                const querySnapshot = await getDocs(q);
+                const snap = await getDocs(q);
 
-                if (!querySnapshot.empty) {
-                    alert(`Atenção: Já existe uma guia registrada com o número ${numero}. Verifique os dados e tente novamente.`);
+                if (!snap.empty) {
+                    alert(`Já existe uma guia com o número ${numero}!`);
                     btn.disabled = false;
                     btn.innerText = "Salvar Guia";
-                    return; 
+                    return;
                 }
 
-                // Se não houver duplicidade, prossegue com o salvamento
                 await addDoc(collection(db, "guias"), {
                     numero, 
                     unidade, 
@@ -84,13 +83,12 @@
                     horaRecebimento: hora,
                     status: "Aberta", 
                     dataCriacao: new Date(),
-                    criadoPor: auth.currentUser.email 
+                    criadoPor: auth.currentUser.email
                 });
-                
                 alert("Guia criada com sucesso!");
                 window.location.href = "documentos.html";
             } catch (e) { 
-                alert("Erro ao salvar: " + e.message); 
+                alert("Erro ao salvar.");
                 btn.disabled = false;
                 btn.innerText = "Salvar Guia";
             }
