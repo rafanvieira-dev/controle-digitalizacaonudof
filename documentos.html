@@ -3,61 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentos por Guia</title>
+    <title>Inserir Documentos - NUDOF</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="content">
-        <h2 class="page-title">Inserir Documentos na Guia</h2>
+    <div id="appInterface">
+        <aside id="sidebar">
+            <div style="padding: 20px; font-weight: bold; background: #003366; color: white;">NUDOF DIGITAL</div>
+            <nav style="display: flex; flex-direction: column; padding: 10px;">
+                <a href="index.html" style="padding: 10px; text-decoration: none; color: #333;">🏠 Início</a>
+                <a href="guia.html" style="padding: 10px; text-decoration: none; color: #333;">➕ Nova Guia</a>
+                <a href="documentos.html" style="padding: 10px; text-decoration: none; color: #333; background: #eee; font-weight: bold;">📄 Inserir Documentos</a>
+                <a href="documentosRecebidos.html" style="padding: 10px; text-decoration: none; color: #333;">📁 Arquivar Guia</a>
+                <a href="documentosArquivados.html" style="padding: 10px; text-decoration: none; color: #333;">📚 Acervo</a>
+            </nav>
+        </aside>
 
-        <a href="index.html" class="btn-primary" style="display: inline-block; width: auto; text-decoration: none; margin-bottom: 20px; padding: 10px 20px;">
-            ⬅ Voltar ao Painel Principal
-        </a>
+        <main id="content">
+            <h2 class="page-title">Inserir Documentos na Guia</h2>
 
-        <div class="form-container">
-            <h3>Selecione a Guia de Destino</h3>
-            <ul id="listaGuias" style="list-style: none; padding: 0; margin-bottom: 20px;">
-                <p>Carregando guias...</p>
-            </ul>
-        </div>
-
-        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">
-
-        <div id="areaDocumentos" style="display:none;">
-            <h3 id="tituloGuia" style="color: #003366; margin-bottom: 15px;"></h3>
-            
             <div class="form-container">
-                <form id="formDocumento">
-                    <label>Nome do Documento:</label>
-                    <input type="text" id="nomeDocumento" placeholder="Ex: Ofício de Encaminhamento" required>
-
-                    <label>Nº do Processo SEI:</label>
-                    <input type="text" id="numeroProcesso" placeholder="00000.000/2026-00" required>
-
-                    <label>Data de Recebimento:</label>
-                    <input type="date" id="dataRecebimento" required>
-
-                    <label>Guia de Remessa:</label>
-                    <input type="text" id="guiaRemessa" placeholder="Digite o nº da Guia" required>
-
-                    <button type="submit" class="btn-primary" id="btnSalvar" style="margin-top: 10px;">
-                        Gravar Documento
-                    </button>
-                </form>
-                
-                <p id="contadorDocs" style="margin-top: 15px; font-weight: bold; font-size: 1.1em; color: #d35400;">
-                    0 / 7 documentos cadastrados
-                </p>
+                <h3>1. Selecione a Guia de Destino</h3>
+                <div id="listaGuias" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+                    <p>Buscando guias abertas...</p>
+                </div>
             </div>
 
-            <h3 style="margin-top: 20px;">Itens já inseridos nesta guia:</h3>
-            <ul id="listaDocumentos" class="sei-table" style="list-style: none; padding: 0;">
-                </ul>
-        </div>
+            <div id="areaDocumentos" style="display:none;">
+                <h3 id="tituloGuia" style="color: #003366; margin-bottom: 15px; border-top: 1px solid #ccc; padding-top: 20px;"></h3>
+                
+                <div class="form-container">
+                    <form id="formDocumento">
+                        <label>Nome do Documento:</label>
+                        <input type="text" id="nomeDocumento" placeholder="Ex: Ofício de Encaminhamento" required>
+
+                        <label>Nº do Processo SEI:</label>
+                        <input type="text" id="numeroProcesso" placeholder="00000.000/2026-00" required>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label>Data de Recebimento:</label>
+                                <input type="date" id="dataRecebimento" required>
+                            </div>
+                            <div>
+                                <label>Guia de Remessa:</label>
+                                <input type="text" id="guiaRemessa" placeholder="Nº da Guia" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary" id="btnSalvar">Gravar Documento na Guia</button>
+                    </form>
+                    
+                    <p id="contadorDocs">0 / 7 documentos cadastrados</p>
+                </div>
+
+                <div class="form-container">
+                    <h3>Itens inseridos nesta guia:</h3>
+                    <ul id="listaDocumentos" class="sei-table" style="list-style: none; padding: 0; margin-top: 10px;">
+                        </ul>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <script type="module" src="documentos.js"></script>
+    <script type="module">
+        import { db, auth } from "./firebase.js";
+        import { collection, getDocs, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
+        let guiaAtivaId = "";
+
+        // Verificar Login
+        onAuthStateChanged(auth, (user) => { 
+            if (!user) window.location.href = "index.html"; 
+            else carregarMenuGuias();
+        });
+
+        // Carregar as guias para escolha
+        async function carregarMenuGuias() {
+            const lista = document.getElementById("listaGuias");
+            try {
+                const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
+                const snap = await getDocs(q);
+                lista.innerHTML = "";
+                snap.forEach(docSnap => {
+                    const g = docSnap.data();
+                    const btn = document.createElement("button");
+                    btn.innerText = "Guia: " + (g.numero || g.numeroGuia);
+                    btn.className = "btn-primary";
+                    btn.style.width = "auto";
+                    btn.style.background = "#4682B4";
+                    btn.onclick = () => iniciarInclusao(docSnap.id, btn.innerText);
+                    lista.appendChild(btn);
+                });
+            } catch (e) { lista.innerHTML = "Erro ao carregar guias."; }
+        }
+
+        // Selecionar a guia e carregar os docs dela
+        window.iniciarInclusao = async function(id, texto) {
+            guiaAtivaId = id;
+            document.getElementById("areaDocumentos").style.display = "block";
+            document.getElementById("tituloGuia").innerText = texto;
+            await atualizarListaDocumentos(id);
+            document.getElementById("areaDocumentos").scrollIntoView({ behavior: 'smooth' });
+        };
+
+        // Função para buscar e listar os documentos da guia
+        async function atualizarListaDocumentos(id) {
+            const container = document.getElementById("listaDocumentos");
+            const contador = document.getElementById("contadorDocs");
+            
+            try {
+                const snap = await getDocs(collection(db, "guias", id, "documentos"));
+                container.innerHTML = ""; // LIMPA A LISTA
+                
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    const li = document.createElement("li");
+                    li.innerHTML = `<span><strong>${d.nomeDocumento}</strong></span> <span>SEI: ${d.numeroProcesso}</span>`;
+                    container.appendChild(li);
+                });
+
+                contador.innerText = `${snap.size} / 7 documentos cadastrados`;
+                if (snap.size >= 7) {
+                    document.getElementById("btnSalvar").disabled = true;
+                    document.getElementById("btnSalvar").innerText = "Limite de 7 atingido";
+                } else {
+                    document.getElementById("btnSalvar").disabled = false;
+                    document.getElementById("btnSalvar").innerText = "Gravar Documento na Guia";
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // Gravar Documento
+        document.getElementById("formDocumento").onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const docDados = {
+                nomeDocumento: document.getElementById("nomeDocumento").value,
+                numeroProcesso: document.getElementById("numeroProcesso").value,
+                dataRecebimento: document.getElementById("dataRecebimento").value,
+                guiaRemessa: document.getElementById("guiaRemessa").value,
+                criadoPor: auth.currentUser.email,
+                dataInsercao: new Date()
+            };
+
+            try {
+                await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), docDados);
+                document.getElementById("formDocumento").reset(); // Limpa form
+                await atualizarListaDocumentos(guiaAtivaId); // ATUALIZA A LISTA NA HORA
+                alert("Documento inserido!");
+            } catch (err) { alert("Erro ao salvar."); }
+        };
+    </script>
 </body>
 </html>
