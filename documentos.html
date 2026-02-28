@@ -1,1 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentos por Guia</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+    <div id="content">
+        <h2 class="page-title">Inserir Documentos na Guia</h2>
+
+        <a href="index.html" class="btn-primary" style="display: inline-block; width: auto; text-decoration: none; margin-bottom: 20px; padding: 10px 20px;">
+            ⬅ Voltar ao Painel Principal
+        </a>
+
+        <div class="form-container">
+            <h3>Selecione a Guia de Destino</h3>
+            <ul id="listaGuias" style="list-style: none; padding: 0; margin-bottom: 20px;">
+                <p>Carregando guias...</p>
+            </ul>
+        </div>
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">
+
+        <div id="areaDocumentos" style="display:none;">
+            <h3 id="tituloGuia" style="color: #003366; margin-bottom: 15px;"></h3>
+            
+            <div class="form-container">
+                <form id="formDocumento">
+                    <label>Nome do Documento:</label>
+                    <input type="text" id="nomeDocumento" placeholder="Ex: Ofício de Encaminhamento" required>
+
+                    <label>Nº do Processo SEI:</label>
+                    <input type="text" id="numeroProcesso" placeholder="00000.000/2026-00" required>
+
+                    <label>Data de Recebimento:</label>
+                    <input type="date" id="dataRecebimento" required>
+
+                    <label>Guia de Remessa:</label>
+                    <input type="text" id="guiaRemessa" placeholder="Digite o nº da Guia" required>
+
+                    <button type="submit" class="btn-primary" id="btnSalvar" style="margin-top: 10px;">
+                        Gravar Documento
+                    </button>
+                </form>
+                
+                <p id="contadorDocs" style="margin-top: 15px; font-weight: bold; font-size: 1.1em; color: #d35400;">
+                    0 / 7 documentos cadastrados
+                </p>
+            </div>
+
+            <h3 style="margin-top: 20px;">Itens já inseridos nesta guia:</h3>
+            <ul id="listaDocumentos" class="sei-table" style="list-style: none; padding: 0;">
+                </ul>
+        </div>
+    </div>
+
+    <script type="module" src="documentos.js"></script>
+
+</body>
+</html>
