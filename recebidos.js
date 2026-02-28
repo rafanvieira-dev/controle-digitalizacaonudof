@@ -1,15 +1,13 @@
 import { db, auth } from "./firebase.js";
-import { 
-  collection, 
-  getDocs, 
-  updateDoc, 
-  doc,
-  query,
-  where
+import {
+  collection,
+  getDocs,
+  updateDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-import { onAuthStateChanged } 
-from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { onAuthStateChanged } from
+"https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
 onAuthStateChanged(auth, (user) => {
   if (!user) window.location.href = "index.html";
@@ -21,22 +19,19 @@ async function carregar() {
   const lista = document.getElementById("listaRecebidas");
   lista.innerHTML = "";
 
-  const q = query(
-    collection(db, "guias"),
-    where("status", "==", "RECEBIDA")
-  );
-
-  const snapshot = await getDocs(q);
+  const snapshot = await getDocs(collection(db, "guias"));
 
   snapshot.forEach(docSnap => {
     const guia = docSnap.data();
 
-    lista.innerHTML += `
-      <div>
-        <strong>Guia Nº ${guia.numeroGuia}</strong>
-        <button onclick="arquivar('${docSnap.id}')">Arquivar</button>
-      </div>
-    `;
+    if (guia.status === "Recebida") {
+      lista.innerHTML += `
+        <div style="margin-bottom:20px;">
+          <strong>Guia Nº ${guia.numero}</strong>
+          <button onclick="arquivar('${docSnap.id}')">Arquivar</button>
+        </div>
+      `;
+    }
   });
 }
 
@@ -47,7 +42,7 @@ window.arquivar = async function(idGuia) {
   const observacao = prompt("Observação:");
 
   await updateDoc(doc(db, "guias", idGuia), {
-    status: "ARQUIVADA",
+    status: "Arquivada",
     arquivamento: {
       dataArquivamento,
       caixaGuia,
@@ -55,7 +50,7 @@ window.arquivar = async function(idGuia) {
     }
   });
 
-  alert("Guia arquivada com sucesso!");
+  alert("Guia arquivada!");
   carregar();
 };
 
