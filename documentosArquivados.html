@@ -1,25 +1,58 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>Documentos Arquivados</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>Guias Arquivadas - NUDOF</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">NUDOF DIGITAL</div>
+            <nav></nav>
+        </aside>
+        <main class="main-content">
+            <h2 class="page-title">Consulta de Guias Arquivadas</h2>
+            <div id="listaArquivados"></div>
+        </main>
+    </div>
 
-<div class="container">
-<header>
-<h1>Documentos Arquivados</h1>
-</header>
+    <script type="module">
+        import { db } from "./firebase.js";
+        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-<input type="text" id="pesquisa" placeholder="Pesquisar..." onkeyup="filtrar()">
-<div id="listaArquivados"></div>
+        async function carregarArquivados() {
+            const container = document.getElementById("listaArquivados");
+            const snapshot = await getDocs(collection(db, "guias"));
+            let arquivadas = [];
 
-<button onclick="voltar()">Voltar</button>
-</div>
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                if(d.status === "Arquivada") arquivadas.push(d);
+            });
 
-<script type="module" src="firebase.js"></script>
-<script type="module" src="arquivados.js"></script>
+            // Ordenar por data de arquivamento (Mais recente primeiro)
+            arquivadas.sort((a, b) => new Date(b.dataArquivamento) - new Date(a.dataArquivamento));
 
+            const agrupado = arquivadas.reduce((acc, g) => {
+                const data = g.dataArquivamento || "Antigas";
+                if (!acc[data]) acc[data] = [];
+                acc[data].push(g);
+                return acc;
+            }, {});
+
+            container.innerHTML = "";
+            for (const data in agrupado) {
+                let html = `<div class="data-group-header">Arquivadas em: ${data}</div>
+                <table class="excel-table">
+                    <thead><tr><th>Guia</th><th>Unidade</th><th>Caixa</th></tr></thead><tbody>`;
+                agrupado[data].forEach(g => {
+                    html += `<tr><td>${g.numero}</td><td>${g.unidade}</td><td>${g.caixa || '-'}</td></tr>`;
+                });
+                container.innerHTML += html + "</tbody></table>";
+            }
+        }
+        carregarArquivados();
+    </script>
 </body>
 </html>
