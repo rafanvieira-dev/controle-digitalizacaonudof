@@ -2,136 +2,31 @@ import { auth, db } from "./firebase.js";
 import { onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import { collection, getDocs, query, where, doc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-// --- CONTROLE DE LOGIN ---
+// --- LOGIN ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
         document.getElementById("loginSection").classList.add("hidden");
-        document.getElementById("appInterface").classList.remove("hidden");
-        carregarGuiasAtivas(); 
+        document.getElementById("appInterface").style.display = "flex";
+        carregarGuiasAtivas();
     } else {
         document.getElementById("loginSection").classList.remove("hidden");
-        document.getElementById("appInterface").classList.add("hidden");
+        document.getElementById("appInterface").style.display = "none";
     }
 });
 
-// Botões básicos
-document.getElementById("btnLogout").onclick = () => signOut(auth);
-
-// --- FUNÇÃO AUXILIAR PARA LIMPAR E MONTAR A TELA ---
-function prepararTela(titulo) {
-    document.getElementById("pageTitle").innerText = titulo;
-    const display = document.getElementById("mainDisplay");
-    display.innerHTML = '<p>Carregando...</p>';
-    return display;
-}
-
-// --- 1. HISTÓRICO DE GUIAS ATIVAS (PÁGINA INICIAL) ---
-async function carregarGuiasAtivas() {
-    const display = prepararTela("Histórico de Guias Ativas");
-    const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
-    const snap = await getDocs(q);
-    
-    let dados = [];
-    snap.forEach(doc => dados.push({ id: doc.id, ...doc.data() }));
-
-    if (dados.length === 0) {
-        display.innerHTML = "<p>Nenhuma guia ativa encontrada.</p>";
-        return;
-    }
-
-    renderizarTabelaExcel(dados, [
-        {label: "Nº Guia", field: "numero"},
-        {label: "Unidade", field: "unidade"},
-        {label: "Status", field: "status"}
-    ], display);
-}
-
-// --- 2. INSERIR DOCUMENTOS EM GUIA ---
-async function telaInserirDocumentos() {
-    const display = prepararTela("Inserir Documentos em Guia");
-    const snap = await getDocs(query(collection(db, "guias"), where("status", "!=", "Arquivada")));
-    
-    let html = `
-        <div class="form-container">
-            <label>Selecione a Guia:</label>
-            <select id="selectGuia" style="margin-bottom:10px;">
-                <option value="">Escolha uma guia...</option>
-                ${snap.docs.map(d => `<option value="${d.id}">${d.data().numero} - ${d.data().unidade}</option>`).join('')}
-            </select>
-            <input type="text" id="doc_nome" placeholder="Nome do Documento">
-            <input type="text" id="doc_sei" placeholder="Processo SEI">
-            <button class="btn-primary" id="btnSalvarDoc">Adicionar Documento</button>
-        </div>
-        <div id="listaDocsExcel"></div>
-    `;
-    display.innerHTML = html;
-
-    document.getElementById("btnSalvarDoc").onclick = async () => {
-        const guiaId = document.getElementById("selectGuia").value;
-        const nome = document.getElementById("doc_nome").value;
-        const sei = document.getElementById("doc_sei").value;
-
-        if(!guiaId || !nome) return alert("Preencha os dados!");
-
-        await addDoc(collection(db, "guias", guiaId, "documentos"), {
-            nomeDocumento: nome,
-            numeroProcesso: sei,
-            dataRecebimento: new Date().toISOString().split('T')[0]
-        });
-        alert("Documento inserido!");
-        telaInserirDocumentos();
-    };
-}
-
-// --- 3. ARQUIVAR GUIA ---
-async function telaArquivar() {
-    const display = prepararTela("Arquivar Guia");
-    const snap = await getDocs(query(collection(db, "guias"), where("status", "!=", "Arquivada")));
-    
-    let html = `<table class="sei-table"><thead><tr><th>Guia</th><th>Ação</th></tr></thead><tbody>`;
-    snap.forEach(d => {
-        html += `<tr>
-            <td>${d.data().numero} - ${d.data().unidade}</td>
-            <td><button onclick="executarArquivamento('${d.id}')">Arquivar</button></td>
-        </tr>`;
-    });
-    display.innerHTML = html + `</tbody></table>`;
-}
-
-window.executarArquivamento = async (id) => {
-    const caixa = prompt("Número da Caixa:");
-    if(!caixa) return;
-    await updateDoc(doc(db, "guias", id), {
-        status: "Arquivada",
-        dataArquivamento: new Date().toISOString().split('T')[0],
-        caixa: caixa
-    });
-    alert("Guia arquivada com sucesso!");
-    telaArquivar();
+document.getElementById("btnLogin").onclick = () => {
+    const email = document.getElementById("email").value;
+    const senha = document.getElementById("senha").value;
+    signInWithEmailAndPassword(auth, email, senha).catch(e => alert("Erro: " + e.message));
 };
 
-// --- 4. GUIAS ARQUIVADAS ---
-async function carregarArquivadas() {
-    const display = prepararTela("Guias Arquivadas");
-    const q = query(collection(db, "guias"), where("status", "==", "Arquivada"));
-    const snap = await getDocs(q);
-    
-    let dados = [];
-    snap.forEach(doc => dados.push(doc.data()));
+document.getElementById("btnLogout").onclick = () => signOut(auth);
 
-    renderizarTabelaExcel(dados, [
-        {label: "Guia", field: "numero"},
-        {label: "Unidade", field: "unidade"},
-        {label: "Caixa", field: "caixa"},
-        {label: "Data Arq.", field: "dataArquivamento"}
-    ], display);
-}
-
-// --- FUNÇÃO DE RENDERIZAÇÃO ESTILO EXCEL ---
-function renderizarTabelaExcel(dados, colunas, elemento) {
+// --- FUNÇÃO PARA RENDERIZAR TABELA ESTILO EXCEL ---
+function exibirTabela(dados, colunas, elemento, campoData) {
     elemento.innerHTML = "";
     const grupos = dados.reduce((acc, item) => {
-        const data = item.dataRecebimento || item.dataArquivamento || "Sem Data";
+        const data = item[campoData] || "Sem Data";
         if (!acc[data]) acc[data] = [];
         acc[data].push(item);
         return acc;
@@ -151,26 +46,56 @@ function renderizarTabelaExcel(dados, colunas, elemento) {
     });
 }
 
-// --- MAPEAMENTO DO MENU ---
+// --- PÁGINAS ---
+async function carregarGuiasAtivas() {
+    document.getElementById("pageTitle").innerText = "Histórico de Guias Ativas";
+    const snap = await getDocs(query(collection(db, "guias"), where("status", "!=", "Arquivada")));
+    const dados = snap.docs.map(d => d.data());
+    exibirTabela(dados, [{label:"Guia", field:"numeroGuia"}, {label:"Unidade", field:"unidade"}, {label:"Status", field:"status"}], document.getElementById("mainDisplay"), "dataRecebimento");
+}
+
+async function telaInserirDocs() {
+    document.getElementById("pageTitle").innerText = "Inserir Documentos";
+    const snap = await getDocs(query(collection(db, "guias"), where("status", "!=", "Arquivada")));
+    let html = `<div class="form-container"><label>Guia:</label><select id="selGuia"><option value="">Selecione...</option>`;
+    snap.forEach(d => html += `<option value="${d.id}">${d.data().numeroGuia}</option>`);
+    html += `</select><input id="doc_n" placeholder="Nome Documento"><input id="doc_s" placeholder="SEI"><button id="btnSaveD" class="btn-primary">Salvar</button></div>`;
+    document.getElementById("mainDisplay").innerHTML = html;
+
+    document.getElementById("btnSaveD").onclick = async () => {
+        const id = document.getElementById("selGuia").value;
+        if(!id) return alert("Selecione uma guia");
+        await addDoc(collection(db, "guias", id, "documentos"), {
+            nomeDocumento: document.getElementById("doc_n").value,
+            numeroProcesso: document.getElementById("doc_s").value,
+            dataRecebimento: new Date().toISOString().split('T')[0]
+        });
+        alert("Salvo!");
+    };
+}
+
+async function carregarArquivadas() {
+    document.getElementById("pageTitle").innerText = "Guias Arquivadas";
+    const snap = await getDocs(query(collection(db, "guias"), where("status", "==", "Arquivada")));
+    const dados = snap.docs.map(d => d.data());
+    exibirTabela(dados, [{label:"Guia", field:"numeroGuia"}, {label:"Unidade", field:"unidade"}, {label:"Caixa", field:"caixa"}], document.getElementById("mainDisplay"), "dataArquivamento");
+}
+
+// --- MENU CLICK ---
 document.getElementById("menuHistorico").onclick = carregarGuiasAtivas;
 document.getElementById("menuNovaGuia").onclick = () => {
-    const display = prepararTela("Inserir Nova Guia");
-    display.innerHTML = `
-        <div class="form-container">
-            <input type="text" id="n_num" placeholder="Nº Guia">
-            <input type="text" id="n_uni" placeholder="Unidade">
-            <input type="date" id="n_dat">
-            <button class="btn-primary" id="btnSalvarNovaGuia">Salvar Guia</button>
-        </div>`;
-    document.getElementById("btnSalvarNovaGuia").onclick = async () => {
-        const num = document.getElementById("n_num").value;
-        const uni = document.getElementById("n_uni").value;
-        const dat = document.getElementById("n_dat").value;
-        await addDoc(collection(db, "guias"), { numero: num, unidade: uni, dataRecebimento: dat, status: "Aberta" });
-        alert("Guia Salva!");
+    document.getElementById("pageTitle").innerText = "Nova Guia";
+    document.getElementById("mainDisplay").innerHTML = `<div class="form-container"><input id="g_num" placeholder="Nº Guia"><input id="g_uni" placeholder="Unidade"><input type="date" id="g_dat"><button id="btnG" class="btn-primary">Criar Guia</button></div>`;
+    document.getElementById("btnG").onclick = async () => {
+        await addDoc(collection(db, "guias"), { 
+            numeroGuia: document.getElementById("g_num").value, 
+            unidade: document.getElementById("g_uni").value, 
+            dataRecebimento: document.getElementById("g_dat").value, 
+            status: "Aberta" 
+        });
+        alert("Guia Criada!");
         carregarGuiasAtivas();
     };
 };
-document.getElementById("menuDocs").onclick = telaInserirDocumentos;
-document.getElementById("menuArquivar").onclick = telaArquivar;
+document.getElementById("menuDocs").onclick = telaInserirDocs;
 document.getElementById("menuArquivadas").onclick = carregarArquivadas;
