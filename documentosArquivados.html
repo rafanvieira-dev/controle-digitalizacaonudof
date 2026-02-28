@@ -43,14 +43,14 @@
     </div>
 
     <div id="modalDetalhes" class="modal">
-        <div class="modal-content" style="width: 80%; max-width: 900px;">
+        <div class="modal-content" style="width: 95%; max-width: 1100px;">
             <span class="close-btn" id="closeModal" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
             <h3 id="modalTitulo" style="color: #003366; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;"></h3>
             
-            <div id="detalhesTecnicos" style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9em;">
-            </div>
+            <div id="detalhesTecnicos" style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 1em; border: 1px solid #b6d4fe;">
+                </div>
 
-            <h4>Documentos da Guia:</h4>
+            <h4 style="color: #003366; margin-bottom: 10px;">Documentos e Informações de Digitalização:</h4>
             <div id="modalCorpo"></div>
         </div>
     </div>
@@ -91,10 +91,10 @@
                         <div class="info-box">
                             <strong>Guia Nº ${num}</strong><br>
                             <small>Unidade: ${g.unidade}</small><br>
-                            <small>Arquivado em: ${g.dataArquivamentoSistema || '--'}</small>
+                            <small>Data do Arquivamento: ${g.dataArquivamentoSistema || '--'}</small>
                         </div>
-                        <div class="badge-local">📦 ${g.locCaixaFinal || 'S/Local'}</div>
-                        <button class="btn-ver-itens" onclick="verTudo('${g.id}', '${num}')">👁 Ver Documentos</button>
+                        <div class="badge-local">📦 Caixa: ${g.locCaixaFinal || 'S/Local'}</div>
+                        <button class="btn-ver-itens" onclick="window.verTudo('${g.id}', '${num}')">👁 Ver Prontuário</button>
                     `;
                     container.appendChild(card);
                 });
@@ -117,30 +117,36 @@
                 const guiaSnap = await getDoc(doc(db, "guias", id));
                 const g = guiaSnap.data();
                 
+                // Agora o grid da Guia mostra apenas as informações "da Caixa" e de quem fez o processo
                 grid.innerHTML = `
-                    <div><strong>Localização Física:</strong> ${g.locCaixaFinal || '---'}</div>
-                    <div><strong>Processo SEI:</strong> ${g.protocoloSei || '---'}</div>
-                    <div><strong>Qtd Páginas:</strong> ${g.paginasPdf || '0'}</div>
-                    <div><strong>Data Digitalização:</strong> ${g.dataDigitalizacao || '---'}</div>
-                    <div><strong>Arquivado por:</strong> ${g.arquivadoPor || 'Sistema'}</div>
-                    <div><strong>Observações:</strong> ${g.observacao || 'Nenhuma'}</div>
+                    <div><strong>📦 Localização Física:</strong> ${g.locCaixaFinal || '---'}</div>
+                    <div><strong>👤 Arquivado por:</strong> ${g.arquivadoPor || 'Sistema'}</div>
                 `;
 
                 const docsSnap = await getDocs(collection(db, "guias", id, "documentos"));
                 if (docsSnap.empty) {
                     corpo.innerHTML = "<p>Esta guia não possui documentos listados.</p>";
                 } else {
-                    let html = `<table class="sei-table" style="width:100%; border-collapse:collapse;">
-                        <thead><tr style="background:#eee;">
+                    // Tabela expandida para mostrar os dados técnicos do documento
+                    let html = `<table class="sei-table" style="width:100%; border-collapse:collapse; font-size: 0.9em;">
+                        <thead><tr style="background:#f8f9fa;">
                             <th style="padding:10px; border:1px solid #ddd; text-align: left;">Documento</th>
-                            <th style="padding:10px; border:1px solid #ddd; text-align: left;">Nº Processo SEI</th>
+                            <th style="padding:10px; border:1px solid #ddd; text-align: left;">SEI (Original)</th>
+                            <th style="padding:10px; border:1px solid #ddd; text-align: left;">SEI (Digitalizado)</th>
+                            <th style="padding:10px; border:1px solid #ddd; text-align: center;">Págs</th>
+                            <th style="padding:10px; border:1px solid #ddd; text-align: center;">Data Digit.</th>
+                            <th style="padding:10px; border:1px solid #ddd; text-align: left;">Obs.</th>
                         </tr></thead><tbody>`;
                     
                     docsSnap.forEach(docItem => {
                         const d = docItem.data();
                         html += `<tr>
-                            <td style="padding:10px; border:1px solid #ddd;">${d.nomeDocumento}</td>
-                            <td style="padding:10px; border:1px solid #ddd;">${d.numeroProcesso}</td>
+                            <td style="padding:10px; border:1px solid #ddd;"><strong>${d.nomeDocumento}</strong></td>
+                            <td style="padding:10px; border:1px solid #ddd; color:#666;">${d.numeroProcesso}</td>
+                            <td style="padding:10px; border:1px solid #ddd; font-weight:bold;">${d.protocoloSeiDigitalizado || '--'}</td>
+                            <td style="padding:10px; border:1px solid #ddd; text-align: center;">${d.paginasPdf || '-'}</td>
+                            <td style="padding:10px; border:1px solid #ddd; text-align: center;">${d.dataDigitalizacao ? new Date(d.dataDigitalizacao).toLocaleDateString('pt-BR') : '--'}</td>
+                            <td style="padding:10px; border:1px solid #ddd; color:#666;">${d.observacaoDigitalizacao || ''}</td>
                         </tr>`;
                     });
                     corpo.innerHTML = html + "</tbody></table>";
@@ -156,4 +162,3 @@
     </script>
 </body>
 </html>
-
