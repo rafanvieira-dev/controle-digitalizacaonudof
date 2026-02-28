@@ -67,7 +67,7 @@
                 </div>
 
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
-                    <h4 style="margin-bottom: 10px; color: #003366;">2. Digitalização e Anexos (Campos com * são obrigatórios)</h4>
+                    <h4 style="margin-bottom: 10px; color: #003366;">2. Digitalização e Anexos (Mídias e Observações Opcionais)</h4>
                     <div id="areaDocumentosArquivar" style="overflow-x: auto;"></div>
                 </div>
 
@@ -149,7 +149,7 @@
                         <td><input type="date" id="data_${docSnap.id}" class="campo-obrigatorio" required></td>
                         <td><select id="tAnexo_${docSnap.id}"><option value="Nenhum">Nenhum</option><option value="CD">CD</option><option value="DVD">DVD</option><option value="Pen Drive">Pen Drive</option></select></td>
                         <td><input type="number" id="qAnexo_${docSnap.id}" value="0"></td>
-                        <td><input type="text" id="obs_${docSnap.id}" placeholder="Opcional"></td>
+                        <td><input type="text" id="obs_${docSnap.id}" placeholder="Ex: Retirada de docs"></td>
                     </tr>`;
                 });
                 areaDocs.innerHTML = html + "</tbody></table>";
@@ -165,13 +165,12 @@
                 const dataM = document.getElementById("dataArquivamentoManual").value;
                 const dataF = dataM.split("-").reverse().join("/");
 
-                // SALVA O USUÁRIO LOGADO NO CAMPO arquivadoPor
                 await updateDoc(doc(db, "guias", guiaAtualId), {
                     status: "Arquivada",
                     locCaixaFinal: document.getElementById("locCaixa").value,
                     locCaixaDocumentos: document.getElementById("locCaixaDocs").value,
                     dataArquivamentoSistema: dataF,
-                    arquivadoPor: auth.currentUser.email
+                    arquivadoPor: auth.currentUser.email // Registra quem arquivou
                 });
 
                 const promessas = documentosDaGuia.map(docId => {
