@@ -127,4 +127,50 @@ async function carregarArquivadas() {
     ], display);
 }
 
-//
+// --- FUNÇÃO DE RENDERIZAÇÃO ESTILO EXCEL ---
+function renderizarTabelaExcel(dados, colunas, elemento) {
+    elemento.innerHTML = "";
+    const grupos = dados.reduce((acc, item) => {
+        const data = item.dataRecebimento || item.dataArquivamento || "Sem Data";
+        if (!acc[data]) acc[data] = [];
+        acc[data].push(item);
+        return acc;
+    }, {});
+
+    const datasOrdenadas = Object.keys(grupos).sort((a, b) => new Date(b) - new Date(a));
+
+    datasOrdenadas.forEach(data => {
+        elemento.innerHTML += `<div class="data-header">Data: ${data}</div>`;
+        let tabela = `<table class="sei-table"><thead><tr>`;
+        colunas.forEach(col => tabela += `<th>${col.label}</th>`);
+        tabela += `</tr></thead><tbody>`;
+        grupos[data].forEach(row => {
+            tabela += `<tr>${colunas.map(c => `<td>${row[c.field] || ""}</td>`).join('')}</tr>`;
+        });
+        elemento.innerHTML += tabela + `</tbody></table>`;
+    });
+}
+
+// --- MAPEAMENTO DO MENU ---
+document.getElementById("menuHistorico").onclick = carregarGuiasAtivas;
+document.getElementById("menuNovaGuia").onclick = () => {
+    const display = prepararTela("Inserir Nova Guia");
+    display.innerHTML = `
+        <div class="form-container">
+            <input type="text" id="n_num" placeholder="Nº Guia">
+            <input type="text" id="n_uni" placeholder="Unidade">
+            <input type="date" id="n_dat">
+            <button class="btn-primary" id="btnSalvarNovaGuia">Salvar Guia</button>
+        </div>`;
+    document.getElementById("btnSalvarNovaGuia").onclick = async () => {
+        const num = document.getElementById("n_num").value;
+        const uni = document.getElementById("n_uni").value;
+        const dat = document.getElementById("n_dat").value;
+        await addDoc(collection(db, "guias"), { numero: num, unidade: uni, dataRecebimento: dat, status: "Aberta" });
+        alert("Guia Salva!");
+        carregarGuiasAtivas();
+    };
+};
+document.getElementById("menuDocs").onclick = telaInserirDocumentos;
+document.getElementById("menuArquivar").onclick = telaArquivar;
+document.getElementById("menuArquivadas").onclick = carregarArquivadas;
