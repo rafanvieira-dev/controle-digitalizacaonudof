@@ -50,7 +50,7 @@
                 </div>
                 <div style="flex: 2; min-width: 400px; display: flex; gap: 15px; align-items: flex-end;">
                     <div style="flex: 1;">
-                        <h4 style="color:#003366; margin-bottom:10px;">📊 Gerar Relatório (Por Data de Arquivamento)</h4>
+                        <h4 style="color:#003366; margin-bottom:10px;">📊 Extrair Relatório em PDF</h4>
                         <label style="font-size: 13px; font-weight: bold;">Data Início:</label>
                         <input type="date" id="dataInicioRel" style="width:100%; padding:10px; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
@@ -63,7 +63,7 @@
             </div>
             
             <div id="listaArquivados">
-                <p>Carregando acervo...</p>
+                <p>A carregar acervo...</p>
             </div>
         </main>
     </div>
@@ -83,7 +83,7 @@
         import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-        let todasAsGuiasArquivadas = []; // Para a busca e PDF funcionar sem recarregar o banco
+        let todasAsGuiasArquivadas = []; 
 
         onAuthStateChanged(auth, (user) => {
             if (!user) window.location.href = "index.html";
@@ -92,7 +92,6 @@
 
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
-        // Função auxiliar para ordenar a data do formato DD/MM/YYYY para comparação
         function parseDateBR(dStr) {
             if (!dStr) return "00000000";
             let p = dStr.split('/');
@@ -113,10 +112,7 @@
 
                 todasAsGuiasArquivadas = [];
                 snap.forEach(d => todasAsGuiasArquivadas.push({ id: d.id, ...d.data() }));
-                
-                // Ordenar da data de arquivamento mais recente para a mais antiga
                 todasAsGuiasArquivadas.sort((a, b) => parseDateBR(b.dataArquivamentoSistema).localeCompare(parseDateBR(a.dataArquivamentoSistema)));
-
                 renderArquivados(todasAsGuiasArquivadas);
             } catch (err) {
                 container.innerHTML = "<p>Erro ao carregar o acervo.</p>";
@@ -163,7 +159,6 @@
             });
         }
 
-        // LÓGICA DA BUSCA EM TEMPO REAL
         document.getElementById("buscaGuia").addEventListener("input", (e) => {
             const termo = e.target.value.toLowerCase();
             const guiasFiltradas = todasAsGuiasArquivadas.filter(g => {
@@ -173,7 +168,9 @@
             renderArquivados(guiasFiltradas);
         });
 
-        // LÓGICA DE GERAÇÃO DO PDF
+        // =========================================================
+        // LÓGICA DO PDF (UMA ÚNICA TABELA COM TODAS AS INFORMAÇÕES)
+        // =========================================================
         window.gerarPDF = async function() {
             const dataInicio = document.getElementById("dataInicioRel").value;
             const dataFim = document.getElementById("dataFimRel").value;
@@ -184,18 +181,16 @@
             }
 
             const btnPdf = document.querySelector('button[onclick="window.gerarPDF()"]');
-            btnPdf.innerText = "A gerar, aguarde...";
+            btnPdf.innerText = "A gerar PDF, aguarde...";
             btnPdf.disabled = true;
 
             try {
                 const { jsPDF } = window.jspdf;
-                const docPdf = new jsPDF('landscape'); // Formato paisagem (deitado) para caber tabelas
+                const docPdf = new jsPDF('landscape'); // Formato deitado
                 
-                // Formatação do Integer YYYYMMDD para o filtro
                 const startInt = parseInt(dataInicio.replace(/-/g, ""));
                 const endInt = parseInt(dataFim.replace(/-/g, ""));
 
-                // Filtra as guias que caem no período selecionado
                 const guiasDoPeriodo = todasAsGuiasArquivadas.filter(g => {
                     if (!g.dataArquivamentoSistema) return false;
                     let p = g.dataArquivamentoSistema.split('/');
@@ -212,49 +207,94 @@
                     return;
                 }
 
-                docPdf.setFontSize(16);
-                docPdf.text("Relatório de Guias Arquivadas - NUDOF DIGITAL", 14, 15);
-                docPdf.setFontSize(10);
-                docPdf.text(`Período de Extração: ${dataInicio.split('-').reverse().join('/')} até ${dataFim.split('-').reverse().join('/')}`, 14, 22);
+                // ARRAY DA TABELA ÚNICA
+                let dadosTabelaUnica = [];
 
-                let dadosTabela = [];
-
-                // Vai buscar os detalhes de cada guia no banco para montar o PDF
                 for (let g of guiasDoPeriodo) {
-                    const docsSnap = await getDocs(collection(db, "guias", g.id, "documentos"));
-                    let listaDocsStr = "";
-                    let inseridoPorSet = new Set();
+                    const numeroGuia = g.numeroGuia || g.numero || "S/N";
+                    const hora = g.horaRecebimento || "--:--";
+                    const unidade = g.unidade || "--";
+                    const dataArq = g.dataArquivamentoSistema || "--";
+                    const caixaGuia = g.locCaixaFinal || "S/L";
+                    const caixaDocs = g.locCaixaDocumentos || "S/L";
                     
-                    docsSnap.forEach(dItem => {
-                        const dd = dItem.data();
-                        listaDocsStr += `- ${dd.nomeDocumento} (SEI: ${dd.numeroProcesso}) [Digitalizado: ${dd.dataDigitalizacao}]\n`;
-                        if(dd.criadoPor) inseridoPorSet.add(dd.criadoPor); // Pega quem inseriu
-                    });
+                    // Tratamento dos responsáveis para não ocupar muito espaço
+                    const respCriouGuia = (g.criadoPor || "N/I").split('@')[0];
+                    const respArquivou = (g.arquivadoPor || "N/I").split('@')[0];
 
-                    dadosTabela.push([
-                        g.numeroGuia || g.numero || "S/N",
-                        g.dataArquivamentoSistema,
-                        g.locCaixaFinal + "\n" + g.locCaixaDocumentos,
-                        g.criadoPor || "N/I",
-                        Array.from(inseridoPorSet).join(',\n') || "N/I",
-                        g.arquivadoPor || "N/I",
-                        listaDocsStr || "Sem docs listados"
-                    ]);
+                    const docsSnap = await getDocs(collection(db, "guias", g.id, "documentos"));
+                    
+                    if (docsSnap.empty) {
+                        // Caso raríssimo de guia sem documento arquivada
+                        dadosTabelaUnica.push([
+                            numeroGuia, hora, unidade, "SEM DOCUMENTOS", "--", "--", "--", 
+                            g.dataRecebimento ? g.dataRecebimento.split('-').reverse().join('/') : "--", 
+                            "--", dataArq, `G: ${caixaGuia}\nD: ${caixaDocs}`, `C: ${respCriouGuia}\nA: ${respArquivou}`, "--"
+                        ]);
+                    } else {
+                        docsSnap.forEach(dItem => {
+                            const dd = dItem.data();
+                            const respInseriuDoc = (dd.criadoPor || "N/I").split('@')[0];
+                            
+                            // Cada documento vira uma linha, carregando junto os dados da guia dele
+                            dadosTabelaUnica.push([
+                                numeroGuia,
+                                hora,
+                                unidade,
+                                dd.nomeDocumento || "--",
+                                dd.numeroProcesso || "--",
+                                dd.protocoloSeiDigitalizado || "--",
+                                dd.paginasPdf || "-",
+                                dd.dataRecebimento ? dd.dataRecebimento.split('-').reverse().join('/') : "--",
+                                dd.dataDigitalizacao ? dd.dataDigitalizacao.split('-').reverse().join('/') : "--",
+                                dataArq,
+                                `G: ${caixaGuia}\nD: ${caixaDocs}`,
+                                `C: ${respCriouGuia}\nI: ${respInseriuDoc}\nA: ${respArquivou}`,
+                                dd.observacaoDigitalizacao || "--"
+                            ]);
+                        });
+                    }
                 }
 
-                // Cria a tabela dentro do PDF
+                // --- DESENHO DO PDF ---
+                // Cabeçalho institucional
+                docPdf.setFillColor(0, 51, 102); 
+                docPdf.rect(0, 0, 297, 20, 'F'); 
+                docPdf.setTextColor(255, 255, 255); 
+                docPdf.setFontSize(16);
+                docPdf.setFont("helvetica", "bold");
+                docPdf.text("NUDOF DIGITAL - RELATÓRIO DE ACERVO DOCUMENTAL", 14, 13);
+                
+                docPdf.setTextColor(0, 0, 0); 
+                docPdf.setFontSize(10);
+                docPdf.setFont("helvetica", "normal");
+                const periodoStr = `${dataInicio.split('-').reverse().join('/')} a ${dataFim.split('-').reverse().join('/')}`;
+                docPdf.text(`Período de Extração: ${periodoStr} | Legenda Atores: C=Criou Guia | I=Inseriu Doc | A=Arquivou`, 14, 28);
+
+                // GERAR A TABELA ÚNICA
                 docPdf.autoTable({
-                    startY: 28,
-                    head: [['Nº Guia', 'Data Arq.', 'Caixa Guia/Doc', 'Gerou a Guia', 'Inseriu os Docs', 'Fez Arquivamento', 'Lista de Documentos']],
-                    body: dadosTabela,
-                    styles: { fontSize: 8, cellPadding: 2, valign: 'middle' },
-                    headStyles: { fillColor: [0, 51, 102] }, // Cor azul NUDOF
+                    startY: 32,
+                    head: [['Nº Guia', 'Hora', 'Unidade', 'Nome do Documento', 'SEI (Orig)', 'SEI (Dig)', 'Págs', 'Data Rec.', 'Data Dig.', 'Data Arq.', 'Caixas (G/D)', 'Atores (C/I/A)', 'Obs.']],
+                    body: dadosTabelaUnica,
+                    theme: 'striped', 
+                    styles: { fontSize: 6, cellPadding: 2, valign: 'middle' }, 
+                    headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], halign: 'center' },
                     columnStyles: { 
-                        6: { cellWidth: 80 } // Deixa a coluna de documentos bem larga
+                        0: { fontStyle: 'bold', halign: 'center' },
+                        6: { halign: 'center' },
+                        7: { halign: 'center' },
+                        8: { halign: 'center' },
+                        9: { halign: 'center' }
+                    },
+                    didDrawPage: function (data) {
+                        let str = 'Página ' + docPdf.internal.getNumberOfPages() + ' | NUDOF Digital';
+                        docPdf.setFontSize(8);
+                        docPdf.setTextColor(150);
+                        docPdf.text(str, data.settings.margin.left, docPdf.internal.pageSize.height - 10);
                     }
                 });
 
-                docPdf.save(`Relatorio_NUDOF_${dataInicio}_a_${dataFim}.pdf`);
+                docPdf.save(`Relatorio_Acervo_NUDOF_${dataInicio}_a_${dataFim}.pdf`);
 
             } catch (error) {
                 console.error(error);
@@ -272,7 +312,7 @@
             
             document.getElementById("modalTitulo").innerText = "Documentos da Guia " + num;
             modal.style.display = "block";
-            grid.innerHTML = "Carregando detalhes...";
+            grid.innerHTML = "A carregar detalhes...";
             corpo.innerHTML = "";
 
             try {
@@ -289,25 +329,25 @@
                 if (docsSnap.empty) {
                     corpo.innerHTML = "<p>Esta guia não possui documentos listados.</p>";
                 } else {
-                    let html = `<table class="sei-table" style="width:100%; border-collapse:collapse; font-size: 0.9em;">
-                        <thead><tr style="background:#f8f9fa;">
-                            <th style="padding:10px; border:1px solid #ddd; text-align: left;">Documento</th>
-                            <th style="padding:10px; border:1px solid #ddd; text-align: left;">SEI (Original)</th>
-                            <th style="padding:10px; border:1px solid #ddd; text-align: left;">SEI (Digitalizado)</th>
-                            <th style="padding:10px; border:1px solid #ddd; text-align: center;">Págs</th>
-                            <th style="padding:10px; border:1px solid #ddd; text-align: center;">Data Digit.</th>
-                            <th style="padding:10px; border:1px solid #ddd; text-align: left;">Obs.</th>
+                    let html = `<table class=\"sei-table\" style=\"width:100%; border-collapse:collapse; font-size: 0.9em;\">
+                        <thead><tr style=\"background:#f8f9fa;\">
+                            <th style=\"padding:10px; border:1px solid #ddd; text-align: left;\">Documento</th>
+                            <th style=\"padding:10px; border:1px solid #ddd; text-align: left;\">SEI (Original)</th>
+                            <th style=\"padding:10px; border:1px solid #ddd; text-align: left;\">SEI (Digitalizado)</th>
+                            <th style=\"padding:10px; border:1px solid #ddd; text-align: center;\">Págs</th>
+                            <th style=\"padding:10px; border:1px solid #ddd; text-align: center;\">Data Digit.</th>
+                            <th style=\"padding:10px; border:1px solid #ddd; text-align: left;\">Obs.</th>
                         </tr></thead><tbody>`;
                     
                     docsSnap.forEach(docItem => {
                         const d = docItem.data();
                         html += `<tr>
-                            <td style="padding:10px; border:1px solid #ddd;"><strong>${d.nomeDocumento}</strong></td>
-                            <td style="padding:10px; border:1px solid #ddd; color:#666;">${d.numeroProcesso}</td>
-                            <td style="padding:10px; border:1px solid #ddd; font-weight:bold;">${d.protocoloSeiDigitalizado || '--'}</td>
-                            <td style="padding:10px; border:1px solid #ddd; text-align: center;">${d.paginasPdf || '-'}</td>
-                            <td style="padding:10px; border:1px solid #ddd; text-align: center;">${d.dataDigitalizacao ? new Date(d.dataDigitalizacao).toLocaleDateString('pt-BR') : '--'}</td>
-                            <td style="padding:10px; border:1px solid #ddd; color:#666;">${d.observacaoDigitalizacao || ''}</td>
+                            <td style=\"padding:10px; border:1px solid #ddd;\"><strong>${d.nomeDocumento}</strong></td>
+                            <td style=\"padding:10px; border:1px solid #ddd; color:#666;\">${d.numeroProcesso}</td>
+                            <td style=\"padding:10px; border:1px solid #ddd; font-weight:bold;\">${d.protocoloSeiDigitalizado || '--'}</td>
+                            <td style=\"padding:10px; border:1px solid #ddd; text-align: center;\">${d.paginasPdf || '-'}</td>
+                            <td style=\"padding:10px; border:1px solid #ddd; text-align: center;\">${d.dataDigitalizacao ? new Date(d.dataDigitalizacao).toLocaleDateString('pt-BR') : '--'}</td>
+                            <td style=\"padding:10px; border:1px solid #ddd; color:#666;\">${d.observacaoDigitalizacao || ''}</td>
                         </tr>`;
                     });
                     corpo.innerHTML = html + "</tbody></table>";
