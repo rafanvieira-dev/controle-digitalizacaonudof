@@ -1,5 +1,5 @@
 import { auth, db } from "./firebase.js";
-import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const loadingScreen = document.getElementById("loading");
@@ -7,13 +7,18 @@ const loginSection = document.getElementById("loginSection");
 const appInterface = document.getElementById("appInterface");
 const erroMsg = document.getElementById("erroMsg");
 
+// Configura a persistência para manter o usuário logado após atualizar a página
+setPersistence(auth, browserLocalPersistence);
+
 onAuthStateChanged(auth, (user) => {
     if (loadingScreen) loadingScreen.style.display = "none";
-    if (user) {
+    
+    if (user && user.email.endsWith("@defensoria.rj.def.br")) {
         if(loginSection) loginSection.style.display = "none";
         if(appInterface) appInterface.style.display = "flex";
         if (document.getElementById("mainDisplay")) carregarGuiasAtivas();
     } else {
+        if (user) signOut(auth); // Desloga se o e-mail for inválido
         if(loginSection) loginSection.style.display = "flex";
         if(appInterface) appInterface.style.display = "none";
     }
@@ -22,19 +27,27 @@ onAuthStateChanged(auth, (user) => {
 const btnGoogle = document.getElementById("btnGoogle");
 const provider = new GoogleAuthProvider();
 
+// Força a exibição da tela de seleção de conta/digitação de e-mail
+provider.setCustomParameters({
+    prompt: 'select_account',
+    hd: 'defensoria.rj.def.br' // Sugere o domínio institucional
+});
+
 if (btnGoogle) {
     btnGoogle.onclick = async () => {
         try {
             if(erroMsg) erroMsg.innerText = "A autenticar...";
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
+            
             if (!user.email.endsWith("@defensoria.rj.def.br")) {
                 await signOut(auth);
-                if(erroMsg) erroMsg.innerText = "Acesso negado: Use o e-mail institucional da Defensoria.";
+                if(erroMsg) erroMsg.innerText = "Acesso negado: Use o e-mail institucional (@defensoria.rj.def.br).";
             } else {
                 if(erroMsg) erroMsg.innerText = "";
             }
         } catch (error) {
+            console.error(error);
             if(erroMsg) erroMsg.innerText = "Erro ao entrar. Tente novamente.";
         }
     };
@@ -47,6 +60,8 @@ if (btnLogout) {
         window.location.href = "index.html";
     };
 }
+
+// --- FUNÇÕES DE INTERFACE MANTIDAS ---
 
 async function carregarGuiasAtivas() {
     const mainDisplay = document.getElementById("mainDisplay");
@@ -61,11 +76,8 @@ async function carregarGuiasAtivas() {
             return;
         }
 
-        // Transforma num array para ordenar e agrupar
         let guias = [];
         snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
-        
-        // Ordena pela data de recebimento mais recente
         guias.sort((a, b) => (b.dataRecebimento || "").localeCompare(a.dataRecebimento || ""));
 
         let html = `<table class="sei-table">
@@ -74,7 +86,6 @@ async function carregarGuiasAtivas() {
 
         let dataAtual = "";
         guias.forEach(g => {
-            // Se a data mudou, cria um cabeçalho separador
             if (g.dataRecebimento !== dataAtual) {
                 dataAtual = g.dataRecebimento;
                 const dataFormatada = dataAtual ? dataAtual.split('-').reverse().join('/') : "Sem Data";
