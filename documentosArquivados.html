@@ -66,7 +66,7 @@
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         let todasAsGuiasArquivadas = [];
@@ -108,33 +108,39 @@
 
         window.verDetalhes = async (id, num) => {
             const grid = document.getElementById("detalhesGuiaGrid");
-            document.getElementById("modalTitulo").innerText = "Detalhes da Guia " + num;
+            document.getElementById("modalTitulo").innerText = "Auditoria da Guia " + num;
             document.getElementById("modalDetalhes").style.display = "block";
-            grid.innerHTML = "Buscando documentos...";
+            grid.innerHTML = "Buscando detalhes...";
 
             try {
+                const gSnap = await getDoc(doc(db, "guias", id));
+                const gData = gSnap.data();
+
                 const docsSnap = await getDocs(collection(db, "guias", id, "documentos"));
-                let html = `<table class="sei-table" style="width:100%; font-size:0.85em; border-collapse: collapse;">
+                let html = `
+                    <div style="margin-bottom:20px; padding:15px; background:#e8f4fd; border-radius:8px; border:1px solid #b6d4fe;">
+                        <p><b>Guia Criada por:</b> ${gData.criadoPor || 'Não informado'}</p>
+                        <p><b>Arquivamento Finalizado por:</b> ${gData.arquivadoPor || 'Não informado'}</p>
+                    </div>
+                    <table class="sei-table" style="width:100%; font-size:0.85em; border-collapse: collapse;">
                     <thead><tr style="background:#f0f2f5;">
-                        <th style="padding:10px; border:1px solid #ddd;">Documento / Processo Original</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Documento</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Inserido por</th>
                         <th style="padding:10px; border:1px solid #ddd;">SEI Digitalizado</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Pgs</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Anexo (Tipo/Qtd/Prot)</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Observações</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Anexo</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Obs.</th>
                     </tr></thead><tbody>`;
 
                 docsSnap.forEach(docItem => {
                     const d = docItem.data();
-                    const infoAnexo = d.tipoAnexo && d.tipoAnexo !== "Nenhum" 
-                        ? `<b>${d.tipoAnexo}</b> (${d.qtdPagsAnexo} pgs)<br><small>Prot: ${d.protocoloAnexo || '--'}</small>` 
-                        : "Nenhum";
+                    const infoAnexo = d.tipoAnexo && d.tipoAnexo !== "Nenhum" ? `<b>${d.tipoAnexo}</b> (${d.qtdPagsAnexo} pgs)` : "Nenhum";
                     
                     html += `<tr>
                         <td style="padding:10px; border:1px solid #ddd;"><b>${d.nomeDocumento}</b><br><small>${d.numeroProcesso}</small></td>
+                        <td style="padding:10px; border:1px solid #ddd;">${d.inseridoPor || '--'}</td>
                         <td style="padding:10px; border:1px solid #ddd; color:#27ae60; font-weight:bold;">${d.protocoloSeiDigitalizado || '--'}</td>
-                        <td style="padding:10px; border:1px solid #ddd; text-align:center">${d.paginasPdf || '-'}</td>
                         <td style="padding:10px; border:1px solid #ddd;">${infoAnexo}</td>
-                        <td style="padding:10px; border:1px solid #ddd; font-style:italic; color:#555;">${d.observacaoDigitalizacao || '--'}</td>
+                        <td style="padding:10px; border:1px solid #ddd;">${d.observacaoDigitalizacao || '--'}</td>
                     </tr>`;
                 });
                 grid.innerHTML = html + "</tbody></table>";
@@ -169,38 +175,38 @@
                     const anexoStr = dd.tipoAnexo && dd.tipoAnexo !== "Nenhum" ? `${dd.tipoAnexo} (${dd.qtdPagsAnexo} pgs)` : "Não";
                     dadosTabela.push([
                         g.numero || g.numeroGuia,
-                        g.unidade,
                         dd.nomeDocumento,
-                        dd.protocoloSeiDigitalizado || '--',
-                        dd.paginasPdf || '0',
-                        anexoStr,
+                        g.criadoPor || '--',         // Quem criou a Guia
+                        dd.inseridoPor || '--',      // Quem inseriu o Item
+                        g.arquivadoPor || '--',      // Quem digitalizou/arquivou
                         g.dataArquivamentoSistema,
                         `G:${g.locCaixaFinal}\nD:${g.locCaixaDocumentos}`,
-                        g.arquivadoBy || g.arquivadoPor || '--', // USUÁRIO AQUI
                         dd.observacaoDigitalizacao || ''
                     ]);
                 });
             }
 
             docPdf.setFontSize(14);
-            docPdf.text("NUDOF - RELATÓRIO DE ACERVO DIGITALIZADO", 14, 15);
-            docPdf.setFontSize(9);
-            docPdf.text(`Período: ${dataInicio.split('-').reverse().join('/')} a ${dataFim.split('-').reverse().join('/')}`, 14, 22);
+            docPdf.text("NUDOF - RELATÓRIO DE AUDITORIA COMPLETO", 14, 15);
+            docPdf.setFontSize(8);
+            docPdf.text(`Período: ${dataInicio.split('-').reverse().join('/')}, a ${dataFim.split('-').reverse().join('/')}`, 14, 22);
 
             docPdf.autoTable({
                 startY: 28,
-                head: [['Guia', 'Unidade', 'Documento', 'SEI Dig.', 'Pgs', 'Anexo', 'Data Arq.', 'Caixas', 'Responsável', 'Obs.']],
+                head: [['Guia', 'Documento', 'Criado por', 'Inserido por', 'Arquivado por', 'Data Arq.', 'Caixas', 'Observação']],
                 body: dadosTabela,
                 theme: 'striped',
-                styles: { fontSize: 6.5, cellPadding: 2 },
+                styles: { fontSize: 6, cellPadding: 1.5 },
                 headStyles: { fillColor: [0, 51, 102] },
                 columnStyles: { 
-                    8: { cellWidth: 35 }, // Coluna do Responsável
-                    9: { cellWidth: 35 }  // Coluna de Obs
+                    2: { cellWidth: 40 }, // Criado por
+                    3: { cellWidth: 40 }, // Inserido por
+                    4: { cellWidth: 40 }, // Arquivado por
+                    7: { cellWidth: 30 }  // Obs
                 }
             });
 
-            docPdf.save(`Relatorio_NUDOF_${dataInicio}.pdf`);
+            docPdf.save(`Relatorio_NUDOF_Auditoria_${dataInicio}.pdf`);
         };
 
         document.getElementById("closeModal").onclick = () => document.getElementById("modalDetalhes").style.display = "none";
