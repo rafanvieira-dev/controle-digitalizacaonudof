@@ -24,10 +24,21 @@
             <div class="form-container">
                 <label>Número da Guia:</label>
                 <input type="text" id="numeroGuia" placeholder="ex: 001/2026">
+                
                 <label>Unidade Solicitante:</label>
                 <input type="text" id="unidade" placeholder="Nome da Unidade">
-                <label>Data de Recebimento:</label>
-                <input type="date" id="dataRecebimento">
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label>Data de Recebimento:</label>
+                        <input type="date" id="dataRecebimento" required>
+                    </div>
+                    <div>
+                        <label>Hora de Recebimento:</label>
+                        <input type="time" id="horaRecebimento" required>
+                    </div>
+                </div>
+
                 <button class="btn-primary" id="btnSalvarGuia">Salvar Guia</button>
             </div>
         </main>
@@ -45,13 +56,19 @@
             const numero = document.getElementById("numeroGuia").value;
             const unidade = document.getElementById("unidade").value;
             const data = document.getElementById("dataRecebimento").value;
+            const hora = document.getElementById("horaRecebimento").value;
 
-            if (!numero || !unidade || !data) return alert("Preencha todos os campos!");
+            if (!numero || !unidade || !data || !hora) return alert("Preencha todos os campos, incluindo a hora!");
 
             try {
                 await addDoc(collection(db, "guias"), {
-                    numero, unidade, dataRecebimento: data, 
-                    status: "Aberta", dataCriacao: new Date()
+                    numero, 
+                    unidade, 
+                    dataRecebimento: data, 
+                    horaRecebimento: hora,
+                    status: "Aberta", 
+                    dataCriacao: new Date(),
+                    criadoPor: auth.currentUser.email // Salva o e-mail de quem gerou a guia
                 });
                 alert("Guia criada com sucesso!");
                 window.location.href = "documentos.html";
