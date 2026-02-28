@@ -7,14 +7,16 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="loginSection" style="margin: 100px auto; width: 300px; text-align: center;">
-        <h2>Acesso NUDOF</h2>
-        <input type="email" id="email" placeholder="E-mail">
-        <input type="password" id="senha" placeholder="Senha">
-        <button id="btnLogin" class="btn-primary">Entrar</button>
+    <div id="loginSection">
+        <div class="login-box">
+            <h2>Acesso NUDOF</h2>
+            <input type="email" id="email" placeholder="E-mail institucional">
+            <input type="password" id="senha" placeholder="Senha">
+            <button id="btnLogin" class="btn-primary">Entrar</button>
+        </div>
     </div>
 
-    <div id="appInterface" class="hidden">
+    <div id="appInterface" style="display: none;">
         <aside id="sidebar">
             <div class="logo">SISTEMA NUDOF</div>
             <nav>
@@ -23,14 +25,15 @@
                 <a id="menuDocs">Documentos em Guia</a>
                 <a id="menuArquivar">Arquivar Guia</a>
                 <a id="menuArquivadas">Guias Arquivadas</a>
-                <a id="btnLogout" style="color: red; border-top: 1px solid #ccc;">Sair</a>
+                <a id="btnLogout" style="color: #e74c3c; border-top: 1px solid #ccc; margin-top: auto;">Sair</a>
             </nav>
         </aside>
         <main id="content">
-            <h2 id="pageTitle">Carregando...</h2>
+            <h2 id="pageTitle">Início</h2>
             <div id="mainDisplay"></div>
         </main>
     </div>
+
     <script type="module" src="app_final.js"></script>
 </body>
 </html>
