@@ -13,20 +13,19 @@
         }
         .form-grid-arquivar { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; }
         .input-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #34495e; }
-        .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <div id="appInterface" style="display: flex;">
+    <div id="appInterface">
         <aside id="sidebar">
-            <div class="logo">SISTEMA NUDOF</div>
+            <div class="sidebar-logo">NUDOF DIGITAL</div>
             <nav>
                 <a href="index.html">🏠 Início / Histórico</a>
-                <a href="guia.html">➕ Inserir Nova Guia</a>
-                <a href="documentos.html">📄 Documentos em Guia</a>
-                <a href="documentosRecebidos.html" style="background-color: #d0d0d0; font-weight: bold;">📁 Arquivar Guia</a>
+                <a href="guia.html">➕ Nova Guia</a>
+                <a href="documentos.html">📄 Inserir Documentos</a>
+                <a href="documentosRecebidos.html" class="ativo">📁 Arquivar Guia</a>
                 <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
-                <button id="btnLogout" style="color:#e74c3c; background:none; border:none; border-top:1px solid #ccc; margin-top:auto; padding:15px; cursor:pointer; width:100%; text-align:left;">🚪 Sair</button>
+                <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
             </nav>
         </aside>
 
@@ -38,8 +37,8 @@
 
     <div id="modalArquivar" class="modal">
         <div class="modal-content" style="width: 90%; max-width: 800px;">
-            <span class="close-btn" id="closeArquivar">&times;</span>
-            <h3 id="tituloModalArquivar"></h3>
+            <span class="close-btn" id="closeArquivar" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
+            <h3 id="tituloModalArquivar" style="margin-bottom: 20px;"></h3>
             <form id="formDadosArquivamento" class="form-grid-arquivar">
                 <div class="input-group"><label>Nº Caixa - Localização Guia:</label><input type="text" id="locCaixa" required></div>
                 <div class="input-group"><label>Qtd. Páginas PDF:</label><input type="number" id="qtdPaginas" required></div>
@@ -74,7 +73,7 @@
                 const div = document.createElement("div");
                 div.className = "guia-card-arquivar";
                 div.innerHTML = `<div><strong>Guia ${num}</strong><br>${g.unidade}</div>
-                <button class="btn-ver" onclick="abrirArq('${d.id}', '${num}')">📁 Arquivar</button>`;
+                <button class="btn-ver" onclick="abrirArq('${d.id}', '${num}')" style="background:#27ae60; color:white; padding:10px; border:none; border-radius:4px; cursor:pointer;">📁 Arquivar</button>`;
                 container.appendChild(div);
             });
         }
