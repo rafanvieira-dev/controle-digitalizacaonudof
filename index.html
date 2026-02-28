@@ -3,16 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NUDOF - Sistema de Controle</title>
+    <title>NUDOF - Sistema de Controlo</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <div id="loginSection">
         <div class="login-box">
-            <h2>Acesso NUDOF</h2>
-            <input type="email" id="email" placeholder="E-mail institucional">
-            <input type="password" id="senha" placeholder="Senha">
-            <button id="btnLogin" class="btn-primary">Entrar</button>
+            <div style="background-color: #003366; color: white; padding: 15px; margin: -40px -40px 30px -40px; border-radius: 8px 8px 0 0; font-weight: bold;">
+                NUDOF DIGITAL
+            </div>
+            <h2>Acesso ao Sistema</h2>
+            <div style="margin-top: 20px;">
+                <input type="email" id="email" placeholder="E-mail institucional" style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="password" id="senha" placeholder="Palavra-passe" style="width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px;">
+                <button id="btnLogin" class="btn-primary" style="width: 100%;">Entrar</button>
+            </div>
         </div>
     </div>
 
@@ -20,17 +26,24 @@
         <aside id="sidebar">
             <div class="logo">SISTEMA NUDOF</div>
             <nav>
-                <a id="menuHistorico">Histórico de Guias</a>
-                <a id="menuNovaGuia">Inserir Nova Guia</a>
-                <a id="menuDocs">Documentos em Guia</a>
-                <a id="menuArquivar">Arquivar Guia</a>
-                <a id="menuArquivadas">Guias Arquivadas</a>
-                <a id="btnLogout" style="color: #e74c3c; border-top: 1px solid #ccc; margin-top: auto;">Sair</a>
+                <a href="index.html" style="background-color: #d0d0d0; font-weight: bold;">🏠 Início / Histórico</a>
+                <a href="guia.html">➕ Inserir Nova Guia</a>
+                <a href="documentos.html">📄 Documentos em Guia</a>
+                <a href="documentosRecebidos.html">📁 Arquivar Guia</a>
+                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
+                
+                <button id="btnLogout" style="color: #e74c3c; background:none; border:none; border-top: 1px solid #ccc; margin-top: auto; padding: 15px; cursor:pointer; width: 100%; text-align: left;">
+                    🚪 Sair do Sistema
+                </button>
             </nav>
         </aside>
+
         <main id="content">
-            <h2 id="pageTitle">Início</h2>
-            <div id="mainDisplay"></div>
+            <h2 id="pageTitle" class="page-title">Histórico de Guias Ativas</h2>
+            
+            <div id="mainDisplay">
+                <p>A carregar dados do Firebase...</p>
+            </div>
         </main>
     </div>
 
