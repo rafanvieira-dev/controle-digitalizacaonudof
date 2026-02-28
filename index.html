@@ -2,39 +2,35 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>NUDOF - SEI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUDOF - Sistema de Controle</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <div id="loginSection" style="margin: auto; width: 300px; padding-top: 100px;">
-        <h2 style="text-align: center;">Acesso NUDOF</h2>
-        <input type="email" id="email" placeholder="E-mail institucional">
+    <div id="loginSection" style="margin: 100px auto; width: 300px; text-align: center;">
+        <h2>Acesso NUDOF</h2>
+        <input type="email" id="email" placeholder="E-mail">
         <input type="password" id="senha" placeholder="Senha">
-        <button id="btnLogin" style="width: 100%; padding: 10px; background: #003366; color: white; border: none; cursor: pointer;">Entrar</button>
+        <button id="btnLogin" class="btn-primary">Entrar</button>
     </div>
 
-    <div id="appInterface" class="hidden" style="display: flex; width: 100%;">
-        
+    <div id="appInterface" class="hidden">
         <aside id="sidebar">
-            <div class="logo">NUDOF / SEI</div>
+            <div class="logo">SISTEMA NUDOF</div>
             <nav>
-                <a href="#" id="menuHistorico">Histórico de Guias</a>
-                <a href="#" id="menuNovaGuia">Inserir Nova Guia</a>
-                <a href="#" id="menuDocs">Documentos em Guia</a>
-                <a href="#" id="menuArquivar">Arquivar Guia</a>
-                <a href="#" id="menuArquivadas">Guias Arquivadas</a>
-                <a href="#" id="btnLogout" style="color: red; border-top: 2px solid #ccc;">Sair</a>
+                <a id="menuHistorico">Histórico de Guias</a>
+                <a id="menuNovaGuia">Inserir Nova Guia</a>
+                <a id="menuDocs">Documentos em Guia</a>
+                <a id="menuArquivar">Arquivar Guia</a>
+                <a id="menuArquivadas">Guias Arquivadas</a>
+                <a id="btnLogout" style="color: red; border-top: 1px solid #ccc;">Sair</a>
             </nav>
         </aside>
-
         <main id="content">
-            <h2 id="pageTitle">Histórico de Guias Ativas</h2>
-            <div id="mainDisplay">
-                </div>
+            <h2 id="pageTitle">Carregando...</h2>
+            <div id="mainDisplay"></div>
         </main>
     </div>
-
     <script type="module" src="app_final.js"></script>
 </body>
 </html>
