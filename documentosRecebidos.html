@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arquivar Guia - NUDOF</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .guia-card-arquivar {
+            background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 6px solid #27ae60;
+        }
+        .data-badge { display: block; font-size: 12px; color: #7f8c8d; font-weight: bold; }
+        .btn-arquivar-acao { background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .form-grid-arquivar { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .input-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #34495e; text-align: left; }
+        .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: inherit; }
+        @media (max-width: 600px) { .form-grid-arquivar { grid-template-columns: 1fr; } }
+    </style>
 </head>
 <body>
     <div id="appInterface" style="display: flex;">
@@ -16,13 +29,13 @@
                 <a href="documentos.html">📄 Documentos em Guia</a>
                 <a href="documentosRecebidos.html" style="background-color: #d0d0d0; font-weight: bold;">📁 Arquivar Guia</a>
                 <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
-                <button id="btnLogout" class="btn-logout">🚪 Sair do Sistema</button>
+                <button id="btnLogout" class="btn-logout" style="color: #e74c3c; background:none; border:none; border-top: 1px solid #ccc; margin-top: auto; padding: 15px; cursor:pointer; width: 100%; text-align: left;">🚪 Sair do Sistema</button>
             </nav>
         </aside>
 
         <main id="content">
             <h2 class="page-title">Arquivamento de Guias de Remessa</h2>
-            <p style="margin-bottom: 20px; color: #666;">Selecione uma guia para realizar o arquivamento permanente.</p>
+            <p style="margin-bottom: 20px; color: #666;">Selecione uma guia para preencher os dados de arquivamento permanente.</p>
             
             <div id="listaParaArquivar">
                 <p>Carregando guias pendentes...</p>
@@ -31,7 +44,7 @@
     </div>
 
     <div id="modalArquivar" class="modal">
-        <div class="modal-content" style="width: 80%; max-width: 850px;">
+        <div class="modal-content" style="width: 90%; max-width: 850px; max-height: 90vh; overflow-y: auto;">
             <span class="close-btn" id="closeArquivar">&times;</span>
             <h3 id="tituloModalArquivar" style="color: #003366; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;"></h3>
             
@@ -52,7 +65,7 @@
                 </div>
 
                 <div class="input-group">
-                    <label>Tipo de Anexo:</label>
+                    <label>Tipo de Anexo (CD, DVD, etc):</label>
                     <select id="tipoAnexo">
                         <option value="Nenhum">Nenhum</option>
                         <option value="CD">CD</option>
@@ -63,12 +76,12 @@
                 </div>
 
                 <div class="input-group">
-                    <label>Quant. Páginas Anexo:</label>
+                    <label>Quant. Páginas do Anexo:</label>
                     <input type="number" id="paginasAnexo" value="0">
                 </div>
 
                 <div class="input-group">
-                    <label>Nº Protocolo SEI Anexo:</label>
+                    <label>Protocolo SEI do Anexo:</label>
                     <input type="text" id="protocoloAnexo" placeholder="Se houver">
                 </div>
 
@@ -79,17 +92,17 @@
 
                 <div class="input-group">
                     <label>Nº da Caixa - Localização Final:</label>
-                    <input type="text" id="locFinal" placeholder="Repetir localização ou nova" required>
+                    <input type="text" id="locFinal" placeholder="Ex: Caixa 10" required>
                 </div>
 
                 <div class="input-group" style="grid-column: span 2;">
                     <label>Observação (Retiradas, detalhes extras):</label>
-                    <textarea id="obsArquivamento" rows="3" placeholder="Digite aqui observações relevantes..."></textarea>
+                    <textarea id="obsArquivamento" rows="3" placeholder="Informações adicionais..."></textarea>
                 </div>
 
                 <div style="grid-column: span 2; display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="submit" class="btn-primary" style="background-color: #27ae60; flex: 2;">Confirmar Arquivamento</button>
-                    <button type="button" class="btn-primary" style="background-color: #7f8c8d; flex: 1;" id="btnCancelar">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="background-color: #27ae60; flex: 2; border: none; color: white; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold;">Confirmar Arquivamento</button>
+                    <button type="button" class="btn-primary" style="background-color: #7f8c8d; flex: 1; border: none; color: white; padding: 12px; border-radius: 5px; cursor: pointer;" id="btnCancelar">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -105,17 +118,22 @@
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { collection, getDocs, updateDoc, doc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-        import { signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+        import { collection, getDocs, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         let guiaAtualId = "";
 
-        // Carregar Guias Ordenadas
+        // Monitor de sessão
+        onAuthStateChanged(auth, (user) => {
+            if (!user) location.href = "index.html";
+            else carregarGuiasParaArquivar();
+        });
+
+        // Carregar Guias com Ordenação Manual (Evita erro de Índice)
         async function carregarGuiasParaArquivar() {
             const container = document.getElementById("listaParaArquivar");
             try {
-                // Ordenação por número decrescente (mais recentes primeiro)
-                const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"), orderBy("numeroGuia", "desc"));
+                const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
                 const snapshot = await getDocs(q);
                 
                 if (snapshot.empty) {
@@ -123,12 +141,21 @@
                     return;
                 }
 
-                container.innerHTML = "";
+                let guiasArray = [];
                 snapshot.forEach(docSnap => {
-                    const g = docSnap.data();
-                    const id = docSnap.id;
-                    const num = g.numeroGuia || g.numero || "S/N";
+                    guiasArray.push({ id: docSnap.id, ...docSnap.data() });
+                });
 
+                // Ordenação manual: Mais recentes primeiro (pelo número da guia)
+                guiasArray.sort((a, b) => {
+                    const numA = parseInt(a.numeroGuia || a.numero || 0);
+                    const numB = parseInt(b.numeroGuia || b.numero || 0);
+                    return numB - numA;
+                });
+
+                container.innerHTML = "";
+                guiasArray.forEach(g => {
+                    const num = g.numeroGuia || g.numero || "S/N";
                     const card = document.createElement("div");
                     card.className = "guia-card-arquivar";
                     card.innerHTML = `
@@ -138,19 +165,18 @@
                             <p>Unidade: ${g.unidade}</p>
                         </div>
                         <div class="acoes">
-                            <button class="btn-ver" onclick="verDetalhes('${id}', '${num}')">👁 Ver</button>
-                            <button class="btn-arquivar-acao" onclick="prepararArquivamento('${id}', '${num}')">📁 Arquivar</button>
+                            <button class="btn-ver" style="background:#4682B4; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; margin-right:5px;" onclick="verDetalhes('${g.id}', '${num}')">👁 Ver</button>
+                            <button class="btn-arquivar-acao" onclick="prepararArquivamento('${g.id}', '${num}')">📁 Arquivar</button>
                         </div>
                     `;
                     container.appendChild(card);
                 });
             } catch (err) {
                 console.error(err);
-                container.innerHTML = "<p>Erro ao carregar guias. Verifique os índices no Firebase.</p>";
+                container.innerHTML = "<p>Erro ao carregar dados.</p>";
             }
         }
 
-        // Funções Globais para os botões funcionarem
         window.prepararArquivamento = (id, numero) => {
             guiaAtualId = id;
             document.getElementById("tituloModalArquivar").innerText = "Dados de Arquivamento: Guia " + numero;
@@ -164,15 +190,21 @@
             corpo.innerHTML = "Carregando...";
             
             const snap = await getDocs(collection(db, "guias", id, "documentos"));
-            let html = `<table class="sei-table"><thead><tr><th>Documento</th><th>Processo SEI</th></tr></thead><tbody>`;
+            let html = `<table class="sei-table" style="width:100%; border-collapse:collapse;">
+                <thead><tr style="background:#eee;">
+                    <th style="padding:10px; border:1px solid #ccc;">Documento</th>
+                    <th style="padding:10px; border:1px solid #ccc;">Processo SEI</th>
+                </tr></thead><tbody>`;
             snap.forEach(d => {
                 const data = d.data();
-                html += `<tr><td>${data.nomeDocumento}</td><td>${data.numeroProcesso}</td></tr>`;
+                html += `<tr>
+                    <td style="padding:10px; border:1px solid #ccc;">${data.nomeDocumento}</td>
+                    <td style="padding:10px; border:1px solid #ccc;">${data.numeroProcesso}</td>
+                </tr>`;
             });
             corpo.innerHTML = html + "</tbody></table>";
         };
 
-        // Salvar Arquivamento
         document.getElementById("formDadosArquivamento").onsubmit = async (e) => {
             e.preventDefault();
             const dados = {
@@ -198,26 +230,11 @@
             }
         };
 
-        // Controles de Fechamento
         document.getElementById("closeArquivar").onclick = () => document.getElementById("modalArquivar").style.display = "none";
         document.getElementById("btnCancelar").onclick = () => document.getElementById("modalArquivar").style.display = "none";
         document.getElementById("closeDetalhes").onclick = () => document.getElementById("modalDetalhes").style.display = "none";
-        document.getElementById("btnLogout").onclick = () => signOut(auth).then(() => location.href = "index.html");
+        document.getElementById("btnLogout").onclick = () => signOut(auth);
 
-        carregarGuiasParaArquivar();
     </script>
-
-    <style>
-        .guia-card-arquivar {
-            background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 6px solid #27ae60;
-        }
-        .data-badge { display: block; font-size: 12px; color: #7f8c8d; font-weight: bold; }
-        .btn-arquivar-acao { background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .form-grid-arquivar { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .input-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #34495e; }
-        .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-    </style>
 </body>
 </html>
