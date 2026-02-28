@@ -19,16 +19,16 @@
     </style>
 </head>
 <body>
-    <div id="appInterface" style="display: flex;">
+    <div id="appInterface">
         <aside id="sidebar">
-            <div class="logo">SISTEMA NUDOF</div>
+            <div class="sidebar-logo">NUDOF DIGITAL</div>
             <nav>
                 <a href="index.html">🏠 Início / Histórico</a>
-                <a href="guia.html">➕ Inserir Nova Guia</a>
-                <a href="documentos.html">📄 Documentos em Guia</a>
+                <a href="guia.html">➕ Nova Guia</a>
+                <a href="documentos.html">📄 Inserir Documentos</a>
                 <a href="documentosRecebidos.html">📁 Arquivar Guia</a>
-                <a href="documentosArquivados.html" style="background-color: #d0d0d0; font-weight: bold;">📚 Guias Arquivadas</a>
-                <button id="btnLogout" style="color: #e74c3c; background:none; border:none; border-top: 1px solid #ccc; margin-top: auto; padding: 15px; cursor:pointer; width: 100%; text-align: left;">🚪 Sair</button>
+                <a href="documentosArquivados.html" class="ativo">📚 Guias Arquivadas</a>
+                <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
             </nav>
         </aside>
 
@@ -44,11 +44,11 @@
 
     <div id="modalDetalhes" class="modal">
         <div class="modal-content" style="width: 80%; max-width: 900px;">
-            <span class="close-btn" id="closeModal">&times;</span>
+            <span class="close-btn" id="closeModal" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
             <h3 id="modalTitulo" style="color: #003366; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;"></h3>
             
             <div id="detalhesTecnicos" style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9em;">
-                </div>
+            </div>
 
             <h4>Documentos da Guia:</h4>
             <div id="modalCorpo"></div>
@@ -60,7 +60,6 @@
         import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-        // Proteção de Rota
         onAuthStateChanged(auth, (user) => {
             if (!user) window.location.href = "index.html";
             else carregarArquivados();
@@ -71,7 +70,6 @@
         async function carregarArquivados() {
             const container = document.getElementById("listaArquivados");
             try {
-                // Busca apenas as arquivadas
                 const q = query(collection(db, "guias"), where("status", "==", "Arquivada"));
                 const snap = await getDocs(q);
                 
@@ -82,8 +80,6 @@
 
                 let guias = [];
                 snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
-                
-                // Ordenar por número decrescente
                 guias.sort((a, b) => parseInt(b.numeroGuia || b.numero) - parseInt(a.numeroGuia || a.numero));
 
                 container.innerHTML = "";
@@ -107,7 +103,6 @@
             }
         }
 
-        // Função para abrir detalhes completos e documentos
         window.verTudo = async (id, num) => {
             const modal = document.getElementById("modalDetalhes");
             const grid = document.getElementById("detalhesTecnicos");
@@ -119,7 +114,6 @@
             corpo.innerHTML = "";
 
             try {
-                // 1. Pegar dados da guia
                 const guiaSnap = await getDoc(doc(db, "guias", id));
                 const g = guiaSnap.data();
                 
@@ -132,15 +126,14 @@
                     <div><strong>Observações:</strong> ${g.observacao || 'Nenhuma'}</div>
                 `;
 
-                // 2. Pegar subcoleção de documentos
                 const docsSnap = await getDocs(collection(db, "guias", id, "documentos"));
                 if (docsSnap.empty) {
                     corpo.innerHTML = "<p>Esta guia não possui documentos listados.</p>";
                 } else {
                     let html = `<table class="sei-table" style="width:100%; border-collapse:collapse;">
                         <thead><tr style="background:#eee;">
-                            <th style="padding:10px; border:1px solid #ddd;">Documento</th>
-                            <th style="padding:10px; border:1px solid #ddd;">Nº Processo SEI</th>
+                            <th style="padding:10px; border:1px solid #ddd; text-align: left;">Documento</th>
+                            <th style="padding:10px; border:1px solid #ddd; text-align: left;">Nº Processo SEI</th>
                         </tr></thead><tbody>`;
                     
                     docsSnap.forEach(docItem => {
@@ -160,7 +153,7 @@
         document.getElementById("closeModal").onclick = () => {
             document.getElementById("modalDetalhes").style.display = "none";
         };
-
     </script>
 </body>
 </html>
+
