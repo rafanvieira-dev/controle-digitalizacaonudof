@@ -1,41 +1,48 @@
 import { auth, db } from "./firebase.js";
-import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const loadingScreen = document.getElementById("loading");
 const loginSection = document.getElementById("loginSection");
 const appInterface = document.getElementById("appInterface");
+const erroMsg = document.getElementById("erroMsg");
 
-// --- MONITOR DE SESSÃO (CORRIGIDO) ---
+// --- MONITOR DE SESSÃO ---
 onAuthStateChanged(auth, (user) => {
-    // Esconde a tela de "Verificando acesso..."
     if (loadingScreen) loadingScreen.style.display = "none";
 
     if (user) {
-        // USUÁRIO LOGADO: Mostra o sistema, esconde o login
         if(loginSection) loginSection.style.display = "none";
         if(appInterface) appInterface.style.display = "flex";
         
-        // Se estiver no index, carrega as guias
         if (document.getElementById("mainDisplay")) carregarGuiasAtivas();
     } else {
-        // USUÁRIO DESLOGADO: Mostra o login, esconde o sistema
         if(loginSection) loginSection.style.display = "flex";
         if(appInterface) appInterface.style.display = "none";
     }
 });
 
-// --- LOGIN ---
-const btnLogin = document.getElementById("btnLogin");
-if (btnLogin) {
-    btnLogin.onclick = async () => {
-        const email = document.getElementById("email").value.trim();
-        const senha = document.getElementById("senha").value.trim();
-        
+// --- LOGIN GOOGLE (COM RESTRIÇÃO INSTITUCIONAL) ---
+const btnGoogle = document.getElementById("btnGoogle");
+const provider = new GoogleAuthProvider();
+
+if (btnGoogle) {
+    btnGoogle.onclick = async () => {
         try {
-            await signInWithEmailAndPassword(auth, email, senha);
+            if(erroMsg) erroMsg.innerText = "A autenticar...";
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            // 🔒 Restringir domínio institucional
+            if (!user.email.endsWith("@defensoria.rj.def.br")) {
+                await signOut(auth);
+                if(erroMsg) erroMsg.innerText = "Acesso negado: Use o e-mail institucional da Defensoria.";
+            } else {
+                if(erroMsg) erroMsg.innerText = ""; // Limpa a mensagem se der certo
+            }
         } catch (error) {
-            alert("E-mail ou senha inválidos.");
+            if(erroMsg) erroMsg.innerText = "Erro ao entrar. Tente novamente.";
+            console.error(error);
         }
     };
 }
@@ -70,7 +77,6 @@ async function carregarGuiasAtivas() {
         snap.forEach(d => {
             const g = d.data();
             const num = g.numero || g.numeroGuia || "S/N";
-            // Repare que adicionei window. antes do verDetalhes
             html += `<tr>
                 <td style="padding:10px; border-bottom:1px solid #eee;">${num}</td>
                 <td style="padding:10px; border-bottom:1px solid #eee;">${g.unidade}</td>
@@ -84,19 +90,17 @@ async function carregarGuiasAtivas() {
     }
 }
 
-// --- FUNÇÃO PARA VER DETALHES DA GUIA (Agora atrelada ao window) ---
+// --- FUNÇÃO PARA VER DETALHES DA GUIA ---
 window.verDetalhes = async function(id, num) {
     const modal = document.getElementById("modalDetalhes");
     const titulo = document.getElementById("modalTitulo");
     const corpo = document.getElementById("modalCorpo");
     
-    // Mostra o modal carregando
     modal.style.display = "block";
     titulo.innerText = "Documentos da Guia " + num;
     corpo.innerHTML = "<p>Buscando documentos...</p>";
 
     try {
-        // Vai na coleção guias -> id específico -> subcoleção documentos
         const docsSnap = await getDocs(collection(db, "guias", id, "documentos"));
         
         if (docsSnap.empty) {
@@ -125,8 +129,7 @@ window.verDetalhes = async function(id, num) {
     }
 };
 
-// --- FUNÇÕES PARA FECHAR O MODAL ---
-// Fecha ao clicar no X
+// --- FECHAR MODAL ---
 const closeBtn = document.querySelector(".close-btn");
 if (closeBtn) {
     closeBtn.onclick = () => {
@@ -134,7 +137,6 @@ if (closeBtn) {
     };
 }
 
-// Fecha ao clicar fora do modal
 window.onclick = (event) => {
     const modal = document.getElementById("modalDetalhes");
     if (event.target === modal) {
