@@ -1,25 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>Arquivar Guias</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>Arquivar Guia - NUDOF</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">NUDOF DIGITAL</div>
+            <nav></nav>
+        </aside>
+        <main class="main-content">
+            <h2 class="page-title">Arquivamento de Guias</h2>
+            <div id="listaParaArquivar"></div>
+        </main>
+    </div>
 
-<div class="container">
-<header>
-<h1>Guias Recebidas</h1>
-</header>
-
-<div id="listaRecebidas"></div>
-
-<button onclick="voltar()">Voltar</button>
-</div>
-
-<script type="module" src="firebase.js"></script>
-<script type="module" src="recebidos.js"></script>
-<ul id="listaArquivamento"></ul>
-  
+    <script type="module">
+        import { db, auth } from "./firebase.js";
+        import { collection, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        
+        async function carregarGuiasParaArquivar() {
+            const container = document.getElementById("listaParaArquivar");
+            const snapshot = await getDocs(collection(db, "guias"));
+            
+            let html = `<table class="excel-table">
+                <thead><tr><th>Guia</th><th>Unidade</th><th>Ação</th></tr></thead><tbody>`;
+            
+            snapshot.forEach(docSnap => {
+                const g = docSnap.data();
+                if(g.status !== "Arquivada") {
+                    html += `<tr>
+                        <td>${g.numero}</td>
+                        <td>${g.unidade}</td>
+                        <td><button onclick="arquivar('${docSnap.id}')" style="background:#27ae60; color:white; border:none; padding:5px; cursor:pointer;">Arquivar</button></td>
+                    </tr>`;
+                }
+            });
+            container.innerHTML = html + "</tbody></table>";
+        }
+        window.arquivar = async (id) => {
+            const dataArq = prompt("Data do Arquivamento (AAAA-MM-DD):");
+            const caixa = prompt("Número da Caixa:");
+            if(dataArq && caixa) {
+                await updateDoc(doc(db, "guias", id), {
+                    status: "Arquivada",
+                    dataArquivamento: dataArq,
+                    caixa: caixa
+                });
+                alert("Guia arquivada!");
+                location.reload();
+            }
+        };
+        carregarGuiasParaArquivar();
+    </script>
 </body>
 </html>
