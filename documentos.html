@@ -1,47 +1,89 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-<meta charset="UTF-8">
-<title>Documentos por Guia</title>
-<link rel="stylesheet" href="style.css">
-</head>
+async function telaDocumentos() {
+    pageTitle.innerText = "Inserir Documentos na Guia";
+    
+    // Busca as guias para o usuário escolher qual vai preencher
+    const snap = await getDocs(query(collection(db, "guias"), where("status", "!=", "Arquivada")));
+    
+    let html = `
+        <div class="form-container">
+            <label><b>Selecione a Guia Cadastrada:</b></label>
+            <select id="selGuia">
+                <option value="">-- Escolha a Guia --</option>
+                ${snap.docs.map(d => `<option value="${d.id}">${d.data().numeroGuia} - ${d.data().unidade}</option>`).join('')}
+            </select>
 
-<body>
+            <div id="formDocumentoArea" style="margin-top: 15px;">
+                <label>Nome do Documento:</label>
+                <input type="text" id="nomeDocumento" placeholder="Nome do Documento" required>
 
-<h2>Guias Cadastradas</h2>
+                <label>Nº do Processo SEI:</label>
+                <input type="text" id="numeroProcesso" placeholder="00000.000/2026-00" required>
 
-<a href="index.html" class="voltar">⬅ Voltar</a>
+                <label>Data de Recebimento:</label>
+                <input type="date" id="dataRecebimento" value="${new Date().toISOString().split('T')[0]}" required>
 
-<ul id="listaGuias"></ul>
+                <label>Guia de Remessa:</label>
+                <input type="text" id="guiaRemessa" placeholder="Nº da Guia de Remessa" required>
 
-<hr>
+                <button id="btnSalvarDoc" class="btn-primary" style="margin-top:10px;">Adicionar Documento</button>
+                <p id="contadorDocs" style="margin-top:10px; font-weight:bold;">Selecione uma guia para ver o limite</p>
+            </div>
+        </div>
+        <div id="listaDocumentos"></div>
+    `;
+    document.getElementById("mainDisplay").innerHTML = html;
 
-<div id="areaDocumentos" style="display:none;">
+    // Elementos para controle
+    const selGuia = document.getElementById("selGuia");
+    const contador = document.getElementById("contadorDocs");
 
-    <h3 id="tituloGuia"></h3>
+    // Evento ao mudar a guia: mostra quantos documentos ela já tem
+    selGuia.onchange = async () => {
+        if (!selGuia.value) {
+            contador.innerText = "Selecione uma guia para ver o limite";
+            return;
+        }
+        const docsSnap = await getDocs(collection(db, "guias", selGuia.value, "documentos"));
+        contador.innerText = `${docsSnap.size} / 7 documentos cadastrados`;
+    };
 
-    <form id="formDocumento">
+    // Evento de Salvar com a regra de 7
+    document.getElementById("btnSalvarDoc").onclick = async () => {
+        const idGuia = selGuia.value;
+        const nome = document.getElementById("nomeDocumento").value;
+        const sei = document.getElementById("numeroProcesso").value;
+        const data = document.getElementById("dataRecebimento").value;
+        const remessa = document.getElementById("guiaRemessa").value;
 
-        <input type="text" id="nomeDocumento" placeholder="Nome do Documento" required>
+        if(!idGuia || !nome || !sei || !remessa) return alert("Preencha todos os campos!");
 
-        <input type="text" id="numeroProcesso" placeholder="Nº do Processo SEI" required>
+        try {
+            // Verifica contagem antes de salvar
+            const docsSnap = await getDocs(collection(db, "guias", idGuia, "documentos"));
+            
+            if (docsSnap.size >= 7) {
+                alert("Bloqueado! Esta guia já atingiu o limite de 7 documentos.");
+                return;
+            }
 
-        <input type="date" id="dataRecebimento" required>
+            // Salva o documento
+            await addDoc(collection(db, "guias", idGuia, "documentos"), {
+                nomeDocumento: nome,
+                numeroProcesso: sei,
+                dataRecebimento: data,
+                guiaRemessa: remessa,
+                timestamp: new Date()
+            });
 
-        <input type="text" id="guiaRemessa" placeholder="Guia de Remessa" required>
-
-        <button type="submit">Adicionar Documento</button>
-
-    </form>
-
-    <p id="contadorDocs">0 / 7 documentos</p>
-
-    <h3>Lista de Documentos</h3>
-    <ul id="listaDocumentos"></ul>
-
-</div>
-
-<script type="module" src="documentos.js"></script>
-
-</body>
-</html>
+            alert(`Documento adicionado! (${docsSnap.size + 1}/7)`);
+            
+            // Limpa campos e atualiza contador
+            document.getElementById("nomeDocumento").value = "";
+            document.getElementById("numeroProcesso").value = "";
+            contador.innerText = `${docsSnap.size + 1} / 7 documentos cadastrados`;
+            
+        } catch (e) {
+            alert("Erro ao gravar: " + e.message);
+        }
+    };
+}
