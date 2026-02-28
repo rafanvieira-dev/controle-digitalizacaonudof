@@ -13,7 +13,22 @@
         }
         .info-box { flex-grow: 1; }
         .info-box strong { color: #003366; font-size: 1.1em; }
-        .badge-local { background: #e8f4fd; color: #003366; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 0.9em; }
+        
+        /* Ajuste no badge-local para comportar as duas informações empilhadas */
+        .badge-local { 
+            background: #e8f4fd; 
+            color: #003366; 
+            padding: 10px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            font-size: 0.9em;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            text-align: left;
+            min-width: 220px;
+        }
+        
         .btn-ver-itens { background: #4682B4; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 15px; }
         .btn-ver-itens:hover { background: #35668d; }
     </style>
@@ -47,7 +62,7 @@
             <span class="close-btn" id="closeModal" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
             <h3 id="modalTitulo" style="color: #003366; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;"></h3>
             
-            <div id="detalhesTecnicos" style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 1em; border: 1px solid #b6d4fe;">
+            <div id="detalhesTecnicos" style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 1em; border: 1px solid #b6d4fe;">
                 </div>
 
             <h4 style="color: #003366; margin-bottom: 10px;">Documentos e Informações de Digitalização:</h4>
@@ -87,13 +102,17 @@
                     const num = g.numeroGuia || g.numero || "S/N";
                     const card = document.createElement("div");
                     card.className = "guia-card-arquivada";
+                    // Adicionado as duas informações de caixa que você pediu
                     card.innerHTML = `
                         <div class="info-box">
                             <strong>Guia Nº ${num}</strong><br>
                             <small>Unidade: ${g.unidade}</small><br>
                             <small>Data do Arquivamento: ${g.dataArquivamentoSistema || '--'}</small>
                         </div>
-                        <div class="badge-local">📦 Caixa: ${g.locCaixaFinal || 'S/Local'}</div>
+                        <div class="badge-local">
+                            <span>📦 Nº Caixa da Guia: ${g.locCaixaFinal || 'S/Local'}</span>
+                            <span>📦 Nº Caixa documentos: ${g.locCaixaDocumentos || 'S/Local'}</span>
+                        </div>
                         <button class="btn-ver-itens" onclick="window.verTudo('${g.id}', '${num}')">👁 Ver Documentos</button>
                     `;
                     container.appendChild(card);
@@ -108,7 +127,6 @@
             const grid = document.getElementById("detalhesTecnicos");
             const corpo = document.getElementById("modalCorpo");
             
-            // Alterado de "Prontuário da Guia" para "Documentos da Guia"
             document.getElementById("modalTitulo").innerText = "Documentos da Guia " + num;
             modal.style.display = "block";
             grid.innerHTML = "Carregando detalhes...";
@@ -118,8 +136,10 @@
                 const guiaSnap = await getDoc(doc(db, "guias", id));
                 const g = guiaSnap.data();
                 
+                // Atualizado para mostrar os dois campos de caixa no detalhamento também
                 grid.innerHTML = `
-                    <div><strong>📦 Localização Física:</strong> ${g.locCaixaFinal || '---'}</div>
+                    <div><strong>📦 Nº Caixa da Guia:</strong> ${g.locCaixaFinal || '---'}</div>
+                    <div><strong>📦 Nº Caixa documentos:</strong> ${g.locCaixaDocumentos || '---'}</div>
                     <div><strong>👤 Arquivado por:</strong> ${g.arquivadoPor || 'Sistema'}</div>
                 `;
 
