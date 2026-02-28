@@ -48,11 +48,17 @@
             <h3 id="tituloModalArquivar" style="margin-bottom: 20px; color: #003366;"></h3>
             
             <form id="formDadosArquivamento" class="form-grid-arquivar">
-                <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b6d4fe;">
-                    <h4 style="margin-bottom: 10px; color: #003366;">1. Dados Físicos da Guia</h4>
+                <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b6d4fe; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <h4 style="grid-column: span 2; margin-bottom: 5px; color: #003366;">1. Dados Físicos de Arquivamento</h4>
+                    
                     <div class="input-group">
-                        <label>Nº da Caixa / Localização Física da Guia no Arquivo:</label>
+                        <label>📦 Nº da Caixa da Guia:</label>
                         <input type="text" id="locCaixa" placeholder="Ex: Caixa 45 - Estante B" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>📦 Nº da Caixa dos Documentos:</label>
+                        <input type="text" id="locCaixaDocs" placeholder="Ex: Caixa 45 - Estante B" required>
                     </div>
                 </div>
 
@@ -101,14 +107,18 @@
 
         window.abrirArq = async (id, num) => {
             guiaAtualId = id;
-            documentosDaGuia = []; // Limpa o array ao abrir nova guia
+            documentosDaGuia = []; 
             document.getElementById("tituloModalArquivar").innerText = "Arquivamento da Guia " + num;
             const areaDocs = document.getElementById("areaDocumentosArquivar");
             areaDocs.innerHTML = "<p>A carregar documentos...</p>";
+            
+            // Limpa os campos de caixa sempre que abrir uma nova guia
+            document.getElementById("locCaixa").value = "";
+            document.getElementById("locCaixaDocs").value = "";
+            
             document.getElementById("modalArquivar").style.display = "block";
 
             try {
-                // Busca os documentos desta guia
                 const snap = await getDocs(collection(db, "guias", id, "documentos"));
                 
                 if (snap.empty) {
@@ -131,7 +141,7 @@
 
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
-                    documentosDaGuia.push(docSnap.id); // Guarda os IDs para atualizar depois
+                    documentosDaGuia.push(docSnap.id);
 
                     html += `<tr>
                         <td><strong>${d.nomeDocumento}</strong></td>
@@ -150,6 +160,11 @@
             }
         };
 
+        // Copia automático da Caixa da Guia para a Caixa dos Documentos
+        document.getElementById("locCaixa").addEventListener("input", function() {
+            document.getElementById("locCaixaDocs").value = this.value;
+        });
+
         document.getElementById("formDadosArquivamento").onsubmit = async (e) => {
             e.preventDefault();
             const btnSubmit = document.getElementById("btnConfirmarArq");
@@ -157,15 +172,16 @@
             btnSubmit.disabled = true;
 
             try {
-                // 1. Atualiza os dados da GUIA (Apenas Caixa e Status)
+                // Atualiza a GUIA com os DOIS campos de caixa
                 await updateDoc(doc(db, "guias", guiaAtualId), {
                     status: "Arquivada",
                     locCaixaFinal: document.getElementById("locCaixa").value,
+                    locCaixaDocumentos: document.getElementById("locCaixaDocs").value,
                     dataArquivamentoSistema: new Date().toLocaleDateString(),
                     arquivadoPor: auth.currentUser.email
                 });
 
-                // 2. Atualiza os dados de CADA DOCUMENTO da guia
+                // Atualiza os documentos
                 const promessas = documentosDaGuia.map(docId => {
                     const docRef = doc(db, "guias", guiaAtualId, "documentos", docId);
                     return updateDoc(docRef, {
@@ -176,7 +192,6 @@
                     });
                 });
 
-                // Espera todas as atualizações de documentos terminarem
                 await Promise.all(promessas);
 
                 alert("Guia e Documentos arquivados com sucesso!");
