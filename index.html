@@ -9,14 +9,15 @@
 <body>
 
     <div id="loginSection">
-        <div class="login-box" style="background: white; padding: 40px; border-radius: 8px; margin: 50px auto; width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-            <div style="background-color: #003366; color: white; padding: 15px; margin: -40px -40px 30px -40px; border-radius: 8px 8px 0 0; font-weight: bold; text-align: center;">
+        <div class="login-box" style="background: white; padding: 40px; border-radius: 8px; margin: 50px auto; width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center;">
+            <div style="background-color: #003366; color: white; padding: 15px; margin: -40px -40px 30px -40px; border-radius: 8px 8px 0 0; font-weight: bold;">
                 CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF
             </div>
-            <h2 style="text-align: center; margin-bottom: 20px;">Acesso ao Sistema</h2>
-            <input type="email" id="email" placeholder="E-mail institucional">
-            <input type="password" id="senha" placeholder="Palavra-passe">
-            <button id="btnLogin" class="btn-primary">Entrar</button>
+            <h2 style="margin-bottom: 20px;">Acesso Restrito</h2>
+            <p style="margin-bottom: 20px; color: #666;">Utilize o seu e-mail institucional da Defensoria Pública para entrar.</p>
+            
+            <button id="btnGoogle" class="btn-primary" style="background-color: #4285F4; margin-bottom: 10px; font-size: 1.1em;">🌐 Entrar com Google</button>
+            <p id="erroMsg" style="color: #e74c3c; font-weight: bold; min-height: 20px; margin-top: 10px;"></p>
         </div>
     </div>
 
