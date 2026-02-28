@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta Acervo - NUDOF</title>
     <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         .guia-card-arquivada {
             background: white; border-radius: 8px; padding: 20px; margin-bottom: 15px;
@@ -13,22 +17,11 @@
         }
         .info-box { flex-grow: 1; }
         .info-box strong { color: #003366; font-size: 1.1em; }
-        
-        /* Ajuste no badge-local para comportar as duas informações empilhadas */
         .badge-local { 
-            background: #e8f4fd; 
-            color: #003366; 
-            padding: 10px; 
-            border-radius: 4px; 
-            font-weight: bold; 
-            font-size: 0.9em;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            text-align: left;
-            min-width: 220px;
+            background: #e8f4fd; color: #003366; padding: 10px; border-radius: 4px; 
+            font-weight: bold; font-size: 0.9em; display: flex; flex-direction: column;
+            gap: 5px; text-align: left; min-width: 220px;
         }
-        
         .btn-ver-itens { background: #4682B4; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 15px; }
         .btn-ver-itens:hover { background: #35668d; }
     </style>
@@ -49,7 +42,25 @@
 
         <main id="content">
             <h2 class="page-title">📚 Acervo de Guias Arquivadas</h2>
-            <p style="margin-bottom: 20px; color: #666;">Consulta de processos digitalizados e localização física no arquivo.</p>
+            
+            <div class="form-container" style="display: flex; gap: 30px; flex-wrap: wrap; background: #fff; padding: 20px;">
+                <div style="flex: 1; min-width: 250px; border-right: 1px solid #ccc; padding-right: 20px;">
+                    <h4 style="color:#003366; margin-bottom:10px;">🔍 Buscar Guia</h4>
+                    <input type="text" id="buscaGuia" placeholder="Digite o número da guia..." style="width:100%; padding:10px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div style="flex: 2; min-width: 400px; display: flex; gap: 15px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <h4 style="color:#003366; margin-bottom:10px;">📊 Gerar Relatório (Por Data de Arquivamento)</h4>
+                        <label style="font-size: 13px; font-weight: bold;">Data Início:</label>
+                        <input type="date" id="dataInicioRel" style="width:100%; padding:10px; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 13px; font-weight: bold;">Data Fim:</label>
+                        <input type="date" id="dataFimRel" style="width:100%; padding:10px; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <button class="btn-primary" onclick="window.gerarPDF()" style="background:#d35400; width:auto; padding: 12px 25px;">📄 Gerar PDF</button>
+                </div>
+            </div>
             
             <div id="listaArquivados">
                 <p>Carregando acervo...</p>
@@ -61,10 +72,7 @@
         <div class="modal-content" style="width: 95%; max-width: 1100px;">
             <span class="close-btn" id="closeModal" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
             <h3 id="modalTitulo" style="color: #003366; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;"></h3>
-            
-            <div id="detalhesTecnicos" style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 1em; border: 1px solid #b6d4fe;">
-                </div>
-
+            <div id="detalhesTecnicos" style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 1em; border: 1px solid #b6d4fe;"></div>
             <h4 style="color: #003366; margin-bottom: 10px;">Documentos e Informações de Digitalização:</h4>
             <div id="modalCorpo"></div>
         </div>
@@ -75,12 +83,22 @@
         import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
+        let todasAsGuiasArquivadas = []; // Para a busca e PDF funcionar sem recarregar o banco
+
         onAuthStateChanged(auth, (user) => {
             if (!user) window.location.href = "index.html";
             else carregarArquivados();
         });
 
         document.getElementById("btnLogout").onclick = () => signOut(auth);
+
+        // Função auxiliar para ordenar a data do formato DD/MM/YYYY para comparação
+        function parseDateBR(dStr) {
+            if (!dStr) return "00000000";
+            let p = dStr.split('/');
+            if(p.length === 3) return p[2] + p[1] + p[0];
+            return dStr;
+        }
 
         async function carregarArquivados() {
             const container = document.getElementById("listaArquivados");
@@ -93,34 +111,159 @@
                     return;
                 }
 
-                let guias = [];
-                snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
-                guias.sort((a, b) => parseInt(b.numeroGuia || b.numero) - parseInt(a.numeroGuia || a.numero));
+                todasAsGuiasArquivadas = [];
+                snap.forEach(d => todasAsGuiasArquivadas.push({ id: d.id, ...d.data() }));
+                
+                // Ordenar da data de arquivamento mais recente para a mais antiga
+                todasAsGuiasArquivadas.sort((a, b) => parseDateBR(b.dataArquivamentoSistema).localeCompare(parseDateBR(a.dataArquivamentoSistema)));
 
-                container.innerHTML = "";
-                guias.forEach(g => {
-                    const num = g.numeroGuia || g.numero || "S/N";
-                    const card = document.createElement("div");
-                    card.className = "guia-card-arquivada";
-                    // Adicionado as duas informações de caixa que você pediu
-                    card.innerHTML = `
-                        <div class="info-box">
-                            <strong>Guia Nº ${num}</strong><br>
-                            <small>Unidade: ${g.unidade}</small><br>
-                            <small>Data do Arquivamento: ${g.dataArquivamentoSistema || '--'}</small>
-                        </div>
-                        <div class="badge-local">
-                            <span>📦 Nº Caixa da Guia: ${g.locCaixaFinal || 'S/Local'}</span>
-                            <span>📦 Nº Caixa documentos: ${g.locCaixaDocumentos || 'S/Local'}</span>
-                        </div>
-                        <button class="btn-ver-itens" onclick="window.verTudo('${g.id}', '${num}')">👁 Ver Documentos</button>
-                    `;
-                    container.appendChild(card);
-                });
+                renderArquivados(todasAsGuiasArquivadas);
             } catch (err) {
                 container.innerHTML = "<p>Erro ao carregar o acervo.</p>";
             }
         }
+
+        function renderArquivados(lista) {
+            const container = document.getElementById("listaArquivados");
+            container.innerHTML = "";
+            
+            if (lista.length === 0) {
+                container.innerHTML = "<p>Nenhuma guia encontrada para esta busca.</p>";
+                return;
+            }
+
+            let dataAtual = "";
+            lista.forEach(g => {
+                if (g.dataArquivamentoSistema !== dataAtual) {
+                    dataAtual = g.dataArquivamentoSistema || "Sem Data";
+                    const header = document.createElement("h3");
+                    header.innerHTML = `📅 Arquivadas em: ${dataAtual}`;
+                    header.style.color = "#003366";
+                    header.style.margin = "20px 0 10px 0";
+                    header.style.borderBottom = "2px solid #ccc";
+                    container.appendChild(header);
+                }
+
+                const num = g.numeroGuia || g.numero || "S/N";
+                const card = document.createElement("div");
+                card.className = "guia-card-arquivada";
+                card.innerHTML = `
+                    <div class="info-box">
+                        <strong>Guia Nº ${num}</strong><br>
+                        <small>Unidade: ${g.unidade}</small><br>
+                        <small>Criado por: ${g.criadoPor || 'Sistema'}</small>
+                    </div>
+                    <div class="badge-local">
+                        <span>📦 Nº Caixa da Guia: ${g.locCaixaFinal || 'S/Local'}</span>
+                        <span>📦 Nº Caixa documentos: ${g.locCaixaDocumentos || 'S/Local'}</span>
+                    </div>
+                    <button class="btn-ver-itens" onclick="window.verTudo('${g.id}', '${num}')">👁 Ver Documentos</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // LÓGICA DA BUSCA EM TEMPO REAL
+        document.getElementById("buscaGuia").addEventListener("input", (e) => {
+            const termo = e.target.value.toLowerCase();
+            const guiasFiltradas = todasAsGuiasArquivadas.filter(g => {
+                const num = (g.numeroGuia || g.numero || "").toLowerCase();
+                return num.includes(termo);
+            });
+            renderArquivados(guiasFiltradas);
+        });
+
+        // LÓGICA DE GERAÇÃO DO PDF
+        window.gerarPDF = async function() {
+            const dataInicio = document.getElementById("dataInicioRel").value;
+            const dataFim = document.getElementById("dataFimRel").value;
+
+            if (!dataInicio || !dataFim) {
+                alert("Por favor, selecione as datas de Início e Fim para gerar o relatório.");
+                return;
+            }
+
+            const btnPdf = document.querySelector('button[onclick="window.gerarPDF()"]');
+            btnPdf.innerText = "A gerar, aguarde...";
+            btnPdf.disabled = true;
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const docPdf = new jsPDF('landscape'); // Formato paisagem (deitado) para caber tabelas
+                
+                // Formatação do Integer YYYYMMDD para o filtro
+                const startInt = parseInt(dataInicio.replace(/-/g, ""));
+                const endInt = parseInt(dataFim.replace(/-/g, ""));
+
+                // Filtra as guias que caem no período selecionado
+                const guiasDoPeriodo = todasAsGuiasArquivadas.filter(g => {
+                    if (!g.dataArquivamentoSistema) return false;
+                    let p = g.dataArquivamentoSistema.split('/');
+                    if (p.length === 3) {
+                        let dInt = parseInt(p[2] + p[1] + p[0]);
+                        return dInt >= startInt && dInt <= endInt;
+                    }
+                    return false;
+                });
+
+                if (guiasDoPeriodo.length === 0) {
+                    alert("Não existem guias arquivadas neste período selecionado.");
+                    btnPdf.innerText = "📄 Gerar PDF"; btnPdf.disabled = false;
+                    return;
+                }
+
+                docPdf.setFontSize(16);
+                docPdf.text("Relatório de Guias Arquivadas - NUDOF DIGITAL", 14, 15);
+                docPdf.setFontSize(10);
+                docPdf.text(`Período de Extração: ${dataInicio.split('-').reverse().join('/')} até ${dataFim.split('-').reverse().join('/')}`, 14, 22);
+
+                let dadosTabela = [];
+
+                // Vai buscar os detalhes de cada guia no banco para montar o PDF
+                for (let g of guiasDoPeriodo) {
+                    const docsSnap = await getDocs(collection(db, "guias", g.id, "documentos"));
+                    let listaDocsStr = "";
+                    let inseridoPorSet = new Set();
+                    
+                    docsSnap.forEach(dItem => {
+                        const dd = dItem.data();
+                        listaDocsStr += `- ${dd.nomeDocumento} (SEI: ${dd.numeroProcesso}) [Digitalizado: ${dd.dataDigitalizacao}]\n`;
+                        if(dd.criadoPor) inseridoPorSet.add(dd.criadoPor); // Pega quem inseriu
+                    });
+
+                    dadosTabela.push([
+                        g.numeroGuia || g.numero || "S/N",
+                        g.dataArquivamentoSistema,
+                        g.locCaixaFinal + "\n" + g.locCaixaDocumentos,
+                        g.criadoPor || "N/I",
+                        Array.from(inseridoPorSet).join(',\n') || "N/I",
+                        g.arquivadoPor || "N/I",
+                        listaDocsStr || "Sem docs listados"
+                    ]);
+                }
+
+                // Cria a tabela dentro do PDF
+                docPdf.autoTable({
+                    startY: 28,
+                    head: [['Nº Guia', 'Data Arq.', 'Caixa Guia/Doc', 'Gerou a Guia', 'Inseriu os Docs', 'Fez Arquivamento', 'Lista de Documentos']],
+                    body: dadosTabela,
+                    styles: { fontSize: 8, cellPadding: 2, valign: 'middle' },
+                    headStyles: { fillColor: [0, 51, 102] }, // Cor azul NUDOF
+                    columnStyles: { 
+                        6: { cellWidth: 80 } // Deixa a coluna de documentos bem larga
+                    }
+                });
+
+                docPdf.save(`Relatorio_NUDOF_${dataInicio}_a_${dataFim}.pdf`);
+
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao tentar gerar o PDF.");
+            }
+
+            btnPdf.innerText = "📄 Gerar PDF";
+            btnPdf.disabled = false;
+        };
 
         window.verTudo = async (id, num) => {
             const modal = document.getElementById("modalDetalhes");
@@ -136,7 +279,6 @@
                 const guiaSnap = await getDoc(doc(db, "guias", id));
                 const g = guiaSnap.data();
                 
-                // Atualizado para mostrar os dois campos de caixa no detalhamento também
                 grid.innerHTML = `
                     <div><strong>📦 Nº Caixa da Guia:</strong> ${g.locCaixaFinal || '---'}</div>
                     <div><strong>📦 Nº Caixa documentos:</strong> ${g.locCaixaDocumentos || '---'}</div>
@@ -175,9 +317,7 @@
             }
         };
 
-        document.getElementById("closeModal").onclick = () => {
-            document.getElementById("modalDetalhes").style.display = "none";
-        };
+        document.getElementById("closeModal").onclick = () => { document.getElementById("modalDetalhes").style.display = "none"; };
     </script>
 </body>
 </html>
