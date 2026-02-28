@@ -22,23 +22,19 @@
 
         <main id="content">
             <h2 class="page-title">Inserir Documentos na Guia</h2>
-
             <div class="form-container">
                 <h3>1. Selecione a Guia de Destino</h3>
-                <div id="listaGuias" style="margin-top: 15px;">
-                    <p>Buscando guias abertas...</p>
-                </div>
+                <div id="listaGuias" style="margin-top: 15px;"><p>Buscando guias abertas...</p></div>
             </div>
 
             <div id="areaDocumentos" style="display:none;">
                 <h3 id="tituloGuia" style="color: #003366; margin-bottom: 15px; border-top: 1px solid #ccc; padding-top: 20px;"></h3>
-                
                 <div class="form-container">
                     <form id="formDocumento">
                         <label>Nome do Documento:</label>
                         <input type="text" id="nomeDocumento" placeholder="Ex: Ofício de Encaminhamento" required>
 
-                        <label>Nº do Processo SEI (Opcional nesta fase):</label>
+                        <label>Nº do Processo SEI:</label>
                         <input type="text" id="numeroProcesso" placeholder="Ex: 00000.000/2026-00">
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -53,8 +49,8 @@
                         </div>
 
                         <div style="display: flex; gap: 10px;">
-                            <button type="submit" class="btn-primary" id="btnSalvar">Gravar Documento na Guia</button>
-                            <button type="button" id="btnCancelarEdicao" onclick="window.cancelarEdicao()" style="display: none; background: #7f8c8d; color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">Cancelar Edição</button>
+                            <button type="submit" class="btn-primary" id="btnSalvar">Gravar Documento</button>
+                            <button type="button" id="btnCancelarEdicao" onclick="window.cancelarEdicao()" style="display: none; background: #7f8c8d; color: white; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">Cancelar Edição</button>
                         </div>
                     </form>
                     <p id="contadorDocs">0 / 7 documentos cadastrados</p>
@@ -76,10 +72,7 @@
         let guiaAtivaId = "";
         let docEmEdicaoId = null; 
 
-        onAuthStateChanged(auth, (user) => { 
-            if (!user) window.location.href = "index.html"; 
-            else carregarMenuGuias();
-        });
+        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregarMenuGuias(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
         async function carregarMenuGuias() {
@@ -87,7 +80,6 @@
             try {
                 const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
                 const snap = await getDocs(q);
-                
                 let guias = [];
                 snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
                 guias.sort((a, b) => (b.dataRecebimento || "").localeCompare(a.dataRecebimento || ""));
@@ -99,27 +91,16 @@
                 guias.forEach(g => {
                     if (g.dataRecebimento !== dataAtual) {
                         dataAtual = g.dataRecebimento;
-                        const dataFormatada = dataAtual ? dataAtual.split('-').reverse().join('/') : "Sem Data";
-                        
                         const tituloData = document.createElement("h4");
-                        tituloData.innerText = "📅 " + dataFormatada;
-                        tituloData.style.margin = "15px 0 5px 0";
-                        tituloData.style.color = "#003366";
-                        tituloData.style.borderBottom = "1px solid #ccc";
+                        tituloData.innerText = "📅 " + (dataAtual ? dataAtual.split('-').reverse().join('/') : "Sem Data");
                         lista.appendChild(tituloData);
-                        
                         divGrupo = document.createElement("div");
-                        divGrupo.style.display = "flex";
-                        divGrupo.style.flexWrap = "wrap";
-                        divGrupo.style.gap = "10px";
+                        divGrupo.style.display = "flex"; divGrupo.style.flexWrap = "wrap"; divGrupo.style.gap = "10px";
                         lista.appendChild(divGrupo);
                     }
-
                     const btn = document.createElement("button");
                     btn.innerText = "Guia: " + (g.numero || g.numeroGuia);
-                    btn.className = "btn-primary";
-                    btn.style.width = "auto";
-                    btn.style.background = "#4682B4";
+                    btn.className = "btn-primary"; btn.style.width = "auto"; btn.style.background = "#4682B4";
                     btn.onclick = () => window.iniciarInclusao(g.id, btn.innerText);
                     divGrupo.appendChild(btn);
                 });
@@ -127,79 +108,45 @@
         }
 
         window.iniciarInclusao = async function(id, texto) {
-            guiaAtivaId = id;
-            window.cancelarEdicao(); 
+            guiaAtivaId = id; window.cancelarEdicao(); 
             document.getElementById("areaDocumentos").style.display = "block";
             document.getElementById("tituloGuia").innerText = texto;
             await window.atualizarListaDocumentos(id);
-            document.getElementById("areaDocumentos").scrollIntoView({ behavior: 'smooth' });
         };
 
         window.atualizarListaDocumentos = async function(id) {
             const container = document.getElementById("listaDocumentos");
             const contador = document.getElementById("contadorDocs");
-            
             try {
                 const snap = await getDocs(collection(db, "guias", id, "documentos"));
                 container.innerHTML = ""; 
-                
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
                     const li = document.createElement("li");
-                    const infoDiv = document.createElement("div");
-                    const numSei = d.numeroProcesso ? d.numeroProcesso : "<span style='color:#e74c3c;'>Informar número processo SEI</span>";
-                    infoDiv.innerHTML = `<span><strong>${d.nomeDocumento}</strong></span> <span style="margin-left: 15px; color: #666;">SEI: ${numSei}</span>`;
-                    
+                    li.innerHTML = `<div><strong>${d.nomeDocumento}</strong> (SEI: ${d.numeroProcesso || 'Não informado'})</div>`;
                     const btnEditar = document.createElement("button");
-                    btnEditar.innerHTML = "✏️ Editar";
-                    btnEditar.style.background = "#f39c12";
-                    btnEditar.style.color = "white";
-                    btnEditar.style.border = "none";
-                    btnEditar.style.padding = "6px 12px";
-                    btnEditar.style.borderRadius = "4px";
-                    btnEditar.style.cursor = "pointer";
-                    btnEditar.style.fontWeight = "bold";
-                    btnEditar.onclick = () => window.prepararEdicao(docSnap.id, d.nomeDocumento, d.numeroProcesso, d.dataRecebimento, d.guiaRemessa);
-
-                    li.appendChild(infoDiv);
+                    btnEditar.innerText = "✏️ Editar"; btnEditar.onclick = () => window.prepararEdicao(docSnap.id, d);
                     li.appendChild(btnEditar);
                     container.appendChild(li);
                 });
-
-                contador.innerText = `${snap.size} / 7 documentos cadastrados`;
-                
-                if (snap.size >= 7 && !docEmEdicaoId) {
-                    document.getElementById("btnSalvar").disabled = true;
-                    document.getElementById("btnSalvar").innerText = "Limite de 7 atingido";
-                    document.getElementById("btnSalvar").style.background = "#95a5a6";
-                } else if (!docEmEdicaoId) {
-                    document.getElementById("btnSalvar").disabled = false;
-                    document.getElementById("btnSalvar").innerText = "Gravar Documento na Guia";
-                    document.getElementById("btnSalvar").style.background = "var(--primary)";
-                }
+                contador.innerText = `${snap.size} / 7 documentos`;
             } catch (e) { console.error(e); }
         }
 
-        window.prepararEdicao = function(id, nome, sei, data, guia) {
+        window.prepararEdicao = (id, d) => {
             docEmEdicaoId = id;
-            document.getElementById("nomeDocumento").value = nome || "";
-            document.getElementById("numeroProcesso").value = sei || "";
-            document.getElementById("dataRecebimento").value = data || "";
-            document.getElementById("guiaRemessa").value = guia || "";
-            document.getElementById("btnSalvar").innerText = "🔄 Atualizar Documento";
-            document.getElementById("btnSalvar").disabled = false;
-            document.getElementById("btnSalvar").style.background = "#f39c12"; 
+            document.getElementById("nomeDocumento").value = d.nomeDocumento;
+            document.getElementById("numeroProcesso").value = d.numeroProcesso;
+            document.getElementById("dataRecebimento").value = d.dataRecebimento;
+            document.getElementById("guiaRemessa").value = d.guiaRemessa;
+            document.getElementById("btnSalvar").innerText = "🔄 Atualizar";
             document.getElementById("btnCancelarEdicao").style.display = "block";
-            document.getElementById("tituloGuia").scrollIntoView({ behavior: 'smooth' });
         };
 
-        window.cancelarEdicao = function() {
-            docEmEdicaoId = null;
-            document.getElementById("formDocumento").reset();
-            document.getElementById("btnSalvar").innerText = "Gravar Documento na Guia";
-            document.getElementById("btnSalvar").style.background = "var(--primary)";
+        window.cancelarEdicao = () => {
+            docEmEdicaoId = null; document.getElementById("formDocumento").reset();
+            document.getElementById("btnSalvar").innerText = "Gravar Documento";
             document.getElementById("btnCancelarEdicao").style.display = "none";
-            window.atualizarListaDocumentos(guiaAtivaId); 
         };
 
         document.getElementById("formDocumento").onsubmit = async (e) => {
@@ -210,21 +157,22 @@
                 dataRecebimento: document.getElementById("dataRecebimento").value,
                 guiaRemessa: document.getElementById("guiaRemessa").value,
                 ultimaAtualizacao: new Date(),
-                atualizadoPor: auth.currentUser.email
+                atualizadoPor: auth.currentUser.email // QUEM ATUALIZOU
             };
 
             try {
                 if (docEmEdicaoId) {
                     await updateDoc(doc(db, "guias", guiaAtivaId, "documentos", docEmEdicaoId), docDados);
-                    alert("Documento atualizado com sucesso!");
+                    alert("Atualizado!");
                 } else {
                     docDados.dataInsercao = new Date();
-                    docDados.criadoPor = auth.currentUser.email; // Salva quem inseriu
+                    docDados.inseridoPor = auth.currentUser.email; // QUEM INSERIU O ITEM
                     await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), docDados);
-                    alert("Documento inserido na guia!");
+                    alert("Documento inserido!");
                 }
                 window.cancelarEdicao(); 
-            } catch (err) { alert("Erro ao salvar documento."); }
+                window.atualizarListaDocumentos(guiaAtivaId);
+            } catch (err) { alert("Erro ao salvar."); }
         };
     </script>
 </body>
