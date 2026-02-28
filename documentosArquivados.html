@@ -2,56 +2,164 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Guias Arquivadas - NUDOF</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Arquivados - NUDOF</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .data-group-header {
+            background: #2c3e50; color: white; padding: 10px 20px;
+            border-radius: 5px; margin: 25px 0 15px 0; font-weight: bold;
+            display: flex; justify-content: space-between;
+        }
+        .guia-card-arquivada {
+            background: white; border-radius: 8px; padding: 15px;
+            margin-bottom: 10px; display: flex; justify-content: space-between;
+            align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-left: 5px solid #7f8c8d;
+        }
+        .info-principal strong { color: #003366; font-size: 1.1em; }
+        .info-secundaria { font-size: 0.9em; color: #666; }
+        .badge-caixa { background: #e8f4fd; color: #003366; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+        .modal-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
+        .modal-info-grid div { border-bottom: 1px solid #eee; padding: 5px 0; }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <aside class="sidebar">
-            <div class="sidebar-header">NUDOF DIGITAL</div>
-            <nav></nav>
+    <div id="appInterface" style="display: flex;">
+        <aside id="sidebar">
+            <div class="logo">SISTEMA NUDOF</div>
+            <nav>
+                <a href="index.html">🏠 Início / Histórico</a>
+                <a href="guia.html">➕ Inserir Nova Guia</a>
+                <a href="documentos.html">📄 Documentos em Guia</a>
+                <a href="documentosRecebidos.html">📁 Arquivar Guia</a>
+                <a href="documentosArquivados.html" style="background-color: #d0d0d0; font-weight: bold;">📚 Guias Arquivadas</a>
+                <button id="btnLogout" class="btn-logout" style="color: #e74c3c; background:none; border:none; border-top: 1px solid #ccc; margin-top: auto; padding: 15px; cursor:pointer; width: 100%; text-align: left;">🚪 Sair do Sistema</button>
+            </nav>
         </aside>
-        <main class="main-content">
-            <h2 class="page-title">Consulta de Guias Arquivadas</h2>
-            <div id="listaArquivados"></div>
+
+        <main id="content">
+            <h2 class="page-title">📚 Acervo de Guias Arquivadas</h2>
+            <p>Consulta detalhada de processos digitalizados e arquivados permanentemente.</p>
+            
+            <div id="listaArquivados">
+                <p>Carregando acervo...</p>
+            </div>
         </main>
     </div>
 
+    <div id="modalDetalhes" class="modal">
+        <div class="modal-content" style="width: 85%; max-width: 900px;">
+            <span class="close-btn" id="closeDetalhes">&times;</span>
+            <h3 id="modalTitulo" style="color: #003366;"></h3>
+            <hr>
+            
+            <div id="detalhesTecnicos" class="modal-info-grid">
+                </div>
+
+            <h4>Documentos contidos nesta guia:</h4>
+            <div id="modalCorpo"></div>
+        </div>
+    </div>
+
     <script type="module">
-        import { db } from "./firebase.js";
-        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { db, auth } from "./firebase.js";
+        import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         async function carregarArquivados() {
             const container = document.getElementById("listaArquivados");
-            const snapshot = await getDocs(collection(db, "guias"));
-            let arquivadas = [];
+            try {
+                const snapshot = await getDocs(query(collection(db, "guias"), where("status", "==", "Arquivada")));
+                let arquivadas = [];
 
-            snapshot.forEach(doc => {
-                const d = doc.data();
-                if(d.status === "Arquivada") arquivadas.push(d);
-            });
-
-            // Ordenar por data de arquivamento (Mais recente primeiro)
-            arquivadas.sort((a, b) => new Date(b.dataArquivamento) - new Date(a.dataArquivamento));
-
-            const agrupado = arquivadas.reduce((acc, g) => {
-                const data = g.dataArquivamento || "Antigas";
-                if (!acc[data]) acc[data] = [];
-                acc[data].push(g);
-                return acc;
-            }, {});
-
-            container.innerHTML = "";
-            for (const data in agrupado) {
-                let html = `<div class="data-group-header">Arquivadas em: ${data}</div>
-                <table class="excel-table">
-                    <thead><tr><th>Guia</th><th>Unidade</th><th>Caixa</th></tr></thead><tbody>`;
-                agrupado[data].forEach(g => {
-                    html += `<tr><td>${g.numero}</td><td>${g.unidade}</td><td>${g.caixa || '-'}</td></tr>`;
+                snapshot.forEach(docSnap => {
+                    arquivadas.push({ id: docSnap.id, ...docSnap.data() });
                 });
-                container.innerHTML += html + "</tbody></table>";
+
+                // Ordenar: Mais recente primeiro
+                arquivadas.sort((a, b) => {
+                    const numA = parseInt(a.numeroGuia || a.numero || 0);
+                    const numB = parseInt(b.numeroGuia || b.numero || 0);
+                    return numB - numA;
+                });
+
+                // Agrupar por data de arquivamento
+                const agrupado = arquivadas.reduce((acc, g) => {
+                    const data = g.dataArquivamentoSistema || "Legado";
+                    if (!acc[data]) acc[data] = [];
+                    acc[data].push(g);
+                    return acc;
+                }, {});
+
+                container.innerHTML = "";
+                for (const data in agrupado) {
+                    let html = `<div class="data-group-header"><span>📅 Arquivadas em: ${data}</span> <span>${agrupado[data].length} guias</span></div>`;
+                    
+                    agrupado[data].forEach(g => {
+                        const num = g.numeroGuia || g.numero || "S/N";
+                        html += `
+                            <div class="guia-card-arquivada">
+                                <div class="info-principal">
+                                    <strong>Guia Nº ${num}</strong><br>
+                                    <span class="info-secundaria">Unidade: ${g.unidade}</span>
+                                </div>
+                                <div class="info-caixa">
+                                    <span class="badge-caixa">📦 ${g.locCaixaFinal || g.caixa || 'S/Local'}</span>
+                                </div>
+                                <button class="btn-ver" style="background:#003366; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;" 
+                                    onclick="verTudo('${g.id}', '${num}')">👁 Detalhes</button>
+                            </div>`;
+                    });
+                    container.innerHTML += html;
+                }
+            } catch (err) {
+                container.innerHTML = "<p>Erro ao carregar arquivos.</p>";
             }
         }
+
+        window.verTudo = async (id, num) => {
+            const modal = document.getElementById("modalDetalhes");
+            const grid = document.getElementById("detalhesTecnicos");
+            const corpo = document.getElementById("modalCorpo");
+            
+            document.getElementById("modalTitulo").innerText = "Prontuário de Arquivamento: Guia " + num;
+            modal.style.display = "block";
+            grid.innerHTML = "Carregando detalhes...";
+            corpo.innerHTML = "";
+
+            try {
+                const guiaDoc = await getDoc(doc(db, "guia", id)); // Tentativa em guias
+                const g = (await getDoc(doc(db, "guias", id))).data();
+                
+                grid.innerHTML = `
+                    <div><strong>Localização:</strong> ${g.locCaixaFinal || g.locCaixaGuia || g.caixa}</div>
+                    <div><strong>Proc. SEI:</strong> ${g.protocoloSei || '---'}</div>
+                    <div><strong>Páginas PDF:</strong> ${g.paginasPdf || '---'}</div>
+                    <div><strong>Digitalizado em:</strong> ${g.dataDigitalizacao || '---'}</div>
+                    <div><strong>Anexo:</strong> ${g.tipoAnexo} (${g.paginasAnexo} pág.)</div>
+                    <div><strong>SEI Anexo:</strong> ${g.protocoloAnexo || 'N/A'}</div>
+                    <div style="grid-column: span 2;"><strong>Obs:</strong> ${g.observacao || 'Nenhuma'}</div>
+                    <div style="grid-column: span 2; color: #27ae60;"><strong>Arquivado por:</strong> ${g.usuarioLogado || 'Sistema'} em ${g.dataArquivamentoSistema}</div>
+                `;
+
+                const docsSnap = await getDocs(collection(db, "guias", id, "documentos"));
+                let htmlDocs = `<table class="sei-table" style="width:100%; border-collapse:collapse; margin-top:10px;">
+                    <thead style="background:#f2f2f2;"><tr><th style="border:1px solid #ddd; padding:8px;">Documento</th><th style="border:1px solid #ddd; padding:8px;">SEI</th></tr></thead><tbody>`;
+                docsSnap.forEach(d => {
+                    const data = d.data();
+                    htmlDocs += `<tr><td style="border:1px solid #ddd; padding:8px;">${data.nomeDocumento}</td><td style="border:1px solid #ddd; padding:8px;">${data.numeroProcesso}</td></tr>`;
+                });
+                corpo.innerHTML = htmlDocs + "</tbody></table>";
+
+            } catch (e) {
+                grid.innerHTML = "Erro ao buscar detalhes técnicos.";
+            }
+        };
+
+        document.getElementById("closeDetalhes").onclick = () => document.getElementById("modalDetalhes").style.display = "none";
+        document.getElementById("btnLogout").onclick = () => signOut(auth).then(() => location.href = "index.html");
+
         carregarArquivados();
     </script>
 </body>
