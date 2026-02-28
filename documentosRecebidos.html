@@ -124,10 +124,44 @@
                 if (snap.empty) {
                     areaDocs.innerHTML = "<p style='color:red;'>Erro: Esta guia não possui documentos. Insira documentos antes de arquivar.</p>";
                     document.getElementById("btnConfirmarArq").disabled = true;
+                    document.getElementById("btnConfirmarArq").style.background = "#95a5a6";
                     return;
                 }
 
+                // ========================================================
+                // TRAVA DE SEGURANÇA: VERIFICA SE FALTA SEI EM ALGUM DOC
+                // ========================================================
+                let temDocumentoSemSei = false;
+                let documentosPendentes = [];
+
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    if (!d.numeroProcesso || d.numeroProcesso.trim() === "") {
+                        temDocumentoSemSei = true;
+                        documentosPendentes.push(d.nomeDocumento);
+                    }
+                });
+
+                if (temDocumentoSemSei) {
+                    areaDocs.innerHTML = `
+                        <div style="background: #fdeaea; border: 1px solid #e74c3c; padding: 20px; border-radius: 8px; color: #c0392b;">
+                            <h4 style="margin-bottom: 10px; font-size: 1.1em;">⚠️ Arquivamento Bloqueado</h4>
+                            <p>Não é possível arquivar esta guia pois existem documentos sem o <strong>Nº do Processo SEI original</strong> informado.</p>
+                            <p style="margin-top: 10px; margin-bottom: 10px;"><strong>Documentos pendentes:</strong><br> - ${documentosPendentes.join("<br> - ")}</p>
+                            <p style="margin-top: 15px; font-weight: bold;">Feche esta janela, vá até a aba "📄 Inserir Documentos", clique em "Editar" nos documentos pendentes e informe o SEI antes de prosseguir com o arquivamento.</p>
+                        </div>
+                    `;
+                    document.getElementById("btnConfirmarArq").disabled = true;
+                    document.getElementById("btnConfirmarArq").style.background = "#95a5a6"; // Deixa cinza
+                    return; // Interrompe a função aqui, não desenha a tabela
+                }
+                // ========================================================
+                // FIM DA TRAVA DE SEGURANÇA
+                // ========================================================
+
+                // Se passou da trava, libera o botão e monta a tabela normalmente
                 document.getElementById("btnConfirmarArq").disabled = false;
+                document.getElementById("btnConfirmarArq").style.background = "#27ae60";
                 
                 let html = `<table class="tabela-docs-arquivamento">
                     <thead><tr>
