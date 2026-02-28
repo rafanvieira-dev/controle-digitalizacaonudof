@@ -7,18 +7,17 @@ const loginSection = document.getElementById("loginSection");
 const appInterface = document.getElementById("appInterface");
 const erroMsg = document.getElementById("erroMsg");
 
-// Configura a persistência para manter o usuário logado após atualizar a página
+// Configura a persistência para evitar deslogar ao atualizar a página
 setPersistence(auth, browserLocalPersistence);
 
 onAuthStateChanged(auth, (user) => {
     if (loadingScreen) loadingScreen.style.display = "none";
-    
     if (user && user.email.endsWith("@defensoria.rj.def.br")) {
         if(loginSection) loginSection.style.display = "none";
         if(appInterface) appInterface.style.display = "flex";
         if (document.getElementById("mainDisplay")) carregarGuiasAtivas();
     } else {
-        if (user) signOut(auth); // Desloga se o e-mail for inválido
+        if (user) signOut(auth); // Desloga se o e-mail não for institucional
         if(loginSection) loginSection.style.display = "flex";
         if(appInterface) appInterface.style.display = "none";
     }
@@ -27,10 +26,10 @@ onAuthStateChanged(auth, (user) => {
 const btnGoogle = document.getElementById("btnGoogle");
 const provider = new GoogleAuthProvider();
 
-// Força a exibição da tela de seleção de conta/digitação de e-mail
+// Força o Google a mostrar a tela de seleção de conta e digitação de e-mail
 provider.setCustomParameters({
     prompt: 'select_account',
-    hd: 'defensoria.rj.def.br' // Sugere o domínio institucional
+    hd: 'defensoria.rj.def.br'
 });
 
 if (btnGoogle) {
@@ -39,15 +38,13 @@ if (btnGoogle) {
             if(erroMsg) erroMsg.innerText = "A autenticar...";
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
-            
             if (!user.email.endsWith("@defensoria.rj.def.br")) {
                 await signOut(auth);
-                if(erroMsg) erroMsg.innerText = "Acesso negado: Use o e-mail institucional (@defensoria.rj.def.br).";
+                if(erroMsg) erroMsg.innerText = "Acesso negado: Use o e-mail institucional da Defensoria.";
             } else {
                 if(erroMsg) erroMsg.innerText = "";
             }
         } catch (error) {
-            console.error(error);
             if(erroMsg) erroMsg.innerText = "Erro ao entrar. Tente novamente.";
         }
     };
@@ -60,8 +57,6 @@ if (btnLogout) {
         window.location.href = "index.html";
     };
 }
-
-// --- FUNÇÕES DE INTERFACE MANTIDAS ---
 
 async function carregarGuiasAtivas() {
     const mainDisplay = document.getElementById("mainDisplay");
