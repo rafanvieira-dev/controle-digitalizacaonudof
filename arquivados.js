@@ -1,15 +1,13 @@
 import { db, auth } from "./firebase.js";
-import { 
-  collection, 
+import {
+  collection,
   getDocs,
-  query,
-  where,
   doc,
   getDoc
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-import { onAuthStateChanged } 
-from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { onAuthStateChanged } from
+"https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
 onAuthStateChanged(auth, (user) => {
   if (!user) window.location.href = "index.html";
@@ -21,24 +19,20 @@ async function carregarArquivados() {
   const lista = document.getElementById("listaArquivados");
   lista.innerHTML = "";
 
-  const q = query(
-    collection(db, "guias"),
-    where("status", "==", "ARQUIVADA")
-  );
-
-  const snapshot = await getDocs(q);
+  const snapshot = await getDocs(collection(db, "guias"));
 
   snapshot.forEach(docSnap => {
     const guia = docSnap.data();
 
-    lista.innerHTML += `
-      <div>
-        <button onclick="mostrarDetalhes('${docSnap.id}')">
-          Guia Nº ${guia.numeroGuia}
-        </button>
-        <div id="detalhe-${docSnap.id}" style="display:none;"></div>
-      </div>
-    `;
+    if (guia.status === "Arquivada") {
+      lista.innerHTML += `
+        <div class="pasta">
+          <strong>Guia Nº ${guia.numero}</strong>
+          <button onclick="mostrarDetalhes('${docSnap.id}')">Ver Detalhes</button>
+          <div id="detalhe-${docSnap.id}"></div>
+        </div>
+      `;
+    }
   });
 }
 
@@ -46,15 +40,8 @@ window.mostrarDetalhes = async function(idGuia) {
 
   const detalheDiv = document.getElementById("detalhe-"+idGuia);
 
-  if (detalheDiv.style.display === "block") {
-    detalheDiv.style.display = "none";
-    return;
-  }
-
-  detalheDiv.style.display = "block";
-
-  const guiaDoc = await getDoc(doc(db, "guias", idGuia));
-  const guiaData = guiaDoc.data();
+  const guiaSnap = await getDoc(doc(db, "guias", idGuia));
+  const guiaData = guiaSnap.data();
 
   const docsSnapshot = await getDocs(
     collection(db, "guias", idGuia, "documentos")
@@ -62,12 +49,11 @@ window.mostrarDetalhes = async function(idGuia) {
 
   let documentosHTML = "";
 
-  docsSnapshot.forEach(docSnap => {
-    const d = docSnap.data();
-
+  docsSnapshot.forEach(doc => {
+    const d = doc.data();
     documentosHTML += `
       <tr>
-        <td>${d.nomeDocumento}</td>
+        <td>${d.nome}</td>
         <td>${d.numeroProcesso}</td>
         <td>${d.guiaRemessa}</td>
         <td>${d.dataRecebimento}</td>
@@ -76,17 +62,21 @@ window.mostrarDetalhes = async function(idGuia) {
   });
 
   detalheDiv.innerHTML = `
-    <p><strong>Unidade:</strong> ${guiaData.unidade}</p>
-    <p><strong>Data Arquivamento:</strong> ${guiaData.arquivamento?.dataArquivamento}</p>
-    <table>
-      <tr>
-        <th>Nome</th>
-        <th>Processo</th>
-        <th>Remessa</th>
-        <th>Data</th>
-      </tr>
-      ${documentosHTML}
-    </table>
+    <div class="detalhes-box">
+      <p><strong>Unidade:</strong> ${guiaData.unidade}</p>
+      <p><strong>Data Recebimento:</strong> ${guiaData.dataRecebimento}</p>
+      <p><strong>Data Arquivamento:</strong> ${guiaData.arquivamento?.dataArquivamento}</p>
+
+      <table>
+        <tr>
+          <th>Nome</th>
+          <th>Processo</th>
+          <th>Guia Remessa</th>
+          <th>Data</th>
+        </tr>
+        ${documentosHTML}
+      </table>
+    </div>
   `;
 };
 
