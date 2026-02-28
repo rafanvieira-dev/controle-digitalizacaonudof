@@ -65,7 +65,6 @@
             btn.innerText = "Verificando...";
 
             try {
-                // Trava de Duplicidade
                 const q = query(collection(db, "guias"), where("numero", "==", numero));
                 const snap = await getDocs(q);
 
@@ -83,7 +82,7 @@
                     horaRecebimento: hora,
                     status: "Aberta", 
                     dataCriacao: new Date(),
-                    criadoPor: auth.currentUser.email
+                    criadoPor: auth.currentUser.email // REGISTRO AUTOMÁTICO DE QUEM CRIOU
                 });
                 alert("Guia criada com sucesso!");
                 window.location.href = "documentos.html";
