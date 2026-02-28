@@ -1,26 +1,29 @@
-/* --- Variáveis de Cor (Estilo Institucional) --- */
+/* --- Variáveis de Cor (Estilo Profissional NUDOF) --- */
 :root {
     --primary: #003366;    /* Azul Marinho */
     --secondary: #4682B4;  /* Azul Aço */
-    --accent: #d35400;     /* Laranja para alertas/contadores */
-    --bg: #f4f7f6;
-    --sidebar-bg: #2c3e50;
+    --accent: #d35400;     /* Laranja (Contadores) */
+    --bg: #f0f2f5;
+    --sidebar-bg: #f8f9fa;
+    --border: #ccc;
     --text: #333;
     --white: #ffffff;
 }
 
+/* --- Reset e Base --- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body { 
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; 
     background-color: var(--bg); 
     color: var(--text);
-    height: 100vh;
+    min-height: 100vh;
+    overflow-y: auto; /* PERMITE ROLAGEM */
 }
 
-/* --- Tela de Login Moderna --- */
+/* --- Tela de Login --- */
 #loginSection {
-    display: flex; justify-content: center; align-items: center;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
     height: 100vh; background: linear-gradient(135deg, var(--primary), var(--secondary));
 }
 
@@ -37,77 +40,101 @@ body {
 }
 
 /* --- Layout Principal --- */
-#appInterface { display: none; height: 100vh; }
+#appInterface { 
+    display: none; 
+    min-height: 100vh; 
+    width: 100%; 
+}
 
 #sidebar {
-    width: 260px; background: var(--sidebar-bg); color: white;
-    display: flex; flex-direction: column; transition: all 0.3s;
+    width: 260px; background: var(--sidebar-bg); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; 
+    position: sticky; top: 0; height: 100vh; /* SIDEBAR FIXA */
+    flex-shrink: 0;
 }
 
 #sidebar .logo {
-    padding: 30px 20px; font-size: 1.2rem; font-weight: bold;
-    text-align: center; background: rgba(0,0,0,0.2); letter-spacing: 1px;
+    background-color: var(--primary); color: white; padding: 25px 20px;
+    font-weight: bold; text-align: center; font-size: 1.1rem; letter-spacing: 1px;
 }
 
-#sidebar nav a {
-    padding: 15px 25px; color: #ecf0f1; text-decoration: none;
-    display: block; border-bottom: 1px solid rgba(255,255,255,0.05);
-    transition: 0.3s; font-size: 0.95rem;
+#sidebar nav { display: flex; flex-direction: column; flex: 1; }
+
+#sidebar nav a, #sidebar nav button {
+    padding: 15px 20px; color: var(--text); text-decoration: none;
+    border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px;
+    transition: all 0.2s; text-align: left; background: none; border-left: none; border-right: none;
 }
 
-#sidebar nav a:hover { background: var(--secondary); padding-left: 35px; }
+#sidebar nav a:hover { background-color: #e2e6ea; padding-left: 30px; color: var(--primary); }
 
 #btnLogout {
-    margin-top: auto; padding: 20px; background: #c0392b; color: white;
-    border: none; cursor: pointer; font-weight: bold; transition: 0.3s;
+    color: #c0392b !important; font-weight: bold; border-top: 2px solid #ddd !important;
+    margin-top: auto;
 }
-
-#btnLogout:hover { background: #e74c3c; }
 
 /* --- Área de Conteúdo --- */
-#content { flex: 1; padding: 40px; overflow-y: auto; }
-
-.page-title {
-    font-size: 1.8rem; color: var(--primary); margin-bottom: 30px;
-    border-bottom: 3px solid var(--secondary); display: inline-block; padding-bottom: 5px;
+#content { 
+    flex: 1; padding: 40px; background: var(--white); 
+    min-width: 0; /* Evita que tabelas quebrem o layout */
 }
 
-/* --- Cards e Tabelas --- */
+.page-title { 
+    border-bottom: 3px solid var(--primary); padding-bottom: 10px; 
+    margin-bottom: 30px; color: var(--primary); font-size: 1.8rem;
+}
+
+/* --- Formulários --- */
 .form-container {
-    background: var(--white); padding: 25px; border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px;
+    background: #fdfdfd; padding: 25px; border: 1px solid #eee;
+    border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.03);
 }
 
-.sei-table {
-    width: 100%; border-collapse: collapse; background: var(--white);
-    border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+.form-container label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
+
+.form-container input, .form-container select {
+    width: 100%; padding: 10px; margin-bottom: 20px;
+    border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;
 }
-
-.sei-table th {
-    background: var(--primary); color: white; padding: 15px;
-    text-align: left; font-size: 0.9rem; text-transform: uppercase;
-}
-
-.sei-table td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 0.95rem; }
-
-.sei-table tr:hover { background: #f9f9f9; }
 
 /* --- Botões --- */
 .btn-primary {
     background: var(--primary); color: white; border: none;
     padding: 12px 25px; border-radius: 6px; cursor: pointer;
-    font-weight: 600; transition: 0.3s;
+    font-weight: 600; transition: 0.3s; width: 100%;
 }
 
 .btn-primary:hover { background: var(--secondary); transform: translateY(-2px); }
 
-/* --- Status e Contadores --- */
-.status-badge {
-    padding: 4px 10px; border-radius: 20px; font-size: 0.8rem;
-    background: #e1f5fe; color: #0288d1; font-weight: bold;
+/* --- Tabelas (Estilo SEI / Excel) --- */
+.sei-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+
+.sei-table th {
+    background-color: #f2f2f2; border: 1px solid var(--border);
+    padding: 12px; font-size: 14px; text-align: left; color: var(--primary);
 }
 
+.sei-table td { border: 1px solid #ddd; padding: 10px; font-size: 14px; }
+
+.sei-table tr:nth-child(even) { background-color: #fafafa; }
+
+.sei-table tr:hover { background-color: #f1f5f9; }
+
+/* --- Elementos Especiais --- */
 #contadorDocs {
-    color: var(--accent); font-size: 1.1rem; margin-top: 10px;
-    display: block; text-align: right;
+    color: var(--accent); font-weight: bold; font-size: 1.2rem;
+    padding: 10px; background: #fff5f0; border-radius: 5px;
+    display: inline-block; margin-top: 10px; border: 1px solid #ffe0d0;
+}
+
+.status-badge {
+    padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;
+    background: #d4edda; color: #155724; /* Verde para Aberta */
+}
+
+/* --- Ajuste para Rolagem em telas menores --- */
+@media (max-width: 768px) {
+    #appInterface { flex-direction: column; }
+    #sidebar { width: 100%; height: auto; position: relative; }
+    #content { padding: 20px; }
 }
