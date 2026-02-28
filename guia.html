@@ -46,21 +46,37 @@
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { collection, addDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; });
         document.getElementById("btnLogout").addEventListener("click", () => signOut(auth));
 
         document.getElementById("btnSalvarGuia").addEventListener("click", async () => {
-            const numero = document.getElementById("numeroGuia").value;
+            const numero = document.getElementById("numeroGuia").value.trim();
             const unidade = document.getElementById("unidade").value;
             const data = document.getElementById("dataRecebimento").value;
             const hora = document.getElementById("horaRecebimento").value;
 
             if (!numero || !unidade || !data || !hora) return alert("Preencha todos os campos, incluindo a hora!");
 
+            const btn = document.getElementById("btnSalvarGuia");
+            btn.disabled = true;
+            btn.innerText = "Verificando duplicidade...";
+
             try {
+                // Consulta para verificar se já existe uma guia com este número
+                const q = query(collection(db, "guias"), where("numero", "==", numero));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    alert(`Atenção: Já existe uma guia registrada com o número ${numero}. Verifique os dados e tente novamente.`);
+                    btn.disabled = false;
+                    btn.innerText = "Salvar Guia";
+                    return; 
+                }
+
+                // Se não houver duplicidade, prossegue com o salvamento
                 await addDoc(collection(db, "guias"), {
                     numero, 
                     unidade, 
@@ -68,11 +84,16 @@
                     horaRecebimento: hora,
                     status: "Aberta", 
                     dataCriacao: new Date(),
-                    criadoPor: auth.currentUser.email // Salva o e-mail de quem gerou a guia
+                    criadoPor: auth.currentUser.email 
                 });
+                
                 alert("Guia criada com sucesso!");
                 window.location.href = "documentos.html";
-            } catch (e) { alert("Erro ao salvar: " + e.message); }
+            } catch (e) { 
+                alert("Erro ao salvar: " + e.message); 
+                btn.disabled = false;
+                btn.innerText = "Salvar Guia";
+            }
         });
     </script>
 </body>
