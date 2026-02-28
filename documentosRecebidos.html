@@ -2,58 +2,222 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arquivar Guia - NUDOF</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
-        <aside class="sidebar">
-            <div class="sidebar-header">NUDOF DIGITAL</div>
-            <nav></nav>
+    <div id="appInterface" style="display: flex;">
+        <aside id="sidebar">
+            <div class="logo">SISTEMA NUDOF</div>
+            <nav>
+                <a href="index.html">🏠 Início / Histórico</a>
+                <a href="guia.html">➕ Inserir Nova Guia</a>
+                <a href="documentos.html">📄 Documentos em Guia</a>
+                <a href="documentosRecebidos.html" style="background-color: #d0d0d0; font-weight: bold;">📁 Arquivar Guia</a>
+                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
+                <button id="btnLogout" class="btn-logout">🚪 Sair do Sistema</button>
+            </nav>
         </aside>
-        <main class="main-content">
-            <h2 class="page-title">Arquivamento de Guias</h2>
-            <div id="listaParaArquivar"></div>
+
+        <main id="content">
+            <h2 class="page-title">Arquivamento de Guias de Remessa</h2>
+            <p style="margin-bottom: 20px; color: #666;">Selecione uma guia para realizar o arquivamento permanente.</p>
+            
+            <div id="listaParaArquivar">
+                <p>Carregando guias pendentes...</p>
+            </div>
         </main>
+    </div>
+
+    <div id="modalArquivar" class="modal">
+        <div class="modal-content" style="width: 80%; max-width: 850px;">
+            <span class="close-btn" id="closeArquivar">&times;</span>
+            <h3 id="tituloModalArquivar" style="color: #003366; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;"></h3>
+            
+            <form id="formDadosArquivamento" class="form-grid-arquivar">
+                <div class="input-group">
+                    <label>Nº da Caixa - Localização Guia:</label>
+                    <input type="text" id="locCaixa" placeholder="Ex: Caixa 10 - Prateleira A" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>Qtd. de Páginas do PDF:</label>
+                    <input type="number" id="qtdPaginas" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Nº de Protocolo do SEI:</label>
+                    <input type="text" id="protocoloSei" placeholder="00000.000000/202X-00" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Tipo de Anexo:</label>
+                    <select id="tipoAnexo">
+                        <option value="Nenhum">Nenhum</option>
+                        <option value="CD">CD</option>
+                        <option value="DVD">DVD</option>
+                        <option value="Pen Drive">Pen Drive</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Quant. Páginas Anexo:</label>
+                    <input type="number" id="paginasAnexo" value="0">
+                </div>
+
+                <div class="input-group">
+                    <label>Nº Protocolo SEI Anexo:</label>
+                    <input type="text" id="protocoloAnexo" placeholder="Se houver">
+                </div>
+
+                <div class="input-group">
+                    <label>Data de Digitalização:</label>
+                    <input type="date" id="dataDigitalizacao" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Nº da Caixa - Localização Final:</label>
+                    <input type="text" id="locFinal" placeholder="Repetir localização ou nova" required>
+                </div>
+
+                <div class="input-group" style="grid-column: span 2;">
+                    <label>Observação (Retiradas, detalhes extras):</label>
+                    <textarea id="obsArquivamento" rows="3" placeholder="Digite aqui observações relevantes..."></textarea>
+                </div>
+
+                <div style="grid-column: span 2; display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn-primary" style="background-color: #27ae60; flex: 2;">Confirmar Arquivamento</button>
+                    <button type="button" class="btn-primary" style="background-color: #7f8c8d; flex: 1;" id="btnCancelar">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalDetalhes" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeDetalhes">&times;</span>
+            <h3 id="modalTitulo"></h3>
+            <div id="modalCorpo"></div>
+        </div>
     </div>
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { collection, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-        
+        import { collection, getDocs, updateDoc, doc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+        let guiaAtualId = "";
+
+        // Carregar Guias Ordenadas
         async function carregarGuiasParaArquivar() {
             const container = document.getElementById("listaParaArquivar");
-            const snapshot = await getDocs(collection(db, "guias"));
-            
-            let html = `<table class="excel-table">
-                <thead><tr><th>Guia</th><th>Unidade</th><th>Ação</th></tr></thead><tbody>`;
-            
-            snapshot.forEach(docSnap => {
-                const g = docSnap.data();
-                if(g.status !== "Arquivada") {
-                    html += `<tr>
-                        <td>${g.numero}</td>
-                        <td>${g.unidade}</td>
-                        <td><button onclick="arquivar('${docSnap.id}')" style="background:#27ae60; color:white; border:none; padding:5px; cursor:pointer;">Arquivar</button></td>
-                    </tr>`;
+            try {
+                // Ordenação por número decrescente (mais recentes primeiro)
+                const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"), orderBy("numeroGuia", "desc"));
+                const snapshot = await getDocs(q);
+                
+                if (snapshot.empty) {
+                    container.innerHTML = "<p>Nenhuma guia pendente de arquivamento.</p>";
+                    return;
                 }
-            });
-            container.innerHTML = html + "</tbody></table>";
-        }
-        window.arquivar = async (id) => {
-            const dataArq = prompt("Data do Arquivamento (AAAA-MM-DD):");
-            const caixa = prompt("Número da Caixa:");
-            if(dataArq && caixa) {
-                await updateDoc(doc(db, "guias", id), {
-                    status: "Arquivada",
-                    dataArquivamento: dataArq,
-                    caixa: caixa
+
+                container.innerHTML = "";
+                snapshot.forEach(docSnap => {
+                    const g = docSnap.data();
+                    const id = docSnap.id;
+                    const num = g.numeroGuia || g.numero || "S/N";
+
+                    const card = document.createElement("div");
+                    card.className = "guia-card-arquivar";
+                    card.innerHTML = `
+                        <div class="info">
+                            <span class="data-badge">${g.dataRecebimento || '---'}</span>
+                            <strong>Guia Nº ${num}</strong>
+                            <p>Unidade: ${g.unidade}</p>
+                        </div>
+                        <div class="acoes">
+                            <button class="btn-ver" onclick="verDetalhes('${id}', '${num}')">👁 Ver</button>
+                            <button class="btn-arquivar-acao" onclick="prepararArquivamento('${id}', '${num}')">📁 Arquivar</button>
+                        </div>
+                    `;
+                    container.appendChild(card);
                 });
-                alert("Guia arquivada!");
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = "<p>Erro ao carregar guias. Verifique os índices no Firebase.</p>";
+            }
+        }
+
+        // Funções Globais para os botões funcionarem
+        window.prepararArquivamento = (id, numero) => {
+            guiaAtualId = id;
+            document.getElementById("tituloModalArquivar").innerText = "Dados de Arquivamento: Guia " + numero;
+            document.getElementById("modalArquivar").style.display = "block";
+        };
+
+        window.verDetalhes = async (id, num) => {
+            const corpo = document.getElementById("modalCorpo");
+            document.getElementById("modalTitulo").innerText = "Documentos da Guia " + num;
+            document.getElementById("modalDetalhes").style.display = "block";
+            corpo.innerHTML = "Carregando...";
+            
+            const snap = await getDocs(collection(db, "guias", id, "documentos"));
+            let html = `<table class="sei-table"><thead><tr><th>Documento</th><th>Processo SEI</th></tr></thead><tbody>`;
+            snap.forEach(d => {
+                const data = d.data();
+                html += `<tr><td>${data.nomeDocumento}</td><td>${data.numeroProcesso}</td></tr>`;
+            });
+            corpo.innerHTML = html + "</tbody></table>";
+        };
+
+        // Salvar Arquivamento
+        document.getElementById("formDadosArquivamento").onsubmit = async (e) => {
+            e.preventDefault();
+            const dados = {
+                status: "Arquivada",
+                locCaixaGuia: document.getElementById("locCaixa").value,
+                paginasPdf: document.getElementById("qtdPaginas").value,
+                protocoloSei: document.getElementById("protocoloSei").value,
+                tipoAnexo: document.getElementById("tipoAnexo").value,
+                paginasAnexo: document.getElementById("paginasAnexo").value,
+                protocoloAnexo: document.getElementById("protocoloAnexo").value,
+                dataDigitalizacao: document.getElementById("dataDigitalizacao").value,
+                locCaixaFinal: document.getElementById("locFinal").value,
+                observacao: document.getElementById("obsArquivamento").value,
+                dataArquivamentoSistema: new Date().toLocaleDateString()
+            };
+
+            try {
+                await updateDoc(doc(db, "guias", guiaAtualId), dados);
+                alert("Guia arquivada com sucesso!");
                 location.reload();
+            } catch (err) {
+                alert("Erro ao salvar: " + err.message);
             }
         };
+
+        // Controles de Fechamento
+        document.getElementById("closeArquivar").onclick = () => document.getElementById("modalArquivar").style.display = "none";
+        document.getElementById("btnCancelar").onclick = () => document.getElementById("modalArquivar").style.display = "none";
+        document.getElementById("closeDetalhes").onclick = () => document.getElementById("modalDetalhes").style.display = "none";
+        document.getElementById("btnLogout").onclick = () => signOut(auth).then(() => location.href = "index.html");
+
         carregarGuiasParaArquivar();
     </script>
+
+    <style>
+        .guia-card-arquivar {
+            background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 6px solid #27ae60;
+        }
+        .data-badge { display: block; font-size: 12px; color: #7f8c8d; font-weight: bold; }
+        .btn-arquivar-acao { background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .form-grid-arquivar { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .input-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #34495e; }
+        .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+    </style>
 </body>
 </html>
