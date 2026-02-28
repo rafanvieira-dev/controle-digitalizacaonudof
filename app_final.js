@@ -2,7 +2,7 @@ import { auth, db } from "./firebase.js";
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-// Variável global para saber quem está logado
+// Variável global para rastrear o usuário logado
 let usuarioLogadoEmail = "";
 
 // --- MONITOR DE SESSÃO ---
@@ -12,7 +12,7 @@ onAuthStateChanged(auth, (user) => {
     const mainDisplay = document.getElementById("mainDisplay");
 
     if (user) {
-        usuarioLogadoEmail = user.email; // Guarda o e-mail de quem logou
+        usuarioLogadoEmail = user.email; // Armazena o e-mail de quem logou
         if(loginSection) loginSection.style.display = "none";
         if(appInterface) appInterface.style.display = "flex";
         if (mainDisplay) carregarGuiasAtivas();
@@ -28,14 +28,17 @@ if (btnLogin) {
     btnLogin.onclick = async () => {
         const email = document.getElementById("email").value.trim();
         const senha = document.getElementById("senha").value.trim();
+        
+        if (!email || !senha) return alert("Preencha todos os campos!");
+
         try {
             await signInWithEmailAndPassword(auth, email, senha);
         } catch (error) {
             console.error("Erro Firebase:", error.code);
             if (error.code === 'auth/network-request-failed') {
-                alert("ERRO DE CONEXÃO: O Firebase bloqueou o acesso. Verifique se o domínio 127.0.0.1 está autorizado no Console do Firebase ou se sua rede possui firewall.");
+                alert("ERRO DE REDE: O Firebase não conseguiu conectar. Verifique se o domínio 127.0.0.1 está autorizado no console do Firebase.");
             } else {
-                alert("Erro: E-mail ou senha incorretos.");
+                alert("E-mail ou senha incorretos.");
             }
         }
     };
@@ -47,7 +50,7 @@ if (btnLogout) {
     btnLogout.onclick = () => signOut(auth);
 }
 
-// --- FUNÇÃO VER DETALHES (MODAL) ---
+// --- FUNÇÃO VER DETALHES (MODAL NO INDEX) ---
 window.verDetalhes = async function(guiaId, numeroGuia) {
     const modal = document.getElementById("modalDetalhes");
     const corpo = document.getElementById("modalCorpo");
@@ -67,7 +70,7 @@ window.verDetalhes = async function(guiaId, numeroGuia) {
             let html = `<table class="sei-table"><thead><tr><th>Documento</th><th>Processo SEI</th></tr></thead><tbody>`;
             docsSnap.forEach(doc => {
                 const d = doc.data();
-                html += `<tr><td>${d.nomeDocumento}</td><td>${d.numeroProcesso}</td></tr>`;
+                html += `<tr><td>${d.nomeDocumento || "---"}</td><td>${d.numeroProcesso || "---"}</td></tr>`;
             });
             corpo.innerHTML = html + "</tbody></table>";
         }
@@ -82,27 +85,27 @@ if (closeBtn) {
     closeBtn.onclick = () => document.getElementById("modalDetalhes").style.display = "none";
 }
 
-// --- CARREGAR HISTÓRICO (INDEX) ---
+// --- CARREGAR HISTÓRICO DE GUIAS ATIVAS ---
 async function carregarGuiasAtivas() {
     const mainDisplay = document.getElementById("mainDisplay");
     if (!mainDisplay) return;
     
-    mainDisplay.innerHTML = "<p>Carregando...</p>";
+    mainDisplay.innerHTML = "<p>Carregando dados do servidor...</p>";
 
     try {
         const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
         const snap = await getDocs(q);
 
         if (snap.empty) {
-            mainDisplay.innerHTML = "<p>Não há guias ativas.</p>";
+            mainDisplay.innerHTML = "<p>Não há guias ativas no momento.</p>";
             return;
         }
 
         let guiasArray = [];
         snap.forEach(d => guiasArray.push({ id: d.id, ...d.data() }));
 
-        // Ordenar: Mais recentes primeiro (pelo número)
-        guiasArray.sort((a, b) => (parseInt(b.numeroGuia || b.numero) - parseInt(a.numeroGuia || a.numero)));
+        // Ordenar: Mais recentes primeiro
+        guiasArray.sort((a, b) => (parseInt(b.numeroGuia || b.numero || 0) - parseInt(a.numeroGuia || a.numero || 0)));
 
         let html = `<table class="sei-table">
             <thead><tr><th>Nº Guia</th><th>Unidade</th><th>Status</th><th>Ação</th></tr></thead>
@@ -121,6 +124,6 @@ async function carregarGuiasAtivas() {
         mainDisplay.innerHTML = html + "</tbody></table>";
     } catch (error) {
         console.error(error);
-        mainDisplay.innerHTML = "<p>Erro ao conectar com o banco de dados.</p>";
+        mainDisplay.innerHTML = "<p>Erro de índice ou permissão. Verifique o console do navegador.</p>";
     }
 }
