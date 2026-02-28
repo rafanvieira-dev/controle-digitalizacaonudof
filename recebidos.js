@@ -24,7 +24,7 @@ async function carregar() {
   snapshot.forEach(docSnap => {
     const guia = docSnap.data();
 
-    if (guia.status === "Recebida") {
+    if (guia.status === "recebida") {
       lista.innerHTML += `
         <div style="margin-bottom:20px;">
           <strong>Guia Nº ${guia.numero}</strong>
