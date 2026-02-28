@@ -2,6 +2,7 @@ import { db, auth } from "./firebase.js";
 import {
   collection,
   getDocs,
+  deleteDoc,
   doc,
   getDoc
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
@@ -9,77 +10,68 @@ import {
 import { onAuthStateChanged } from
 "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-onAuthStateChanged(auth, (user) => {
-  if (!user) window.location.href = "index.html";
-  else carregarArquivados();
+const lista = document.getElementById("listaArquivados");
+let isAdmin = false;
+
+onAuthStateChanged(auth, async (user) => {
+
+  if (!user) {
+    window.location.href = "index.html";
+  } else {
+
+    const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+
+    if (userDoc.exists() && userDoc.data().role === "admin") {
+      isAdmin = true;
+    }
+
+    carregarArquivados();
+  }
 });
 
 async function carregarArquivados() {
 
-  const lista = document.getElementById("listaArquivados");
   lista.innerHTML = "";
 
   const snapshot = await getDocs(collection(db, "guias"));
 
   snapshot.forEach(docSnap => {
+
     const guia = docSnap.data();
 
     if (guia.status === "Arquivada") {
+
       lista.innerHTML += `
         <div class="pasta">
           <strong>Guia Nº ${guia.numero}</strong>
-          <button onclick="mostrarDetalhes('${docSnap.id}')">Ver Detalhes</button>
-          <div id="detalhe-${docSnap.id}"></div>
+          <p>Unidade: ${guia.unidade}</p>
+
+          ${isAdmin ? `
+          <button class="btn-danger" onclick="excluirGuia('${docSnap.id}')">
+            Excluir
+          </button>
+          ` : ""}
         </div>
       `;
     }
   });
 }
 
-window.mostrarDetalhes = async function(idGuia) {
+window.excluirGuia = async function(idGuia) {
 
-  const detalheDiv = document.getElementById("detalhe-"+idGuia);
-
-  const guiaSnap = await getDoc(doc(db, "guias", idGuia));
-  const guiaData = guiaSnap.data();
+  const confirmar = confirm("Excluir guia arquivada?");
+  if (!confirmar) return;
 
   const docsSnapshot = await getDocs(
     collection(db, "guias", idGuia, "documentos")
   );
 
-  let documentosHTML = "";
+  for (const docSnap of docsSnapshot.docs) {
+    await deleteDoc(doc(db, "guias", idGuia, "documentos", docSnap.id));
+  }
 
-  docsSnapshot.forEach(doc => {
-    const d = doc.data();
-    documentosHTML += `
-      <tr>
-        <td>${d.nome}</td>
-        <td>${d.numeroProcesso}</td>
-        <td>${d.guiaRemessa}</td>
-        <td>${d.dataRecebimento}</td>
-      </tr>
-    `;
-  });
+  await deleteDoc(doc(db, "guias", idGuia));
 
-  detalheDiv.innerHTML = `
-    <div class="detalhes-box">
-      <p><strong>Unidade:</strong> ${guiaData.unidade}</p>
-      <p><strong>Data Recebimento:</strong> ${guiaData.dataRecebimento}</p>
-      <p><strong>Data Arquivamento:</strong> ${guiaData.arquivamento?.dataArquivamento}</p>
-
-      <table>
-        <tr>
-          <th>Nome</th>
-          <th>Processo</th>
-          <th>Guia Remessa</th>
-          <th>Data</th>
-        </tr>
-        ${documentosHTML}
-      </table>
-    </div>
-  `;
-};
-
-window.voltar = function() {
-  window.location.href = "index.html";
+  alert("Guia arquivada excluída!");
+  carregarArquivados();
 };
