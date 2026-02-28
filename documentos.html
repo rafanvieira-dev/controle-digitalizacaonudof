@@ -25,7 +25,7 @@
 
             <div class="form-container">
                 <h3>1. Selecione a Guia de Destino</h3>
-                <div id="listaGuias" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+                <div id="listaGuias" style="margin-top: 15px;">
                     <p>Buscando guias abertas...</p>
                 </div>
             </div>
@@ -87,16 +87,41 @@
             try {
                 const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
                 const snap = await getDocs(q);
+                
+                let guias = [];
+                snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
+                guias.sort((a, b) => (b.dataRecebimento || "").localeCompare(a.dataRecebimento || ""));
+
                 lista.innerHTML = "";
-                snap.forEach(docSnap => {
-                    const g = docSnap.data();
+                let dataAtual = "";
+                let divGrupo = null;
+
+                guias.forEach(g => {
+                    if (g.dataRecebimento !== dataAtual) {
+                        dataAtual = g.dataRecebimento;
+                        const dataFormatada = dataAtual ? dataAtual.split('-').reverse().join('/') : "Sem Data";
+                        
+                        const tituloData = document.createElement("h4");
+                        tituloData.innerText = "📅 " + dataFormatada;
+                        tituloData.style.margin = "15px 0 5px 0";
+                        tituloData.style.color = "#003366";
+                        tituloData.style.borderBottom = "1px solid #ccc";
+                        lista.appendChild(tituloData);
+                        
+                        divGrupo = document.createElement("div");
+                        divGrupo.style.display = "flex";
+                        divGrupo.style.flexWrap = "wrap";
+                        divGrupo.style.gap = "10px";
+                        lista.appendChild(divGrupo);
+                    }
+
                     const btn = document.createElement("button");
                     btn.innerText = "Guia: " + (g.numero || g.numeroGuia);
                     btn.className = "btn-primary";
                     btn.style.width = "auto";
                     btn.style.background = "#4682B4";
-                    btn.onclick = () => iniciarInclusao(docSnap.id, btn.innerText);
-                    lista.appendChild(btn);
+                    btn.onclick = () => window.iniciarInclusao(g.id, btn.innerText);
+                    divGrupo.appendChild(btn);
                 });
             } catch (e) { lista.innerHTML = "Erro ao carregar guias."; }
         }
@@ -106,7 +131,7 @@
             window.cancelarEdicao(); 
             document.getElementById("areaDocumentos").style.display = "block";
             document.getElementById("tituloGuia").innerText = texto;
-            await atualizarListaDocumentos(id);
+            await window.atualizarListaDocumentos(id);
             document.getElementById("areaDocumentos").scrollIntoView({ behavior: 'smooth' });
         };
 
@@ -121,9 +146,7 @@
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
                     const li = document.createElement("li");
-                    
                     const infoDiv = document.createElement("div");
-                    // O texto foi alterado aqui
                     const numSei = d.numeroProcesso ? d.numeroProcesso : "<span style='color:#e74c3c;'>Informar número processo SEI</span>";
                     infoDiv.innerHTML = `<span><strong>${d.nomeDocumento}</strong></span> <span style="margin-left: 15px; color: #666;">SEI: ${numSei}</span>`;
                     
@@ -136,7 +159,6 @@
                     btnEditar.style.borderRadius = "4px";
                     btnEditar.style.cursor = "pointer";
                     btnEditar.style.fontWeight = "bold";
-                    
                     btnEditar.onclick = () => window.prepararEdicao(docSnap.id, d.nomeDocumento, d.numeroProcesso, d.dataRecebimento, d.guiaRemessa);
 
                     li.appendChild(infoDiv);
@@ -164,29 +186,24 @@
             document.getElementById("numeroProcesso").value = sei || "";
             document.getElementById("dataRecebimento").value = data || "";
             document.getElementById("guiaRemessa").value = guia || "";
-
             document.getElementById("btnSalvar").innerText = "🔄 Atualizar Documento";
             document.getElementById("btnSalvar").disabled = false;
             document.getElementById("btnSalvar").style.background = "#f39c12"; 
             document.getElementById("btnCancelarEdicao").style.display = "block";
-            
             document.getElementById("tituloGuia").scrollIntoView({ behavior: 'smooth' });
         };
 
         window.cancelarEdicao = function() {
             docEmEdicaoId = null;
             document.getElementById("formDocumento").reset();
-            
             document.getElementById("btnSalvar").innerText = "Gravar Documento na Guia";
             document.getElementById("btnSalvar").style.background = "var(--primary)";
             document.getElementById("btnCancelarEdicao").style.display = "none";
-            
             window.atualizarListaDocumentos(guiaAtivaId); 
         };
 
         document.getElementById("formDocumento").onsubmit = async (e) => {
             e.preventDefault();
-            
             const docDados = {
                 nomeDocumento: document.getElementById("nomeDocumento").value,
                 numeroProcesso: document.getElementById("numeroProcesso").value,
@@ -198,21 +215,16 @@
 
             try {
                 if (docEmEdicaoId) {
-                    const docRef = doc(db, "guias", guiaAtivaId, "documentos", docEmEdicaoId);
-                    await updateDoc(docRef, docDados);
+                    await updateDoc(doc(db, "guias", guiaAtivaId, "documentos", docEmEdicaoId), docDados);
                     alert("Documento atualizado com sucesso!");
                 } else {
                     docDados.dataInsercao = new Date();
-                    docDados.criadoPor = auth.currentUser.email;
+                    docDados.criadoPor = auth.currentUser.email; // Salva quem inseriu
                     await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), docDados);
                     alert("Documento inserido na guia!");
                 }
-                
                 window.cancelarEdicao(); 
-                
-            } catch (err) { 
-                alert("Erro ao salvar documento: " + err.message); 
-            }
+            } catch (err) { alert("Erro ao salvar documento."); }
         };
     </script>
 </body>
