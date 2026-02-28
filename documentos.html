@@ -7,16 +7,16 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <div id="appInterface">
         <aside id="sidebar">
-            <div style="padding: 20px; font-weight: bold; background: #003366; color: white;">NUDOF DIGITAL</div>
-            <nav style="display: flex; flex-direction: column; padding: 10px;">
-                <a href="index.html" style="padding: 10px; text-decoration: none; color: #333;">🏠 Início</a>
-                <a href="guia.html" style="padding: 10px; text-decoration: none; color: #333;">➕ Nova Guia</a>
-                <a href="documentos.html" style="padding: 10px; text-decoration: none; color: #333; background: #eee; font-weight: bold;">📄 Inserir Documentos</a>
-                <a href="documentosRecebidos.html" style="padding: 10px; text-decoration: none; color: #333;">📁 Arquivar Guia</a>
-                <a href="documentosArquivados.html" style="padding: 10px; text-decoration: none; color: #333;">📚 Acervo</a>
+            <div class="sidebar-logo">NUDOF DIGITAL</div>
+            <nav>
+                <a href="index.html">🏠 Início / Histórico</a>
+                <a href="guia.html">➕ Nova Guia</a>
+                <a href="documentos.html" class="ativo">📄 Inserir Documentos</a>
+                <a href="documentosRecebidos.html">📁 Arquivar Guia</a>
+                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
+                <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
             </nav>
         </aside>
 
@@ -54,14 +54,12 @@
 
                         <button type="submit" class="btn-primary" id="btnSalvar">Gravar Documento na Guia</button>
                     </form>
-                    
                     <p id="contadorDocs">0 / 7 documentos cadastrados</p>
                 </div>
 
                 <div class="form-container">
                     <h3>Itens inseridos nesta guia:</h3>
-                    <ul id="listaDocumentos" class="sei-table" style="list-style: none; padding: 0; margin-top: 10px;">
-                        </ul>
+                    <ul id="listaDocumentos" class="sei-table" style="list-style: none; padding: 0; margin-top: 10px;"></ul>
                 </div>
             </div>
         </main>
@@ -69,18 +67,17 @@
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { collection, getDocs, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+        import { collection, getDocs, addDoc, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         let guiaAtivaId = "";
 
-        // Verificar Login
         onAuthStateChanged(auth, (user) => { 
             if (!user) window.location.href = "index.html"; 
             else carregarMenuGuias();
         });
+        document.getElementById("btnLogout").onclick = () => signOut(auth);
 
-        // Carregar as guias para escolha
         async function carregarMenuGuias() {
             const lista = document.getElementById("listaGuias");
             try {
@@ -100,7 +97,6 @@
             } catch (e) { lista.innerHTML = "Erro ao carregar guias."; }
         }
 
-        // Selecionar a guia e carregar os docs dela
         window.iniciarInclusao = async function(id, texto) {
             guiaAtivaId = id;
             document.getElementById("areaDocumentos").style.display = "block";
@@ -109,14 +105,13 @@
             document.getElementById("areaDocumentos").scrollIntoView({ behavior: 'smooth' });
         };
 
-        // Função para buscar e listar os documentos da guia
         async function atualizarListaDocumentos(id) {
             const container = document.getElementById("listaDocumentos");
             const contador = document.getElementById("contadorDocs");
             
             try {
                 const snap = await getDocs(collection(db, "guias", id, "documentos"));
-                container.innerHTML = ""; // LIMPA A LISTA
+                container.innerHTML = ""; 
                 
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
@@ -136,10 +131,8 @@
             } catch (e) { console.error(e); }
         }
 
-        // Gravar Documento
         document.getElementById("formDocumento").onsubmit = async (e) => {
             e.preventDefault();
-            
             const docDados = {
                 nomeDocumento: document.getElementById("nomeDocumento").value,
                 numeroProcesso: document.getElementById("numeroProcesso").value,
@@ -151,8 +144,8 @@
 
             try {
                 await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), docDados);
-                document.getElementById("formDocumento").reset(); // Limpa form
-                await atualizarListaDocumentos(guiaAtivaId); // ATUALIZA A LISTA NA HORA
+                document.getElementById("formDocumento").reset();
+                await atualizarListaDocumentos(guiaAtivaId);
                 alert("Documento inserido!");
             } catch (err) { alert("Erro ao salvar."); }
         };
