@@ -94,7 +94,7 @@
                             <small>Data do Arquivamento: ${g.dataArquivamentoSistema || '--'}</small>
                         </div>
                         <div class="badge-local">📦 Caixa: ${g.locCaixaFinal || 'S/Local'}</div>
-                        <button class="btn-ver-itens" onclick="window.verTudo('${g.id}', '${num}')">👁 Ver Prontuário</button>
+                        <button class="btn-ver-itens" onclick="window.verTudo('${g.id}', '${num}')">👁 Ver Documentos</button>
                     `;
                     container.appendChild(card);
                 });
@@ -108,7 +108,8 @@
             const grid = document.getElementById("detalhesTecnicos");
             const corpo = document.getElementById("modalCorpo");
             
-            document.getElementById("modalTitulo").innerText = "Prontuário da Guia " + num;
+            // Alterado de "Prontuário da Guia" para "Documentos da Guia"
+            document.getElementById("modalTitulo").innerText = "Documentos da Guia " + num;
             modal.style.display = "block";
             grid.innerHTML = "Carregando detalhes...";
             corpo.innerHTML = "";
@@ -117,7 +118,6 @@
                 const guiaSnap = await getDoc(doc(db, "guias", id));
                 const g = guiaSnap.data();
                 
-                // Agora o grid da Guia mostra apenas as informações "da Caixa" e de quem fez o processo
                 grid.innerHTML = `
                     <div><strong>📦 Localização Física:</strong> ${g.locCaixaFinal || '---'}</div>
                     <div><strong>👤 Arquivado por:</strong> ${g.arquivadoPor || 'Sistema'}</div>
@@ -127,7 +127,6 @@
                 if (docsSnap.empty) {
                     corpo.innerHTML = "<p>Esta guia não possui documentos listados.</p>";
                 } else {
-                    // Tabela expandida para mostrar os dados técnicos do documento
                     let html = `<table class="sei-table" style="width:100%; border-collapse:collapse; font-size: 0.9em;">
                         <thead><tr style="background:#f8f9fa;">
                             <th style="padding:10px; border:1px solid #ddd; text-align: left;">Documento</th>
