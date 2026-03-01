@@ -6,7 +6,6 @@
     <title>Inserir Documentos - NUDOF</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Estilo das Abas de Data */
         .data-header-btn {
             width: 100%; background: #003366; color: white; padding: 12px;
             border: none; border-radius: 5px; text-align: left; font-weight: bold;
@@ -14,24 +13,17 @@
             align-items: center;
         }
         .data-header-btn:hover { background: #004080; }
-        
         .contador-abas {
             background: #4682B4; color: white; padding: 2px 10px; border-radius: 12px;
             font-size: 0.85em; margin-left: 10px; font-weight: normal;
         }
-
         .grupo-guias-inserir { display: none; margin-bottom: 20px; padding: 10px; background: #f9f9f9; border-radius: 0 0 8px 8px; }
-
         .btn-guia-item {
             position: relative; padding: 10px 20px; margin: 5px; border: none;
             border-radius: 5px; background: #4682B4; color: white; cursor: pointer;
             font-weight: bold; display: flex; align-items: center; gap: 8px;
         }
-        .badge-docs {
-            background: #27ae60; color: white; padding: 1px 7px; border-radius: 10px; font-size: 0.75em;
-        }
-
-        /* Alerta de Atraso */
+        .badge-docs { background: #27ae60; color: white; padding: 1px 7px; border-radius: 10px; font-size: 0.75em; }
         .alerta-atraso {
             background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px;
             font-size: 0.7em; font-weight: bold; margin-left: 10px; animation: blink 1s infinite;
@@ -55,7 +47,6 @@
 
         <main id="content">
             <h2 class="page-title">Inserir Documentos na Guia</h2>
-            
             <div class="form-container">
                 <h3>1. Selecione a Guia de Destino (Por data de recebimento)</h3>
                 <div id="listaGuias" style="margin-top: 15px;"><p>Buscando guias abertas...</p></div>
@@ -67,10 +58,8 @@
                     <form id="formDocumento">
                         <label>Nome do Documento:</label>
                         <input type="text" id="nomeDocumento" placeholder="Ex: Ofício de Encaminhamento" required>
-
                         <label>Nº do Processo SEI:</label>
                         <input type="text" id="numeroProcesso" placeholder="Ex: 00000.000/2026-00">
-
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                             <div>
                                 <label>Data de Recebimento:</label>
@@ -81,7 +70,6 @@
                                 <input type="text" id="guiaRemessa" placeholder="Nº da Guia" required>
                             </div>
                         </div>
-
                         <div style="display: flex; gap: 10px;">
                             <button type="submit" class="btn-primary" id="btnSalvar">Gravar Documento</button>
                             <button type="button" id="btnCancelarEdicao" onclick="window.cancelarEdicao()" style="display: none; background: #7f8c8d; color: white; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">Cancelar Edição</button>
@@ -89,7 +77,6 @@
                     </form>
                     <p id="contadorDocs">0 / 7 documentos cadastrados</p>
                 </div>
-
                 <div class="form-container">
                     <h3>Itens inseridos nesta guia:</h3>
                     <ul id="listaDocumentos" class="sei-table" style="list-style: none; padding: 0; margin-top: 10px;"></ul>
@@ -114,14 +101,12 @@
             try {
                 const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
                 const snap = await getDocs(q);
-                
                 let guias = [];
                 for (const d of snap.docs) {
                     const docsSnap = await getDocs(collection(db, "guias", d.id, "documentos"));
                     guias.push({ id: d.id, qtdDocs: docsSnap.size, ...d.data() });
                 }
-
-                // ORDENAÇÃO: Mais antigo primeiro para garantir que o que chegou antes seja visto primeiro
+                // Ordenação: Mais antigo primeiro
                 guias.sort((a, b) => (a.dataRecebimento || "").localeCompare(b.dataRecebimento || ""));
 
                 const contagemPorData = {};
@@ -135,57 +120,43 @@
                 let divGrupo = null;
 
                 guias.forEach(g => {
-                    // Lógica de Alerta de Atraso (Se a data de recebimento for anterior a hoje)
-                    const hoje = new Date();
-                    hoje.setHours(0,0,0,0);
-                    
-                    // Ajuste da data da guia para comparação (evitando problemas de fuso horário no Date)
+                    const hoje = new Date(); hoje.setHours(0,0,0,0);
                     const [ano, mes, dia] = g.dataRecebimento.split('-');
                     const dataGuia = new Date(ano, mes - 1, dia);
-
                     const alertaHtml = dataGuia < hoje ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
 
                     if (g.dataRecebimento !== dataAtual) {
                         dataAtual = g.dataRecebimento;
-                        const dataF = dataAtual !== "Sem Data" ? dataAtual.split('-').reverse().join('/') : "Sem Data";
+                        const dataF = dataAtual.split('-').reverse().join('/');
                         const idGrupo = `grupo-ins-${dataAtual.replace(/-/g, '_')}`;
                         const totalGuias = contagemPorData[dataAtual];
 
                         const btnData = document.createElement("button");
                         btnData.className = "data-header-btn";
-                        btnData.innerHTML = `
-                            <div>
-                                <span>📅 Recebidas em: ${dataF}</span>
-                                <span class="contador-abas">${totalGuias} guia(s)</span>
-                                ${alertaHtml}
-                            </div>
-                            <span>➕</span>`;
+                        btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span> <span class="contador-abas">${totalGuias} guia(s)</span> ${alertaHtml}</div><span>➕</span>`;
                         
                         divGrupo = document.createElement("div");
                         divGrupo.className = "grupo-guias-inserir";
                         divGrupo.id = idGrupo;
-                        divGrupo.style.display = "none";
                         divGrupo.style.flexWrap = "wrap"; divGrupo.style.gap = "10px";
 
                         btnData.onclick = () => {
                             const target = document.getElementById(idGrupo);
                             const icon = btnData.querySelector('span:last-child');
-                            const estaFechado = target.style.display === "none";
+                            const estaFechado = target.style.display === "none" || target.style.display === "";
                             target.style.display = estaFechado ? "flex" : "none";
                             icon.innerText = estaFechado ? "➖" : "➕";
                         };
-
                         lista.appendChild(btnData);
                         lista.appendChild(divGrupo);
                     }
-
                     const btnGuia = document.createElement("button");
                     btnGuia.className = "btn-guia-item";
                     btnGuia.innerHTML = `Guia: ${g.numero || g.numeroGuia} <span class="badge-docs">${g.qtdDocs}</span>`;
                     btnGuia.onclick = () => window.iniciarInclusao(g.id, `Guia: ${g.numero || g.numeroGuia}`);
                     divGrupo.appendChild(btnGuia);
                 });
-            } catch (e) { console.error(e); lista.innerHTML = "Erro ao carregar guias."; }
+            } catch (e) { console.error(e); }
         }
 
         window.iniciarInclusao = async function(id, texto) {
@@ -205,11 +176,10 @@
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
                     const li = document.createElement("li");
-                    li.className = "guia-card-arquivada";
-                    li.style.display = "flex"; li.style.justifyContent = "space-between"; li.style.padding = "10px"; li.style.marginBottom = "5px";
-                    li.innerHTML = `
-                        <div><strong>${d.nomeDocumento}</strong><br><small>SEI: ${d.numeroProcesso || '---'}</small></div>
-                        <button class="btn-ver" onclick="window.prepararEdicao('${docSnap.id}', ${JSON.stringify(d).replace(/"/g, '&quot;')})" style="background:#f39c12">✏️ Editar</button>`;
+                    li.className = "sei-table li";
+                    li.style.display = "flex"; li.style.justifyContent = "space-between"; li.style.padding = "10px"; li.style.background = "#fff"; li.style.marginBottom = "5px"; li.style.borderRadius = "4px";
+                    li.innerHTML = `<div><strong>${d.nomeDocumento}</strong><br><small>SEI: ${d.numeroProcesso || '---'}</small></div>
+                                    <button class="btn-primary" onclick="window.prepararEdicao('${docSnap.id}', ${JSON.stringify(d).replace(/"/g, '&quot;')})" style="width:auto; background:#f39c12">✏️ Editar</button>`;
                     containerReal.appendChild(li);
                 });
                 contador.innerText = `${snap.size} / 7 documentos cadastrados`;
@@ -224,7 +194,6 @@
             document.getElementById("guiaRemessa").value = d.guiaRemessa;
             document.getElementById("btnSalvar").innerText = "🔄 Atualizar Documento";
             document.getElementById("btnCancelarEdicao").style.display = "block";
-            document.getElementById("formDocumento").scrollIntoView({ behavior: 'smooth' });
         };
 
         window.cancelarEdicao = () => {
@@ -236,9 +205,6 @@
 
         document.getElementById("formDocumento").onsubmit = async (e) => {
             e.preventDefault();
-            const btn = document.getElementById("btnSalvar");
-            btn.disabled = true;
-
             const docDados = {
                 nomeDocumento: document.getElementById("nomeDocumento").value,
                 numeroProcesso: document.getElementById("numeroProcesso").value,
@@ -247,25 +213,19 @@
                 ultimaAtualizacao: new Date(),
                 atualizadoPor: auth.currentUser.email
             };
-
             try {
                 if (docEmEdicaoId) {
                     await updateDoc(doc(db, "guias", guiaAtivaId, "documentos", docEmEdicaoId), docDados);
                     alert("Documento atualizado!");
                 } else {
-                    docDados.dataInsercao = new Date();
                     docDados.inseridoPor = auth.currentUser.email;
                     await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), docDados);
-                    alert("Documento inserido com sucesso!");
+                    alert("Documento inserido!");
                 }
-                btn.disabled = false;
                 window.cancelarEdicao(); 
                 window.atualizarListaDocumentos(guiaAtivaId);
                 carregarMenuGuias();
-            } catch (err) { 
-                alert("Erro ao salvar documento."); 
-                btn.disabled = false;
-            }
+            } catch (err) { alert("Erro ao salvar."); }
         };
     </script>
 </body>
