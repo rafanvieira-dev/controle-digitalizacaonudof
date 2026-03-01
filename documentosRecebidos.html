@@ -101,6 +101,31 @@
         onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregar(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
+        // FUNÇÃO INTELIGENTE DE CÁLCULO DE ATRASO IGNORANDO FINAIS DE SEMANA
+        function verificarAtraso(dataStr) {
+            if (!dataStr || dataStr === "Sem Data") return false;
+            
+            const hoje = new Date(); hoje.setHours(0,0,0,0);
+            const [ano, mes, dia] = dataStr.split('-');
+            const dataGuia = new Date(ano, mes - 1, dia); dataGuia.setHours(0,0,0,0);
+            
+            if (dataGuia >= hoje) return false;
+            
+            let diasUteis = 0;
+            let d = new Date(dataGuia);
+            d.setDate(d.getDate() + 1);
+            
+            while (d <= hoje) {
+                const diaSemana = d.getDay();
+                if (diaSemana !== 0 && diaSemana !== 6) {
+                    diasUteis++;
+                }
+                d.setDate(d.getDate() + 1);
+            }
+            
+            return diasUteis > 0;
+        }
+
         async function carregar() {
             const container = document.getElementById("listaParaArquivar");
             try {
@@ -124,10 +149,7 @@
                 container.innerHTML = ""; let dataAtual = "";
 
                 guias.forEach(g => {
-                    const hoje = new Date(); hoje.setHours(0,0,0,0);
-                    const [ano, mes, dia] = g.dataRecebimento.split('-');
-                    const dataGuia = new Date(ano, mes - 1, dia);
-                    const alertaHtml = dataGuia < hoje ? `<span class="alerta-atraso">⚠️ EM ATRASO</span>` : "";
+                    let alertaHtml = verificarAtraso(g.dataRecebimento) ? `<span class="alerta-atraso">⚠️ EM ATRASO</span>` : "";
 
                     if (g.dataRecebimento !== dataAtual) {
                         dataAtual = g.dataRecebimento;
@@ -135,13 +157,13 @@
                         
                         const btnData = document.createElement("button");
                         btnData.className = "data-header-btn";
-                        btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span><span class="contador-pendentes">${contagem[dataAtual]} pendente(s)</span> ${alertaHtml}</div><span>➕</span>`;
+                        btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span><span class="contador-pendentes">${contagem[dataAtual]} pendente(s)</span> ${alertaHtml}</div><span class="toggle-icon">➕</span>`;
                         
                         const divGrupoSendoCriado = document.createElement("div"); divGrupoSendoCriado.className = "grupo-pendentes";
                         btnData.onclick = () => {
                             const estaAberto = divGrupoSendoCriado.style.display === "block";
                             divGrupoSendoCriado.style.display = estaAberto ? "none" : "block";
-                            btnData.querySelector('span:last-child').innerText = estaAberto ? "➕" : "➖";
+                            btnData.querySelector('.toggle-icon').innerText = estaAberto ? "➕" : "➖";
                         };
                         container.appendChild(btnData); container.appendChild(divGrupoSendoCriado);
                         window.grupoTemp = divGrupoSendoCriado;
