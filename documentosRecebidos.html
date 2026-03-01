@@ -21,7 +21,7 @@
         .tabela-docs-arquivamento { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85em; }
         .tabela-docs-arquivamento th, .tabela-docs-arquivamento td { padding: 8px; border: 1px solid #ccc; vertical-align: top; }
         .tabela-docs-arquivamento th { background: #f0f2f5; color: #003366; }
-        .campo-obrigatorio { border: 1.5px solid #e74c3c !important; }
+        .campo-obrigatorio:invalid { border: 2.5px solid #e74c3c !important; background: #fff6f6; }
     </style>
 </head>
 <body>
@@ -45,7 +45,7 @@
     </div>
 
     <div id="modalArquivar" class="modal">
-        <div class="modal-content" style="width: 98%; max-width: 1300px; margin: 1% auto;">
+        <div class="modal-content" style="width: 98%; max-width: 1350px; margin: 1% auto;">
             <span class="close-btn" id="closeArquivar" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
             <h3 id="tituloModalArquivar" style="margin-bottom: 15px; color: #003366;"></h3>
             
@@ -71,7 +71,7 @@
                     <div id="areaDocumentosArquivar" style="overflow-x: auto;"></div>
                 </div>
 
-                <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#27ae60; padding: 15px;">Finalizar Arquivamento</button>
+                <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#27ae60; padding: 15px; font-weight: bold;">✅ FINALIZAR ARQUIVAMENTO E REGISTRAR AUDITORIA</button>
             </form>
         </div>
     </div>
@@ -113,7 +113,7 @@
                     const div = document.createElement("div");
                     div.className = "guia-card-arquivar";
                     div.innerHTML = `<div><strong>Guia ${num}</strong><br><small>${g.unidade}</small></div>
-                    <button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#27ae60; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer;">📁 Arquivar</button>`;
+                    <button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#27ae60; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer;">📁 Digitalizar</button>`;
                     container.appendChild(div);
                 });
             } catch (err) { console.error(err); }
@@ -122,7 +122,7 @@
         window.abrirArq = async (id, num) => {
             guiaAtualId = id;
             documentosDaGuia = []; 
-            document.getElementById("tituloModalArquivar").innerText = "Arquivamento: " + num;
+            document.getElementById("tituloModalArquivar").innerText = "Digitalização da Guia: " + num;
             document.getElementById("dataArquivamentoManual").value = new Date().toISOString().split('T')[0];
             const areaDocs = document.getElementById("areaDocumentosArquivar");
             document.getElementById("modalArquivar").style.display = "block";
@@ -132,13 +132,13 @@
                 let html = `<table class="tabela-docs-arquivamento">
                     <thead><tr>
                         <th>Documento</th>
-                        <th style="width:90px">Páginas PDF*</th>
-                        <th style="width:160px">Protocolo SEI*</th>
-                        <th style="width:130px">Data Digitalizção*</th>
+                        <th style="width:90px">Páginas*</th>
+                        <th style="width:170px">Novo Protocolo SEI*</th>
+                        <th style="width:130px">Data Dig.*</th>
                         <th style="width:110px">Tipo Anexo</th>
-                        <th style="width:70px">Página Anexo</th>
-                        <th style="width:160px">Protocolo SEI</th>
-                        <th style="width:200px">Observações</th>
+                        <th style="width:70px">Pgs Anexo</th>
+                        <th style="width:160px">Prot. Anexo</th>
+                        <th style="width:250px">Observação de Digitalização</th>
                     </tr></thead><tbody>`;
 
                 snap.forEach(docSnap => {
@@ -146,15 +146,16 @@
                     html += `<tr>
                         <td><small><b>${docSnap.data().nomeDocumento}</b><br>${docSnap.data().numeroProcesso}</small></td>
                         <td><input type="number" id="pags_${docSnap.id}" class="campo-obrigatorio" required></td>
-                        <td><input type="text" id="sei_${docSnap.id}" class="campo-obrigatorio" required></td>
+                        <td><input type="text" id="sei_${docSnap.id}" class="campo-obrigatorio" placeholder="Número SEI" required></td>
                         <td><input type="date" id="data_${docSnap.id}" class="campo-obrigatorio" required></td>
                         <td><select id="tAnexo_${docSnap.id}"><option value="Nenhum">Nenhum</option><option value="CD">CD</option><option value="DVD">DVD</option><option value="Pen Drive">Pen Drive</option></select></td>
                         <td><input type="number" id="qAnexo_${docSnap.id}" value="0"></td>
-                        <td><input type="text" id="obs_${docSnap.id}" placeholder="Ex: Retirada de docs"></td>
+                        <td><input type="text" id="protAnexo_${docSnap.id}" placeholder="Se houver"></td>
+                        <td><input type="text" id="obs_${docSnap.id}" placeholder="Ex: Grampo retirado, doc. danificado"></td>
                     </tr>`;
                 });
                 areaDocs.innerHTML = html + "</tbody></table>";
-            } catch (e) { areaDocs.innerHTML = "<p>Erro ao carregar.</p>"; }
+            } catch (e) { areaDocs.innerHTML = "<p>Erro ao carregar documentos.</p>"; }
         };
 
         document.getElementById("formDadosArquivamento").onsubmit = async (e) => {
@@ -171,24 +172,28 @@
                     locCaixaFinal: document.getElementById("locCaixa").value,
                     locCaixaDocumentos: document.getElementById("locCaixaDocs").value,
                     dataArquivamentoSistema: dataF,
-                    arquivadoPor: auth.currentUser.email // Registra quem arquivou
+                    arquivadoPor: auth.currentUser.email
                 });
 
                 const promessas = documentosDaGuia.map(docId => {
                     return updateDoc(doc(db, "guias", guiaAtualId, "documentos", docId), {
-                        paginasPdf: document.getElementById(`pags_${docId}`).value,
                         protocoloSeiDigitalizado: document.getElementById(`sei_${docId}`).value,
+                        paginasPdf: document.getElementById(`pags_${docId}`).value,
                         dataDigitalizacao: document.getElementById(`data_${docId}`).value,
                         tipoAnexo: document.getElementById(`tAnexo_${docId}`).value,
                         qtdPagsAnexo: document.getElementById(`qAnexo_${docId}`).value || 0,
+                        protocoloAnexo: document.getElementById(`protAnexo_${docId}`).value || "",
                         observacaoDigitalizacao: document.getElementById(`obs_${docId}`).value || ""
                     });
                 });
 
                 await Promise.all(promessas);
-                alert("Arquivamento realizado com sucesso!");
+                alert("Processo concluído! As observações foram registradas no acervo.");
                 location.reload();
-            } catch (err) { alert("Erro ao salvar."); btn.disabled = false; btn.innerText = "Finalizar Arquivamento"; }
+            } catch (err) { 
+                alert("Erro ao salvar."); 
+                btn.disabled = false; btn.innerText = "Finalizar Arquivamento"; 
+            }
         };
 
         document.getElementById("closeArquivar").onclick = () => document.getElementById("modalArquivar").style.display = "none";
