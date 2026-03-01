@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arquivar Guia - NUDOF</title>
+    <title>Digitalização e SEI - NUDOF</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -11,7 +11,7 @@
         .guia-card-arquivar {
             background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 15px;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 6px solid #27ae60;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 6px solid #f39c12;
         }
         .data-header-btn {
             width: 100%; background: #003366; color: white; padding: 12px;
@@ -29,7 +29,6 @@
         .tabela-docs-arquivamento th, .tabela-docs-arquivamento td { padding: 8px; border: 1px solid #ccc; vertical-align: top; }
         .tabela-docs-arquivamento th { background: #f0f2f5; color: #003366; }
         .campo-obrigatorio:invalid { border: 2px solid #e74c3c !important; background: #fff6f6; }
-        
         .alerta-atraso {
             background: #ffeb3b; color: #000; padding: 2px 8px; border-radius: 4px;
             font-size: 0.7em; font-weight: bold; margin-left: 10px; animation: blink 1.5s infinite;
@@ -45,15 +44,16 @@
                 <a href="index.html">🏠 Início / Histórico</a>
                 <a href="guia.html">➕ Nova Guia</a>
                 <a href="documentos.html">📄 Inserir Documentos</a>
-                <a href="documentosRecebidos.html" class="ativo">📁 Arquivar Guia</a>
+                <a href="documentosRecebidos.html" class="ativo">🖨️ Digitalização e SEI</a>
+                <a href="arquivamentoFisico.html">📦 Arquivar Guia Físico</a>
                 <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
                 <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
             </nav>
         </aside>
 
         <main id="content">
-            <h2 class="page-title">Arquivamento de Guias e Digitalização</h2>
-            <div id="listaParaArquivar"><p>Buscando guias pendentes...</p></div>
+            <h2 class="page-title">Digitalização e Inserção no SEI</h2>
+            <div id="listaParaArquivar"><p>Buscando guias pendentes de digitalização...</p></div>
         </main>
     </div>
 
@@ -64,37 +64,25 @@
             
             <form id="formDadosArquivamento" class="form-grid-arquivar">
                 <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b6d4fe; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                    <h4 style="grid-column: 1 / -1; color: #003366; margin: 0 0 5px 0;">1. Informações de Controle</h4>
+                    <h4 style="grid-column: 1 / -1; color: #003366; margin: 0 0 5px 0;">1. Informações do Operador (Para Folha de Rosto)</h4>
                     <div class="input-group">
-                        <label>📦 Nº Caixa da Guia:</label>
-                        <input type="text" id="locCaixa" required>
-                    </div>
-                    <div class="input-group">
-                        <label>📦 Nº Caixa dos Documentos:</label>
-                        <input type="text" id="locCaixaDocs" required>
-                    </div>
-                    <div class="input-group">
-                        <label>📅 Data de Arquivamento:</label>
-                        <input type="date" id="dataArquivamentoManual" required>
-                    </div>
-                    <div class="input-group">
-                        <label>👤 Nome Completo (Folha de Rosto):</label>
+                        <label>👤 Nome Completo:</label>
                         <input type="text" id="nomeOperador" placeholder="Digite seu nome completo" required>
                     </div>
                     <div class="input-group">
-                        <label>🆔 Matrícula (Folha de Rosto):</label>
+                        <label>🆔 Matrícula:</label>
                         <input type="text" id="matriculaOperador" placeholder="Digite sua matrícula" required>
                     </div>
                 </div>
 
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
-                    <h4 style="margin-bottom: 10px; color: #003366;">2. Detalhamento dos Itens</h4>
+                    <h4 style="margin-bottom: 10px; color: #003366;">2. Detalhamento dos Itens Digitalizados</h4>
                     <div id="areaDocumentosArquivar" style="overflow-x: auto;"></div>
                 </div>
 
                 <div style="display: flex; gap: 15px;">
-                    <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#27ae60; padding: 15px; font-weight: bold; flex: 2;">✅ FINALIZAR ARQUIVAMENTO</button>
-                    <button type="button" class="btn-primary" id="btnGerarFolhaRosto" style="background:#003366; padding: 15px; font-weight: bold; flex: 1; display: none;">📄 GERAR FOLHA DE ROSTO (PAISAGEM)</button>
+                    <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#f39c12; padding: 15px; font-weight: bold; flex: 2;">✅ CONCLUIR DIGITALIZAÇÃO</button>
+                    <button type="button" class="btn-primary" id="btnGerarFolhaRosto" style="background:#003366; padding: 15px; font-weight: bold; flex: 1; display: none;">📄 GERAR FOLHA DE ROSTO</button>
                 </div>
             </form>
         </div>
@@ -116,9 +104,9 @@
         async function carregar() {
             const container = document.getElementById("listaParaArquivar");
             try {
-                const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
+                const q = query(collection(db, "guias"), where("status", "==", "Aberta"));
                 const snap = await getDocs(q);
-                if(snap.empty) { container.innerHTML = "<p>Não há guias pendentes.</p>"; return; }
+                if(snap.empty) { container.innerHTML = "<p>Não há guias pendentes de digitalização.</p>"; return; }
                 
                 let guias = [];
                 snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
@@ -161,7 +149,7 @@
 
                     const num = g.numero || g.numeroGuia || "S/N";
                     const div = document.createElement("div"); div.className = "guia-card-arquivar";
-                    div.innerHTML = `<div><strong>Guia ${num}</strong><br><small>${g.unidade}</small></div><button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#27ae60; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📁 Iniciar Arquivamento</button>`;
+                    div.innerHTML = `<div><strong>Guia ${num}</strong><br><small>${g.unidade}</small></div><button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#f39c12; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">🖨️ Iniciar Digitalização</button>`;
                     window.grupoTemp.appendChild(div);
                 });
             } catch (err) { console.error(err); }
@@ -179,11 +167,8 @@
             guiaAtualId = id; documentosDaGuia = []; listaDocumentosCache = [];
             document.getElementById("btnGerarFolhaRosto").style.display = "none";
             document.getElementById("btnConfirmarArq").disabled = false;
-            document.getElementById("btnConfirmarArq").innerText = "✅ FINALIZAR ARQUIVAMENTO";
-            document.getElementById("tituloModalArquivar").innerText = "Digitalização da Guia: " + num;
-            document.getElementById("dataArquivamentoManual").value = new Date().toISOString().split('T')[0];
-            
-            // Tenta puxar o nome do google, mas o user pode apagar e escrever certo
+            document.getElementById("btnConfirmarArq").innerText = "✅ CONCLUIR DIGITALIZAÇÃO";
+            document.getElementById("tituloModalArquivar").innerText = "Digitalização e SEI - Guia: " + num;
             document.getElementById("nomeOperador").value = auth.currentUser.displayName || "";
             
             const areaDocs = document.getElementById("areaDocumentosArquivar");
@@ -225,15 +210,11 @@
             btn.disabled = true; btn.innerText = "Gravando...";
             
             try {
-                const dataF = document.getElementById("dataArquivamentoManual").value.split("-").reverse().join("/");
-                const nomeOp = document.getElementById("nomeOperador").value.toUpperCase(); // Salva em Maiúsculo para ficar bonito na folha
+                const nomeOp = document.getElementById("nomeOperador").value.toUpperCase(); 
                 
                 await updateDoc(doc(db, "guias", guiaAtualId), {
-                    status: "Arquivada",
-                    locCaixaFinal: document.getElementById("locCaixa").value,
-                    locCaixaDocumentos: document.getElementById("locCaixaDocs").value,
-                    dataArquivamentoSistema: dataF,
-                    arquivadoPor: auth.currentUser.email,
+                    status: "Digitalizada",
+                    operadorDigitalizacao: auth.currentUser.email,
                     nomeOperador: nomeOp, 
                     matriculaOperador: document.getElementById("matriculaOperador").value 
                 });
@@ -250,10 +231,10 @@
                 });
                 
                 await Promise.all(promessas);
-                alert("Arquivamento Finalizado! Gere a Folha de Rosto abaixo.");
+                alert("Digitalização Concluída! Gere a Folha de Rosto abaixo. A guia foi enviada para o setor de Arquivamento Físico.");
                 document.getElementById("btnGerarFolhaRosto").style.display = "block";
                 btn.innerText = "FINALIZADO ✅";
-            } catch (err) { alert("Erro ao salvar."); btn.disabled = false; btn.innerText = "FINALIZAR ARQUIVAMENTO"; }
+            } catch (err) { alert("Erro ao salvar."); btn.disabled = false; btn.innerText = "CONCLUIR DIGITALIZAÇÃO"; }
         };
 
         document.getElementById("btnGerarFolhaRosto").onclick = () => {
@@ -284,7 +265,6 @@
             docPdf.text(`GUIA Nº: ${dadosGuiaOriginal.numero || dadosGuiaOriginal.numeroGuia}`, 20, finalY);
             docPdf.text(`RECEBIDO EM: ${dadosGuiaOriginal.dataRecebimento.split('-').reverse().join('/')}`, 20, finalY + 10);
             
-            // AGORA SIM, GARANTIDO QUE SAI O NOME DIGITADO:
             docPdf.text(`OPERADOR: ${nomeDoOperador}`, 20, finalY + 20);
             docPdf.text(`MATRÍCULA: ${matricula}`, 20, finalY + 30);
 
