@@ -185,7 +185,6 @@
                             guiasDoDia.forEach(g => {
                                 const div = document.createElement("div"); div.className = "guia-card-arquivada";
                                 
-                                // Para as tags azuis de quem arquivou
                                 let nomeVisual = g.nomeOperador;
                                 if (!nomeVisual || nomeVisual.includes('@')) {
                                     nomeVisual = "Email: " + (g.arquivadoPor || '---');
@@ -335,15 +334,22 @@
                 docPdf.text(`GUIA Nº: ${g.numero || g.numeroGuia}`, 20, finalY); 
                 docPdf.text(`RECEBIDO EM: ${g.dataRecebimento.split('-').reverse().join('/')}`, 20, finalY + 10);
                 
-                // NOVO: TRATATIVA FINAL PARA NUNCA SAIR E-MAIL
+                // NOVO: Pergunta o NOME e a MATRÍCULA caso estejam faltando (Guias Antigas)
                 let nomeOperadorPrint = g.nomeOperador;
+                let matriculaPrint = g.matriculaOperador;
+
                 if (!nomeOperadorPrint || nomeOperadorPrint.includes('@')) {
                     nomeOperadorPrint = prompt("⚠️ Esta é uma guia antiga.\nDigite o NOME COMPLETO do Operador para sair na Folha de Rosto:", "");
-                    if (!nomeOperadorPrint) return; // Cancela impressão se a pessoa não digitar o nome
+                    if (!nomeOperadorPrint) return; 
+                }
+
+                if (!matriculaPrint) {
+                    matriculaPrint = prompt("Digite a MATRÍCULA do Operador para sair na Folha de Rosto:", "");
+                    if (!matriculaPrint) return; 
                 }
 
                 docPdf.text(`OPERADOR: ${nomeOperadorPrint.toUpperCase()}`, 20, finalY + 20); 
-                docPdf.text(`MATRÍCULA: ${g.matriculaOperador || '---'}`, 20, finalY + 30);
+                docPdf.text(`MATRÍCULA: ${matriculaPrint}`, 20, finalY + 30);
                 
                 window.open(docPdf.output('bloburl'), '_blank');
             } catch (e) { alert("Erro ao gerar PDF."); }
