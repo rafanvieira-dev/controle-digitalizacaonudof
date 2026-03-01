@@ -30,7 +30,6 @@
         .tabela-docs-arquivamento th { background: #f0f2f5; color: #003366; }
         .campo-obrigatorio:invalid { border: 2px solid #e74c3c !important; background: #fff6f6; }
         
-        /* Alerta de Atraso */
         .alerta-atraso {
             background: #ffeb3b; color: #000; padding: 2px 8px; border-radius: 4px;
             font-size: 0.7em; font-weight: bold; margin-left: 10px; animation: blink 1.5s infinite;
@@ -120,8 +119,19 @@
                 let guias = [];
                 snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
                 
-                // ORDENAÇÃO: Mais antigo primeiro
-                guias.sort((a, b) => (a.dataRecebimento || "").localeCompare(b.dataRecebimento || ""));
+                // ORDENAÇÃO: Mais antigo primeiro E crescente pelo número da guia
+                guias.sort((a, b) => {
+                    const dataA = a.dataRecebimento || "";
+                    const dataB = b.dataRecebimento || "";
+                    
+                    if (dataA !== dataB) {
+                        return dataA.localeCompare(dataB);
+                    }
+                    
+                    const numA = a.numero || a.numeroGuia || "";
+                    const numB = b.numero || b.numeroGuia || "";
+                    return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
+                });
                 
                 const contagem = {};
                 guias.forEach(g => { const dRec = g.dataRecebimento || "Sem Data"; contagem[dRec] = (contagem[dRec] || 0) + 1; });
