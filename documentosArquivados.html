@@ -56,7 +56,8 @@
                 <a href="index.html">🏠 Início / Histórico</a>
                 <a href="guia.html">➕ Nova Guia</a>
                 <a href="documentos.html">📄 Inserir Documentos</a>
-                <a href="documentosRecebidos.html">📁 Arquivar Guia</a>
+                <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
+                <a href="arquivamentoFisico.html">📦 Arquivar Guia Físico</a>
                 <a href="documentosArquivados.html" class="ativo">📚 Guias Arquivadas</a>
                 <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
             </nav>
@@ -110,11 +111,9 @@
 
         // ==========================================
         // 🔒 CONFIGURAÇÃO DOS ADMINISTRADORES
-        // Coloque aqui o seu e-mail verdadeiro
         // ==========================================
         const ADMIN_USERS = [
             "rafael.nascimento-vieira@defensoria.rj.def.br", 
-            
         ];
 
         let todasAsGuiasArquivadas = [];
@@ -222,7 +221,6 @@
                     nomeDigitalizadorModal = "Email: " + (g.arquivadoPor || '---'); 
                 }
 
-                // Verifica se é Admin
                 const isAdmin = auth.currentUser && ADMIN_USERS.includes(auth.currentUser.email);
 
                 let html = `
@@ -232,7 +230,7 @@
                         <div><b>📦 Caixa da Guia:</b> ${g.locCaixaFinal || '--'}</div>
                         <div><b>📦 Caixa de Documentos:</b> ${g.locCaixaDocumentos || '--'}</div>
                         <div style="grid-column: span 2; margin-top: 10px;">
-                            <button class="btn-reimprimir" onclick="window.reimprimirFolha('${id}')">🖨️ Reimprimir Folha de Rosto (Paisagem)</button>
+                            <button class="btn-reimprimir" onclick="window.reimprimirFolha('${id}')">🖨️ Reimprimir Folha de Rosto</button>
                         </div>
                     </div>`;
 
@@ -243,7 +241,7 @@
                             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                                 <button onclick="window.editarMetadadosGuia('${id}', '${g.numero || g.numeroGuia}', '${g.unidade}')" style="background:#f39c12; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">✏️ Alterar Nº ou Unidade</button>
                                 <button onclick="window.reabrirGuia('${id}')" style="background:#e67e22; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">🔓 Desarquivar</button>
-                                <button onclick="window.excluirGuiaCompleta('${id}')" style="background:#c0392b; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; margin-left: auto;">🗑️ Excluir Guia Permanentemente</button>
+                                <button onclick="window.excluirGuiaCompleta('${id}')" style="background:#c0392b; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; margin-left: auto;">🗑️ Excluir Guia</button>
                             </div>
                         </div>
                     `;
@@ -255,7 +253,7 @@
                         <th style="padding:10px; border:1px solid #ddd;">Inserido por</th>
                         <th style="padding:10px; border:1px solid #ddd;">Protocolo SEI</th>
                         <th style="padding:10px; border:1px solid #ddd;">Anexo</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Obs. Digitalização</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Obs.</th>
                     </tr></thead><tbody>`;
 
                 docsSnap.forEach(docItem => {
@@ -273,11 +271,8 @@
             } catch (e) { grid.innerHTML = "Erro ao carregar detalhes."; }
         };
 
-        // ==========================================
-        // 🛡️ FUNÇÕES DE ADMINISTRADOR
-        // ==========================================
         window.reabrirGuia = async (id) => {
-            if(!confirm("Tem certeza que deseja DESARQUIVAR esta guia? Ela voltará para o menu de 'Inserir Documentos'.")) return;
+            if(!confirm("Tem certeza que deseja DESARQUIVAR esta guia? Ela voltará para o menu de 'Digitalização e SEI'.")) return;
             try {
                 await updateDoc(doc(db, "guias", id), { status: "Aberta", dataArquivamentoSistema: "", locCaixaFinal: "", locCaixaDocumentos: "" });
                 alert("Guia reaberta com sucesso!"); location.reload();
@@ -309,9 +304,6 @@
             } catch(e) { alert("Erro fatal ao excluir guia."); }
         }
 
-        // ==========================================
-        // IMPRESSÃO E DASHBOARD
-        // ==========================================
         window.reimprimirFolha = async (id) => { 
             const { jsPDF } = window.jspdf; const docPdf = new jsPDF('l', 'mm', 'a4');
             try {
@@ -334,15 +326,13 @@
                 docPdf.text(`GUIA Nº: ${g.numero || g.numeroGuia}`, 20, finalY); 
                 docPdf.text(`RECEBIDO EM: ${g.dataRecebimento.split('-').reverse().join('/')}`, 20, finalY + 10);
                 
-                // NOVO: Pergunta o NOME e a MATRÍCULA caso estejam faltando (Guias Antigas)
                 let nomeOperadorPrint = g.nomeOperador;
                 let matriculaPrint = g.matriculaOperador;
 
                 if (!nomeOperadorPrint || nomeOperadorPrint.includes('@')) {
-                    nomeOperadorPrint = prompt("⚠️ Esta é uma guia antiga.\nDigite o NOME COMPLETO do Operador para sair na Folha de Rosto:", "");
+                    nomeOperadorPrint = prompt("⚠️ Digite o NOME COMPLETO do Operador para sair na Folha de Rosto:", "");
                     if (!nomeOperadorPrint) return; 
                 }
-
                 if (!matriculaPrint) {
                     matriculaPrint = prompt("Digite a MATRÍCULA do Operador para sair na Folha de Rosto:", "");
                     if (!matriculaPrint) return; 
@@ -405,7 +395,7 @@
             }
             if (dadosTabela.length === 0) return alert("Nenhum dado encontrado para gerar auditoria.");
             docPdf.setFontSize(14); docPdf.text("CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS - NUDOF", 14, 15);
-            docPdf.autoTable({ startY: 25, head: [['Guia', 'Documento', 'Prot. SEI', 'Criador', 'Inserido', 'Digitalizador', 'Data Arq.', 'Caixas', 'Observação']], body: dadosTabela, theme: 'striped', styles: { fontSize: 6 } });
+            docPdf.autoTable({ startY: 25, head: [['Guia', 'Documento', 'Prot. SEI', 'Criador', 'Inserido', 'Digitalizador', 'Data Arq.', 'Caixas', 'Obs']], body: dadosTabela, theme: 'striped', styles: { fontSize: 6 } });
             docPdf.save(`Auditoria_NUDOF_${dataInicio}.pdf`);
         };
 
