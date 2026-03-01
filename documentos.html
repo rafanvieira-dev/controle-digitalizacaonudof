@@ -106,8 +106,20 @@
                     const docsSnap = await getDocs(collection(db, "guias", d.id, "documentos"));
                     guias.push({ id: d.id, qtdDocs: docsSnap.size, ...d.data() });
                 }
-                // Ordenação: Mais antigo primeiro
-                guias.sort((a, b) => (a.dataRecebimento || "").localeCompare(b.dataRecebimento || ""));
+                
+                // ORDENAÇÃO: Mais antigo primeiro pela data E crescente pelo número da guia
+                guias.sort((a, b) => {
+                    const dataA = a.dataRecebimento || "";
+                    const dataB = b.dataRecebimento || "";
+                    
+                    if (dataA !== dataB) {
+                        return dataA.localeCompare(dataB);
+                    }
+                    
+                    const numA = a.numero || a.numeroGuia || "";
+                    const numB = b.numero || b.numeroGuia || "";
+                    return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
+                });
 
                 const contagemPorData = {};
                 guias.forEach(g => {
@@ -120,15 +132,20 @@
                 let divGrupo = null;
 
                 guias.forEach(g => {
-                    const hoje = new Date(); hoje.setHours(0,0,0,0);
-                    const [ano, mes, dia] = g.dataRecebimento.split('-');
-                    const dataGuia = new Date(ano, mes - 1, dia);
-                    const alertaHtml = dataGuia < hoje ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
+                    const recVal = g.dataRecebimento || "Sem Data";
+                    
+                    let alertaHtml = "";
+                    if (recVal !== "Sem Data") {
+                        const hoje = new Date(); hoje.setHours(0,0,0,0);
+                        const [ano, mes, dia] = recVal.split('-');
+                        const dataGuia = new Date(ano, mes - 1, dia);
+                        alertaHtml = dataGuia < hoje ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
+                    }
 
-                    if (g.dataRecebimento !== dataAtual) {
-                        dataAtual = g.dataRecebimento;
-                        const dataF = dataAtual.split('-').reverse().join('/');
-                        const idGrupo = `grupo-ins-${dataAtual.replace(/-/g, '_')}`;
+                    if (recVal !== dataAtual) {
+                        dataAtual = recVal;
+                        const dataF = dataAtual !== "Sem Data" ? dataAtual.split('-').reverse().join('/') : "Sem Data";
+                        const idGrupo = `grupo-ins-${dataAtual.replace(/-/g, '_').replace(/ /g, '')}`;
                         const totalGuias = contagemPorData[dataAtual];
 
                         const btnData = document.createElement("button");
@@ -182,7 +199,14 @@
                                     <button class="btn-primary" onclick="window.prepararEdicao('${docSnap.id}', ${JSON.stringify(d).replace(/"/g, '&quot;')})" style="width:auto; background:#f39c12">✏️ Editar</button>`;
                     containerReal.appendChild(li);
                 });
-                contador.innerText = `${snap.size} / 7 documentos cadastrados`;
+                
+                if(snap.size >= 7) {
+                    contador.style.color = "#e74c3c";
+                    contador.innerText = `LIMITE MÁXIMO ATINGIDO: ${snap.size} / 7 documentos`;
+                } else {
+                    contador.style.color = "#d35400";
+                    contador.innerText = `${snap.size} / 7 documentos cadastrados`;
+                }
             } catch (e) { console.error(e); }
         }
 
@@ -205,6 +229,18 @@
 
         document.getElementById("formDocumento").onsubmit = async (e) => {
             e.preventDefault();
+            const btn = document.getElementById("btnSalvar");
+            btn.disabled = true;
+
+            if (!docEmEdicaoId) {
+                const snapCheck = await getDocs(collection(db, "guias", guiaAtivaId, "documentos"));
+                if (snapCheck.size >= 7) {
+                    alert("Limite máximo de 7 documentos por guia atingido! Crie uma nova guia se necessário.");
+                    btn.disabled = false;
+                    return;
+                }
+            }
+
             const docDados = {
                 nomeDocumento: document.getElementById("nomeDocumento").value,
                 numeroProcesso: document.getElementById("numeroProcesso").value,
@@ -213,6 +249,7 @@
                 ultimaAtualizacao: new Date(),
                 atualizadoPor: auth.currentUser.email
             };
+            
             try {
                 if (docEmEdicaoId) {
                     await updateDoc(doc(db, "guias", guiaAtivaId, "documentos", docEmEdicaoId), docDados);
@@ -225,7 +262,11 @@
                 window.cancelarEdicao(); 
                 window.atualizarListaDocumentos(guiaAtivaId);
                 carregarMenuGuias();
-            } catch (err) { alert("Erro ao salvar."); }
+            } catch (err) { 
+                alert("Erro ao salvar."); 
+            } finally {
+                btn.disabled = false;
+            }
         };
     </script>
 </body>
