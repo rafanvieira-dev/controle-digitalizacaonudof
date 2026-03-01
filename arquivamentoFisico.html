@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquivamento Físico - NUDOF</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .guia-card-arquivar {
+            background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 6px solid #27ae60;
+        }
+        .data-header-btn {
+            width: 100%; background: #003366; color: white; padding: 12px;
+            border: none; border-radius: 5px; text-align: left; font-weight: bold;
+            margin: 15px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between;
+            align-items: center;
+        }
+        .data-header-btn:hover { background: #004080; }
+        .contador-pendentes { background: #e74c3c; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85em; margin-left: 10px; font-weight: normal; }
+        .grupo-pendentes { display: none; margin-bottom: 20px; }
+        .form-grid-arquivar { display: flex; flex-direction: column; gap: 15px; text-align: left; }
+        .input-group label { display: block; font-weight: bold; font-size: 12px; margin-bottom: 5px; color: #34495e; }
+        .input-group input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div id="appInterface">
+        <aside id="sidebar">
+            <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
+            <nav>
+                <a href="index.html">🏠 Início / Histórico</a>
+                <a href="guia.html">➕ Nova Guia</a>
+                <a href="documentos.html">📄 Inserir Documentos</a>
+                <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
+                <a href="arquivamentoFisico.html" class="ativo">📦 Arquivar Guia Físico</a>
+                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
+                <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
+            </nav>
+        </aside>
+
+        <main id="content">
+            <h2 class="page-title">Arquivamento Físico de Guias</h2>
+            <p style="margin-bottom: 20px; color: #666;">Aqui constam as guias que já foram digitalizadas e inseridas no SEI, aguardando organização nas caixas físicas.</p>
+            <div id="listaParaArquivar"><p>Buscando guias pendentes de arquivamento...</p></div>
+        </main>
+    </div>
+
+    <div id="modalArquivar" class="modal">
+        <div class="modal-content" style="width: 50%; max-width: 600px; margin: 5% auto;">
+            <span class="close-btn" id="closeArquivar" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
+            <h3 id="tituloModalArquivar" style="margin-bottom: 15px; color: #003366;"></h3>
+            
+            <form id="formDadosArquivamento" class="form-grid-arquivar">
+                <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b6d4fe;">
+                    <div class="input-group">
+                        <label>📦 Nº Caixa da Guia:</label>
+                        <input type="text" id="locCaixa" required placeholder="Ex: G-012">
+                    </div>
+                    <div class="input-group">
+                        <label>📦 Nº Caixa dos Documentos:</label>
+                        <input type="text" id="locCaixaDocs" required placeholder="Ex: D-045">
+                    </div>
+                    <div class="input-group">
+                        <label>📅 Data de Arquivamento Físico:</label>
+                        <input type="date" id="dataArquivamentoManual" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#27ae60; padding: 15px; font-weight: bold; width: 100%;">✅ CONCLUIR ARQUIVAMENTO</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db, auth } from "./firebase.js";
+        import { collection, getDocs, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+        let guiaAtualId = "";
+
+        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregar(); });
+        document.getElementById("btnLogout").onclick = () => signOut(auth);
+
+        async function carregar() {
+            const container = document.getElementById("listaParaArquivar");
+            try {
+                const q = query(collection(db, "guias"), where("status", "==", "Digitalizada"));
+                const snap = await getDocs(q);
+                if(snap.empty) { container.innerHTML = "<p>Nenhuma guia aguardando arquivamento físico.</p>"; return; }
+                
+                let guias = [];
+                snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
+                
+                guias.sort((a, b) => {
+                    const dataA = a.dataRecebimento || ""; const dataB = b.dataRecebimento || "";
+                    if (dataA !== dataB) return dataA.localeCompare(dataB);
+                    const numA = a.numero || a.numeroGuia || ""; const numB = b.numero || b.numeroGuia || "";
+                    return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
+                });
+                
+                const contagem = {};
+                guias.forEach(g => { const dRec = g.dataRecebimento || "Sem Data"; contagem[dRec] = (contagem[dRec] || 0) + 1; });
+                
+                container.innerHTML = ""; let dataAtual = "";
+
+                guias.forEach(g => {
+                    if (g.dataRecebimento !== dataAtual) {
+                        dataAtual = g.dataRecebimento;
+                        const dataF = dataAtual !== "Sem Data" ? dataAtual.split('-').reverse().join('/') : "Sem Data";
+                        
+                        const btnData = document.createElement("button");
+                        btnData.className = "data-header-btn";
+                        btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span><span class="contador-pendentes" style="background:#27ae60">${contagem[dataAtual]} pendente(s)</span></div><span>➕</span>`;
+                        
+                        const divGrupo = document.createElement("div"); divGrupo.className = "grupo-pendentes";
+                        btnData.onclick = () => {
+                            const estaAberto = divGrupo.style.display === "block";
+                            divGrupo.style.display = estaAberto ? "none" : "block";
+                            btnData.querySelector('span:last-child').innerText = estaAberto ? "➕" : "➖";
+                        };
+                        container.appendChild(btnData); container.appendChild(divGrupo);
+                        window.grupoTemp = divGrupo;
+                    }
+
+                    const num = g.numero || g.numeroGuia || "S/N";
+                    const div = document.createElement("div"); div.className = "guia-card-arquivar";
+                    div.innerHTML = `<div><strong>Guia ${num}</strong><br><small>${g.unidade}</small></div><button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#27ae60; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📦 Registrar Arquivamento</button>`;
+                    window.grupoTemp.appendChild(div);
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        window.abrirArq = (id, num) => {
+            guiaAtualId = id;
+            document.getElementById("btnConfirmarArq").disabled = false;
+            document.getElementById("btnConfirmarArq").innerText = "✅ CONCLUIR ARQUIVAMENTO";
+            document.getElementById("tituloModalArquivar").innerText = "Arquivar Guia: " + num;
+            document.getElementById("dataArquivamentoManual").value = new Date().toISOString().split('T')[0];
+            
+            document.getElementById("modalArquivar").style.display = "block";
+        };
+
+        document.getElementById("formDadosArquivamento").onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById("btnConfirmarArq");
+            btn.disabled = true; btn.innerText = "Gravando...";
+            
+            try {
+                const dataF = document.getElementById("dataArquivamentoManual").value.split("-").reverse().join("/");
+                
+                await updateDoc(doc(db, "guias", guiaAtualId), {
+                    status: "Arquivada",
+                    locCaixaFinal: document.getElementById("locCaixa").value,
+                    locCaixaDocumentos: document.getElementById("locCaixaDocs").value,
+                    dataArquivamentoSistema: dataF,
+                    arquivadoPor: auth.currentUser.email
+                });
+
+                alert("Arquivamento Físico Concluído com Sucesso! A guia agora consta no Acervo.");
+                document.getElementById("modalArquivar").style.display = "none";
+                carregar();
+            } catch (err) { alert("Erro ao salvar."); btn.disabled = false; btn.innerText = "CONCLUIR ARQUIVAMENTO"; }
+        };
+
+        document.getElementById("closeArquivar").onclick = () => document.getElementById("modalArquivar").style.display = "none";
+    </script>
+</body>
+</html>
