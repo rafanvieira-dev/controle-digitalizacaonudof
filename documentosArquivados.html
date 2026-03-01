@@ -19,9 +19,18 @@
             width: 100%; background: #003366; color: white; padding: 12px;
             border: none; border-radius: 5px; text-align: left; font-weight: bold;
             margin: 15px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between;
+            align-items: center;
         }
         .data-header-btn:hover { background: #004080; }
-        .grupo-guias { display: block; margin-bottom: 20px; }
+        
+        /* Estilo do Contador */
+        .contador-guias {
+            background: #27ae60; color: white; padding: 2px 10px; border-radius: 12px;
+            font-size: 0.85em; margin-left: 10px; font-weight: normal;
+        }
+
+        .grupo-guias { display: none; margin-bottom: 20px; transition: all 0.3s ease; }
+        
         .info-box strong { color: #003366; font-size: 1.1em; }
         .badge-user { font-size: 0.75em; color: #666; display: block; margin-top: 5px; }
         .badge-local { background: #e8f4fd; color: #003366; padding: 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
@@ -86,7 +95,7 @@
                 const snap = await getDocs(q);
                 
                 if(snap.empty) { 
-                    container.innerHTML = "<p>Nenhuma guia arquivada encontrada.</p>"; 
+                    container.innerHTML = "<p>Nenhuma guia arquivada encontrada no acervo.</p>"; 
                     return; 
                 }
 
@@ -100,6 +109,12 @@
                     return dataB.localeCompare(dataA);
                 });
 
+                // Primeiro, vamos contar quantas guias existem por data
+                const contagemPorData = {};
+                todasAsGuiasArquivadas.forEach(g => {
+                    contagemPorData[g.dataArquivamentoSistema] = (contagemPorData[g.dataArquivamentoSistema] || 0) + 1;
+                });
+
                 container.innerHTML = "";
                 let dataAtual = "";
                 let divGrupoAtual = null;
@@ -107,22 +122,32 @@
                 todasAsGuiasArquivadas.forEach(g => {
                     if (g.dataArquivamentoSistema !== dataAtual) {
                         dataAtual = g.dataArquivamentoSistema;
-                        
-                        // Criamos uma constante local para a data para não perder a referência no evento de clique
                         const dataParaOId = dataAtual.replace(/\//g, '-');
+                        const totalNoDia = contagemPorData[dataAtual];
                         
                         const btnData = document.createElement("button");
                         btnData.className = "data-header-btn";
-                        btnData.innerHTML = `<span>📅 Arquivadas em: ${dataAtual}</span> <span>↕</span>`;
+                        btnData.innerHTML = `
+                            <div>
+                                <span>📅 Arquivadas em: ${dataAtual}</span>
+                                <span class="contador-guias">${totalNoDia} ${totalNoDia > 1 ? 'guias' : 'guia'}</span>
+                            </div>
+                            <span>➕</span>`;
                         
                         divGrupoAtual = document.createElement("div");
                         divGrupoAtual.className = "grupo-guias";
                         divGrupoAtual.id = `grupo-${dataParaOId}`;
                         
-                        // CORREÇÃO: O clique agora referencia o ID único e correto deste grupo
                         btnData.onclick = () => {
                             const target = document.getElementById(`grupo-${dataParaOId}`);
-                            target.style.display = target.style.display === "none" ? "block" : "none";
+                            const icon = btnData.querySelector('span:last-child');
+                            if (target.style.display === "block") {
+                                target.style.display = "none";
+                                icon.innerText = "➕";
+                            } else {
+                                target.style.display = "block";
+                                icon.innerText = "➖";
+                            }
                         };
 
                         container.appendChild(btnData);
@@ -135,7 +160,7 @@
                         <div class="info-box">
                             <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
                             <small>Unidade: ${g.unidade}</small><br>
-                            <span class="badge-user">👤 Digitalizador: ${g.arquivadoPor || '---'}</span>
+                            <span class="badge-user">👤 Responsável: ${g.arquivadoPor || '---'}</span>
                         </div>
                         <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
                             <div class="badge-local">📦 G: ${g.locCaixaFinal} / D: ${g.locCaixaDocumentos}</div>
@@ -153,7 +178,7 @@
             const grid = document.getElementById("detalhesGuiaGrid");
             document.getElementById("modalTitulo").innerText = "Auditoria Detalhada - Guia " + num;
             document.getElementById("modalDetalhes").style.display = "block";
-            grid.innerHTML = "Carregando detalhes...";
+            grid.innerHTML = "Carregando...";
 
             try {
                 const gSnap = await getDoc(doc(db, "guias", id));
