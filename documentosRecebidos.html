@@ -219,7 +219,7 @@
 
         document.getElementById("btnGerarFolhaRosto").onclick = () => {
             const { jsPDF } = window.jspdf;
-            const docPdf = new jsPDF('l', 'mm', 'a4');
+            const docPdf = new jsPDF('l', 'mm', 'a4'); // Orientação Paisagem 
             const matricula = document.getElementById("matriculaOperador").value;
 
             // Título Principal ampliado
@@ -232,17 +232,18 @@
                 const midiaSel = document.getElementById(`tAnexo_${item.id}`).value;
                 const contemMidia = midiaSel !== "Nenhum" ? "S" : "N";
                 rows.push([
-                    idx + 1, // Nº ORDEM
-                    document.getElementById(`pags_${item.id}`).value, // QTD FOLHAS
-                    document.getElementById(`data_${item.id}`).value.split('-').reverse().join('/'), // DATA DIGIT.
-                    item.processoOriginal, // Nº DO PROCESSO NO SEI (Original do sistema)
-                    document.getElementById(`sei_${item.id}`).value, // Nº PROTOCOLO DO DOCUMENTO (Preenchido nesta etapa)
+                    idx + 1, // Nº ORDEM 
+                    document.getElementById(`pags_${item.id}`).value, // QTD FOLHAS 
+                    document.getElementById(`data_${item.id}`).value.split('-').reverse().join('/'), // DATA DIGIT. 
+                    item.processoOriginal, // Nº DO PROCESSO NO SEI (Original do sistema) 
+                    document.getElementById(`sei_${item.id}`).value, // Nº PROTOCOLO DO DOCUMENTO 
                     contemMidia,
                     midiaSel === "Nenhum" ? "" : midiaSel,
                     document.getElementById(`protAnexo_${item.id}`).value || ""
                 ]);
             });
 
+            // Preenchimento de 7 linhas conforme modelo 
             while(rows.length < 7) { rows.push([rows.length + 1, "", "", "", "", "N", "", ""]); }
 
             docPdf.autoTable({
@@ -250,8 +251,23 @@
                 head: [['Nº ORDEM', 'QTD FOLHAS', 'DATA DIGIT.', 'Nº PROCESSO SEI', 'Nº PROTOCOLO DO DOCUMENTO', 'MÍDIA', 'TIPO MÍDIA', 'PROT. MÍDIA']],
                 body: rows,
                 theme: 'grid',
-                styles: { fontSize: 9, halign: 'center', textColor: 0, cellPadding: 3 },
-                headStyles: { fillColor: [230, 230, 230], textColor: 0, fontStyle: 'bold', fontSize: 10 }
+                styles: { 
+                    fontSize: 10, 
+                    halign: 'center', 
+                    textColor: 0, 
+                    cellPadding: 4,
+                    lineColor: [0, 0, 0], // Linhas pretas (escuras) 
+                    lineWidth: 0.5        // Linhas mais grossas 
+                },
+                headStyles: { 
+                    fillColor: [60, 60, 60], // Cabeçalho cinza escuro 
+                    textColor: 255, 
+                    fontStyle: 'bold', 
+                    fontSize: 11 
+                },
+                alternateRowStyles: { 
+                    fillColor: [220, 220, 220] // Linhas intercaladas em cinza escuro/médio 
+                }
             });
 
             const finalY = docPdf.lastAutoTable.finalY + 20;
