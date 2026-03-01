@@ -165,7 +165,6 @@
                         
                         container.appendChild(btnData);
                         container.appendChild(divGrupoSendoCriado);
-                        // Atribui o grupo atual para que os cartões seguintes caiam nele
                         window.grupoTemp = divGrupoSendoCriado;
                     }
 
@@ -177,6 +176,19 @@
                 });
             } catch (err) { console.error(err); }
         }
+
+        // NOVO: Função que espalha a data para os campos vazios da tabela
+        window.sincronizarDatas = function(valorAlterado) {
+            if (!valorAlterado) return; // Se apagou a data, ignora
+            
+            documentosDaGuia.forEach(docId => {
+                const inputData = document.getElementById(`data_${docId}`);
+                // Se o campo de data deste documento estiver vazio, auto-preenche
+                if (inputData && !inputData.value) {
+                    inputData.value = valorAlterado;
+                }
+            });
+        };
 
         window.abrirArq = async (id, num) => {
             guiaAtualId = id; documentosDaGuia = []; listaDocumentosCache = [];
@@ -210,12 +222,13 @@
                     documentosDaGuia.push(docSnap.id);
                     listaDocumentosCache.push({ id: docSnap.id, processoOriginal: d.numeroProcesso });
                     
+                    // NOVO: O input de data agora possui onchange="window.sincronizarDatas(this.value)"
                     html += `<tr>
                         <td style="text-align:center"><b>${i++}</b></td>
                         <td><small><b>${d.nomeDocumento}</b><br>Processo: ${d.numeroProcesso}</small></td>
                         <td><input type="number" id="pags_${docSnap.id}" class="campo-obrigatorio" required></td>
                         <td><input type="text" id="sei_${docSnap.id}" class="campo-obrigatorio" placeholder="Número Protocolo" required></td>
-                        <td><input type="date" id="data_${docSnap.id}" class="campo-obrigatorio" required></td>
+                        <td><input type="date" id="data_${docSnap.id}" class="campo-obrigatorio" onchange="window.sincronizarDatas(this.value)" required></td>
                         <td><select id="tAnexo_${docSnap.id}"><option value="Nenhum">Não</option><option value="CD">CD</option><option value="DVD">DVD</option><option value="Pen Drive">Pen Drive</option></select></td>
                         <td><input type="text" id="protAnexo_${docSnap.id}" placeholder="Se houver"></td>
                         <td><input type="text" id="obs_${docSnap.id}"></td>
