@@ -165,7 +165,7 @@
                     div.className = "guia-card-arquivar";
                     div.innerHTML = `
                         <div><strong>Guia ${num}</strong><br><small>${g.unidade}</small></div>
-                        <button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#27ae60; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📁 Iniciar Digitalização</button>`;
+                        <button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#27ae60; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📁 Iniciar Arquivamento</button>`;
                     divGrupoAtual.appendChild(div);
                 });
             } catch (err) { console.error(err); }
