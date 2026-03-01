@@ -11,16 +11,21 @@
 
     <style>
         .guia-card-arquivada {
-            background: white; border-radius: 8px; padding: 20px; margin-bottom: 15px;
+            background: white; border-radius: 8px; padding: 15px; margin-bottom: 10px;
             display: flex; justify-content: space-between; align-items: center; 
             border-left: 6px solid #7f8c8d; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
+        .data-header-btn {
+            width: 100%; background: #003366; color: white; padding: 12px;
+            border: none; border-radius: 5px; text-align: left; font-weight: bold;
+            margin: 15px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between;
+        }
+        .data-header-btn:hover { background: #004080; }
+        .grupo-guias { display: block; margin-bottom: 20px; }
         .info-box strong { color: #003366; font-size: 1.1em; }
         .badge-user { font-size: 0.75em; color: #666; display: block; margin-top: 5px; }
-        .badge-local { background: #e8f4fd; color: #003366; padding: 8px; border-radius: 4px; font-weight: bold; font-size: 0.9em; }
+        .badge-local { background: #e8f4fd; color: #003366; padding: 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
         .filtros-relatorio { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: flex-end; border: 1px solid #ddd; }
-        .filtros-relatorio div { display: flex; flex-direction: column; gap: 5px; }
-        .filtros-relatorio input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -38,26 +43,26 @@
         </aside>
 
         <main id="content">
-            <h2 class="page-title">Consulta de Acervo e Auditoria</h2>
+            <h2 class="page-title">Consulta de Acervo por Data de Arquivamento</h2>
 
             <div class="filtros-relatorio">
                 <div>
-                    <label>📅 Data Inicial (Arquivamento):</label>
+                    <label>📅 Data Inicial:</label>
                     <input type="date" id="dataInicioRel">
                 </div>
                 <div>
-                    <label>📅 Data Final (Arquivamento):</label>
+                    <label>📅 Data Final:</label>
                     <input type="date" id="dataFimRel">
                 </div>
                 <button class="btn-primary" onclick="window.gerarPDF()" style="width: auto; padding: 10px 20px;">📄 Gerar Relatório PDF</button>
             </div>
 
-            <div id="listaArquivadas"><p>A carregar acervo...</p></div>
+            <div id="listaArquivadas"><p>Buscando acervo...</p></div>
         </main>
     </div>
 
     <div id="modalDetalhes" class="modal">
-        <div class="modal-content" style="width: 95%; max-width: 1200px;">
+        <div class="modal-content" style="width: 95%; max-width: 1250px;">
             <span class="close-btn" id="closeModal" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
             <h3 id="modalTitulo" style="color: #003366; margin-bottom: 15px;"></h3>
             <div id="detalhesGuiaGrid"></div>
@@ -79,37 +84,77 @@
             try {
                 const q = query(collection(db, "guias"), where("status", "==", "Arquivada"));
                 const snap = await getDocs(q);
-                if(snap.empty) { container.innerHTML = "<p>Nenhuma guia arquivada encontrada.</p>"; return; }
+                
+                if(snap.empty) { 
+                    container.innerHTML = "<p>Nenhuma guia arquivada encontrada.</p>"; 
+                    return; 
+                }
 
                 todasAsGuiasArquivadas = [];
+                snap.forEach(d => todasAsGuiasArquivadas.push({ id: d.id, ...d.data() }));
+
+                // ORDENAÇÃO: Mais recente para o mais antigo (baseado na data de arquivamento)
+                todasAsGuiasArquivadas.sort((a, b) => {
+                    const dataA = a.dataArquivamentoSistema.split('/').reverse().join('');
+                    const dataB = b.dataArquivamentoSistema.split('/').reverse().join('');
+                    return dataB.localeCompare(dataA);
+                });
+
                 container.innerHTML = "";
+                let dataAtual = "";
+                let divGrupoAtual = null;
 
-                snap.forEach(d => {
-                    const g = { id: d.id, ...d.data() };
-                    todasAsGuiasArquivadas.push(g);
+                todasAsGuiasArquivadas.forEach(g => {
+                    if (g.dataArquivamentoSistema !== dataAtual) {
+                        dataAtual = g.dataArquivamentoSistema;
+                        
+                        // Botão de Data (Header)
+                        const btnData = document.createElement("button");
+                        btnData.className = "data-header-btn";
+                        btnData.innerHTML = `<span>📅 Arquivadas em: ${dataAtual}</span> <span>▼</span>`;
+                        
+                        // Container para as guias dessa data
+                        divGrupoAtual = document.createElement("div");
+                        divGrupoAtual.className = "grupo-guias";
+                        divGrupoAtual.id = `grupo-${dataAtual.replace(/\//g, '-')}`;
+                        
+                        // Lógica de recolher/expandir ao clicar no botão da data
+                        btnData.onclick = () => {
+                            const target = document.getElementById(`grupo-${dataAtual.replace(/\//g, '-')}`);
+                            target.style.display = target.style.display === "none" ? "block" : "none";
+                        };
 
+                        container.appendChild(btnData);
+                        container.appendChild(divGrupoAtual);
+                    }
+
+                    // Card da Guia (dentro do grupo da data)
                     const div = document.createElement("div");
                     div.className = "guia-card-arquivada";
                     div.innerHTML = `
                         <div class="info-box">
                             <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
                             <small>Unidade: ${g.unidade}</small><br>
-                            <span class="badge-user">👤 Responsável Final: ${g.arquivadoPor || 'Não informado'}</span>
+                            <span class="badge-user">👤 Responsável: ${g.arquivadoPor || '---'}</span>
                         </div>
                         <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
                             <div class="badge-local">📦 G: ${g.locCaixaFinal} / D: ${g.locCaixaDocumentos}</div>
                             <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Auditoria</button>
                         </div>`;
-                    container.appendChild(div);
+                    divGrupoAtual.appendChild(div);
                 });
-            } catch (err) { container.innerHTML = "Erro ao carregar acervo."; }
+            } catch (err) { 
+                console.error(err);
+                container.innerHTML = "Erro ao carregar acervo."; 
+            }
         }
 
+        // Função do Modal (Ver Detalhes)
         window.verDetalhes = async (id, num) => {
             const grid = document.getElementById("detalhesGuiaGrid");
             document.getElementById("modalTitulo").innerText = "Auditoria Detalhada - Guia " + num;
             document.getElementById("modalDetalhes").style.display = "block";
-            grid.innerHTML = "Consultando base de dados...";
+            grid.innerHTML = "Carregando...";
 
             try {
                 const gSnap = await getDoc(doc(db, "guias", id));
@@ -127,15 +172,14 @@
                     <thead><tr style="background:#003366; color:white;">
                         <th style="padding:10px; border:1px solid #ddd;">Documento</th>
                         <th style="padding:10px; border:1px solid #ddd;">Inserido por</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Prot. SEI</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Protocolo SEI</th>
                         <th style="padding:10px; border:1px solid #ddd;">Anexo</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Observação</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Obs. Digitalização</th>
                     </tr></thead><tbody>`;
 
                 docsSnap.forEach(docItem => {
                     const d = docItem.data();
                     const anexoStr = d.tipoAnexo && d.tipoAnexo !== "Nenhum" ? `<b>${d.tipoAnexo}</b> (${d.qtdPagsAnexo} pgs)` : "Nenhum";
-                    
                     html += `<tr>
                         <td style="padding:10px; border:1px solid #ddd;"><b>${d.nomeDocumento}</b><br><small>${d.numeroProcesso}</small></td>
                         <td style="padding:10px; border:1px solid #ddd;">${d.inseridoPor || '--'}</td>
@@ -148,6 +192,7 @@
             } catch (e) { grid.innerHTML = "Erro ao carregar detalhes."; }
         };
 
+        // Função PDF (Mantida Completa)
         window.gerarPDF = async function() {
             const dataInicio = document.getElementById("dataInicioRel").value;
             const dataFim = document.getElementById("dataFimRel").value;
@@ -155,17 +200,16 @@
 
             const { jsPDF } = window.jspdf;
             const docPdf = new jsPDF('landscape');
-            
-            const dIni = parseInt(dataInicio.replace(/-/g, ""));
-            const dFim = parseInt(dataFim.replace(/-/g, ""));
+            const dIni = new Date(dataInicio);
+            const dFim = new Date(dataFim);
+            dFim.setHours(23, 59, 59);
 
             let dadosTabela = [];
-
             for (let g of todasAsGuiasArquivadas) {
-                const p = g.dataArquivamentoSistema.split('/');
-                const dG = parseInt(p[2] + p[1] + p[0]);
+                const partes = g.dataArquivamentoSistema.split('/');
+                const dataG = new Date(partes[2], partes[1] - 1, partes[0]);
 
-                if (dG >= dIni && dG <= dFim) {
+                if (dataG >= dIni && dataG <= dFim) {
                     const docsSnap = await getDocs(collection(db, "guias", g.id, "documentos"));
                     docsSnap.forEach(dItem => {
                         const dd = dItem.data();
@@ -184,26 +228,18 @@
                 }
             }
 
-            if (dadosTabela.length === 0) return alert("Nenhuma guia encontrada neste intervalo.");
+            if (dadosTabela.length === 0) return alert("Nenhum dado encontrado.");
 
             docPdf.setFontSize(14);
-            docPdf.text("NUDOF - RELATÓRIO DE AUDITORIA DE DOCUMENTOS DIGITALIZADOS", 14, 15);
-
+            docPdf.text("NUDOF - RELATÓRIO DE AUDITORIA", 14, 15);
             docPdf.autoTable({
                 startY: 25,
-                head: [['Guia', 'Documento', 'Prot. SEI', 'Criado por', 'Inserido por', 'Digitalizado por', 'Data Arq.', 'Caixas', 'Observações']],
+                head: [['Guia', 'Documento', 'Prot. SEI', 'Criador', 'Inserido', 'Digitalizador', 'Data Arq.', 'Caixas', 'Observação']],
                 body: dadosTabela,
                 theme: 'striped',
-                styles: { fontSize: 6, cellPadding: 1.5 },
-                headStyles: { fillColor: [0, 51, 102] },
-                columnStyles: { 
-                    3: { cellWidth: 35 }, 
-                    4: { cellWidth: 35 }, 
-                    5: { cellWidth: 35 } 
-                }
+                styles: { fontSize: 6 }
             });
-
-            docPdf.save(`Relatorio_Auditoria_NUDOF_${dataInicio}.pdf`);
+            docPdf.save(`Auditoria_NUDOF_${dataInicio}.pdf`);
         };
 
         document.getElementById("closeModal").onclick = () => document.getElementById("modalDetalhes").style.display = "none";
