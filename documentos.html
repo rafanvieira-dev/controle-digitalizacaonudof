@@ -220,31 +220,31 @@
         // ==========================================
         window.editarGuiaAtual = async () => {
             try {
-                // Busca os dados originais da guia para colocar no prompt
                 const gSnap = await getDoc(doc(db, "guias", guiaAtivaId));
                 const g = gSnap.data();
                 
                 const novoNum = prompt("Digite o NOVO número da Guia:", g.numero || g.numeroGuia);
-                if(!novoNum) return; // Cancela se o usuário deixar em branco ou cancelar
+                if(!novoNum) return; 
                 
                 const novaUnidade = prompt("Digite o NOVO nome da Unidade:", g.unidade);
                 if(!novaUnidade) return;
 
-                // Atualiza o Firestore
+                const novaData = prompt("Digite a NOVA data de recebimento (Formato AAAA-MM-DD):", g.dataRecebimento);
+                if(!novaData) return;
+
                 await updateDoc(doc(db, "guias", guiaAtivaId), { 
                     numero: novoNum, 
                     numeroGuia: novoNum, 
-                    unidade: novaUnidade 
+                    unidade: novaUnidade,
+                    dataRecebimento: novaData
                 });
                 
                 alert("Metadados da guia atualizados com sucesso!");
                 
-                // Atualiza a interface da área de documentos
                 document.getElementById("tituloGuia").innerText = `Guia: ${novoNum}`;
                 numeroGuiaAtiva = novoNum;
                 document.getElementById("guiaRemessa").value = novoNum;
                 
-                // Recarrega o menu lateral de guias
                 carregarMenuGuias(); 
             } catch(e) { 
                 alert("Erro ao atualizar os metadados da guia."); 
