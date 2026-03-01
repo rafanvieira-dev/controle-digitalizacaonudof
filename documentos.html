@@ -102,9 +102,6 @@
         import { collection, getDocs, addDoc, updateDoc, doc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-        // ==========================================
-        // 🔒 CONFIGURAÇÃO DOS ADMINISTRADORES
-        // ==========================================
         const ADMIN_USERS = [
             "rafael.nascimento-vieira@defensoria.rj.def.br", 
         ];
@@ -116,6 +113,33 @@
 
         onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregarMenuGuias(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
+
+        // FUNÇÃO INTELIGENTE DE CÁLCULO DE ATRASO IGNORANDO FINAIS DE SEMANA
+        function verificarAtraso(dataStr) {
+            if (!dataStr || dataStr === "Sem Data") return false;
+            
+            const hoje = new Date(); hoje.setHours(0,0,0,0);
+            const [ano, mes, dia] = dataStr.split('-');
+            const dataGuia = new Date(ano, mes - 1, dia); dataGuia.setHours(0,0,0,0);
+            
+            if (dataGuia >= hoje) return false;
+            
+            let diasUteis = 0;
+            let d = new Date(dataGuia);
+            d.setDate(d.getDate() + 1); // começa a contar no dia seguinte
+            
+            while (d <= hoje) {
+                const diaSemana = d.getDay();
+                // 0 = Domingo, 6 = Sábado
+                if (diaSemana !== 0 && diaSemana !== 6) {
+                    diasUteis++;
+                }
+                d.setDate(d.getDate() + 1);
+            }
+            
+            // Se tiver passado ao menos 1 dia útil completo, considera em atraso
+            return diasUteis > 0;
+        }
 
         async function carregarMenuGuias() {
             const lista = document.getElementById("listaGuias");
@@ -150,13 +174,7 @@
                 guias.forEach(g => {
                     const recVal = g.dataRecebimento || "Sem Data";
                     
-                    let alertaHtml = "";
-                    if (recVal !== "Sem Data") {
-                        const hoje = new Date(); hoje.setHours(0,0,0,0);
-                        const [ano, mes, dia] = recVal.split('-');
-                        const dataGuia = new Date(ano, mes - 1, dia);
-                        alertaHtml = dataGuia < hoje ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
-                    }
+                    let alertaHtml = verificarAtraso(recVal) ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
 
                     if (recVal !== dataAtual) {
                         dataAtual = recVal;
@@ -166,7 +184,8 @@
 
                         const btnData = document.createElement("button");
                         btnData.className = "data-header-btn";
-                        btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span> <span class="contador-abas">${totalGuias} guia(s)</span> ${alertaHtml}</div><span>➕</span>`;
+                        // A classe toggle-icon no final resolve o problema do alerta sumir
+                        btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span> <span class="contador-abas">${totalGuias} guia(s)</span> ${alertaHtml}</div><span class="toggle-icon">➕</span>`;
                         
                         divGrupo = document.createElement("div");
                         divGrupo.className = "grupo-guias-inserir";
@@ -175,7 +194,7 @@
 
                         btnData.onclick = () => {
                             const target = document.getElementById(idGrupo);
-                            const icon = btnData.querySelector('span:last-child');
+                            const icon = btnData.querySelector('.toggle-icon');
                             const estaFechado = target.style.display === "none" || target.style.display === "";
                             target.style.display = estaFechado ? "flex" : "none";
                             icon.innerText = estaFechado ? "➖" : "➕";
@@ -203,7 +222,6 @@
             document.getElementById("areaDocumentos").style.display = "block";
             document.getElementById("tituloGuia").innerText = texto;
 
-            // Mostrar botão de edição apenas para Administradores
             const isAdmin = auth.currentUser && ADMIN_USERS.includes(auth.currentUser.email);
             document.getElementById("btnEditarGuia").style.display = isAdmin ? "block" : "none";
 
@@ -215,9 +233,6 @@
             document.getElementById("areaDocumentos").scrollIntoView({ behavior: 'smooth' });
         };
 
-        // ==========================================
-        // 🛠️ FUNÇÃO DE EDITAR GUIA (ADMIN)
-        // ==========================================
         window.editarGuiaAtual = async () => {
             try {
                 const gSnap = await getDoc(doc(db, "guias", guiaAtivaId));
@@ -300,10 +315,8 @@
         window.cancelarEdicao = () => {
             docEmEdicaoId = null; 
             document.getElementById("formDocumento").reset();
-            
             if (ultimaDataRecebimento) document.getElementById("dataRecebimento").value = ultimaDataRecebimento;
             if (numeroGuiaAtiva) document.getElementById("guiaRemessa").value = numeroGuiaAtiva;
-
             document.getElementById("btnSalvar").innerText = "Gravar Documento";
             document.getElementById("btnCancelarEdicao").style.display = "none";
         };
@@ -316,7 +329,7 @@
             if (!docEmEdicaoId) {
                 const snapCheck = await getDocs(collection(db, "guias", guiaAtivaId, "documentos"));
                 if (snapCheck.size >= 7) {
-                    alert("Limite máximo de 7 documentos por guia atingido! Crie uma nova guia se necessário.");
+                    alert("Limite máximo de 7 documentos por guia atingido!");
                     btn.disabled = false;
                     return;
                 }
