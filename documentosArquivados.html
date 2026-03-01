@@ -239,7 +239,7 @@
                         <div style="margin-bottom: 20px; padding: 15px; background: #fff3cd; border: 2px dashed #ff9800; border-radius: 8px;">
                             <h4 style="color: #d35400; margin-top:0; margin-bottom: 10px;">🛡️ Painel do Administrador</h4>
                             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                <button onclick="window.editarMetadadosGuia('${id}', '${g.numero || g.numeroGuia}', '${g.unidade}')" style="background:#f39c12; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">✏️ Alterar Nº ou Unidade</button>
+                                <button onclick="window.editarMetadadosGuia('${id}', '${g.numero || g.numeroGuia}', '${g.unidade}')" style="background:#f39c12; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">✏️ Alterar Nº, Unidade ou Data</button>
                                 <button onclick="window.reabrirGuia('${id}')" style="background:#e67e22; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">🔓 Desarquivar</button>
                                 <button onclick="window.excluirGuiaCompleta('${id}')" style="background:#c0392b; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; margin-left: auto;">🗑️ Excluir Guia</button>
                             </div>
@@ -280,15 +280,34 @@
         }
 
         window.editarMetadadosGuia = async (id, numeroAtual, unidadeAtual) => {
-            const novoNum = prompt("Digite o NOVO número da Guia:", numeroAtual);
-            if(!novoNum) return;
-            const novaUnidade = prompt("Digite o NOVO nome da Unidade:", unidadeAtual);
-            if(!novaUnidade) return;
-
             try {
-                await updateDoc(doc(db, "guias", id), { numero: novoNum, numeroGuia: novoNum, unidade: novaUnidade });
-                alert("Metadados atualizados!"); document.getElementById("modalDetalhes").style.display = "none"; carregar();
-            } catch(e) { alert("Erro ao atualizar metadados."); }
+                // Puxamos os dados originais para preencher a data no prompt
+                const gSnap = await getDoc(doc(db, "guias", id));
+                const g = gSnap.data();
+
+                const novoNum = prompt("Digite o NOVO número da Guia:", numeroAtual);
+                if(!novoNum) return;
+                
+                const novaUnidade = prompt("Digite o NOVO nome da Unidade:", unidadeAtual);
+                if(!novaUnidade) return;
+
+                const novaData = prompt("Digite a NOVA data de recebimento (Formato AAAA-MM-DD):", g.dataRecebimento);
+                if(!novaData) return;
+
+                await updateDoc(doc(db, "guias", id), { 
+                    numero: novoNum, 
+                    numeroGuia: novoNum, 
+                    unidade: novaUnidade,
+                    dataRecebimento: novaData 
+                });
+                
+                alert("Metadados atualizados com sucesso!"); 
+                document.getElementById("modalDetalhes").style.display = "none"; 
+                carregar(); // Recarrega a árvore de acervo
+            } catch(e) { 
+                alert("Erro ao atualizar metadados."); 
+                console.error(e);
+            }
         }
 
         window.excluirGuiaCompleta = async (id) => {
