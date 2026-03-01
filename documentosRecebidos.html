@@ -20,10 +20,7 @@
             align-items: center;
         }
         .data-header-btn:hover { background: #004080; }
-        .contador-pendentes {
-            background: #e74c3c; color: white; padding: 2px 10px; border-radius: 12px;
-            font-size: 0.85em; margin-left: 10px; font-weight: normal;
-        }
+        .contador-pendentes { background: #e74c3c; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85em; margin-left: 10px; font-weight: normal; }
         .grupo-pendentes { display: none; margin-bottom: 20px; }
         .form-grid-arquivar { display: flex; flex-direction: column; gap: 15px; text-align: left; }
         .input-group label { display: block; font-weight: bold; font-size: 12px; margin-bottom: 5px; color: #34495e; }
@@ -60,8 +57,8 @@
             <h3 id="tituloModalArquivar" style="margin-bottom: 15px; color: #003366;"></h3>
             
             <form id="formDadosArquivamento" class="form-grid-arquivar">
-                <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b6d4fe; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                    <h4 style="grid-column: span 3; color: #003366;">1. Localização Física (Obrigatório)</h4>
+                <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b6d4fe; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px;">
+                    <h4 style="grid-column: span 4; color: #003366;">1. Informações de Controle</h4>
                     <div class="input-group">
                         <label>📦 Nº Caixa da Guia:</label>
                         <input type="text" id="locCaixa" required>
@@ -74,16 +71,20 @@
                         <label>📅 Data de Arquivamento:</label>
                         <input type="date" id="dataArquivamentoManual" required>
                     </div>
+                    <div class="input-group">
+                        <label>🆔 Sua Matrícula (Para Folha de Rosto):</label>
+                        <input type="text" id="matriculaOperador" placeholder="Digite sua matrícula" required>
+                    </div>
                 </div>
 
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
-                    <h4 style="margin-bottom: 10px; color: #003366;">2. Detalhamento Técnico (Folha de Rosto)</h4>
+                    <h4 style="margin-bottom: 10px; color: #003366;">2. Detalhamento dos Itens</h4>
                     <div id="areaDocumentosArquivar" style="overflow-x: auto;"></div>
                 </div>
 
                 <div style="display: flex; gap: 15px;">
-                    <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#27ae60; padding: 15px; font-weight: bold; flex: 2;">✅ FINALIZAR ARQUIVAMENTO E SALVAR DADOS DE AUDITORIA</button>
-                    <button type="button" class="btn-primary" id="btnGerarFolhaRosto" style="background:#003366; padding: 15px; font-weight: bold; flex: 1; display: none;">📄 GERAR FOLHA DE ROSTO</button>
+                    <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#27ae60; padding: 15px; font-weight: bold; flex: 2;">✅ FINALIZAR ARQUIVAMENTO</button>
+                    <button type="button" class="btn-primary" id="btnGerarFolhaRosto" style="background:#003366; padding: 15px; font-weight: bold; flex: 1; display: none;">📄 GERAR FOLHA DE ROSTO (PAISAGEM)</button>
                 </div>
             </form>
         </div>
@@ -97,6 +98,7 @@
         let guiaAtualId = "";
         let documentosDaGuia = [];
         let dadosGuiaOriginal = null;
+        let listaDocumentosCache = [];
 
         onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
@@ -107,47 +109,34 @@
                 const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
                 const snap = await getDocs(q);
                 if(snap.empty) { container.innerHTML = "<p>Não há guias pendentes.</p>"; return; }
-
                 let guias = [];
                 snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
                 guias.sort((a, b) => (a.dataRecebimento || "").localeCompare(b.dataRecebimento || ""));
-
                 const contagem = {};
-                guias.forEach(g => {
-                    const dRec = g.dataRecebimento || "Sem Data";
-                    contagem[dRec] = (contagem[dRec] || 0) + 1;
-                });
-
+                guias.forEach(g => { const dRec = g.dataRecebimento || "Sem Data"; contagem[dRec] = (contagem[dRec] || 0) + 1; });
                 container.innerHTML = "";
                 let dataAtual = "";
                 let divGrupoAtual = null;
-
                 guias.forEach(g => {
                     if (g.dataRecebimento !== dataAtual) {
                         dataAtual = g.dataRecebimento;
                         const dataF = dataAtual !== "Sem Data" ? dataAtual.split('-').reverse().join('/') : "Sem Data";
                         const idGrupo = `grupo-${dataAtual.replace(/\//g, '-')}`;
-                        const total = contagem[dataAtual];
-
                         const btnData = document.createElement("button");
                         btnData.className = "data-header-btn";
-                        btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span><span class="contador-pendentes">${total} pendente(s)</span></div><span>➕</span>`;
-                        
+                        btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span><span class="contador-pendentes">${contagem[dataAtual]} pendente(s)</span></div><span>➕</span>`;
                         divGrupoAtual = document.createElement("div");
                         divGrupoAtual.className = "grupo-pendentes";
                         divGrupoAtual.id = idGrupo;
-
                         btnData.onclick = () => {
                             const target = document.getElementById(idGrupo);
                             const icon = btnData.querySelector('span:last-child');
                             target.style.display = target.style.display === "block" ? "none" : "block";
                             icon.innerText = target.style.display === "block" ? "➖" : "➕";
                         };
-
                         container.appendChild(btnData);
                         container.appendChild(divGrupoAtual);
                     }
-
                     const num = g.numero || g.numeroGuia || "S/N";
                     const div = document.createElement("div");
                     div.className = "guia-card-arquivar";
@@ -158,45 +147,40 @@
         }
 
         window.abrirArq = async (id, num) => {
-            guiaAtualId = id;
-            documentosDaGuia = []; 
+            guiaAtualId = id; documentosDaGuia = []; listaDocumentosCache = [];
             document.getElementById("btnGerarFolhaRosto").style.display = "none";
             document.getElementById("tituloModalArquivar").innerText = "Digitalização da Guia: " + num;
             document.getElementById("dataArquivamentoManual").value = new Date().toISOString().split('T')[0];
             const areaDocs = document.getElementById("areaDocumentosArquivar");
             document.getElementById("modalArquivar").style.display = "block";
-
             try {
                 const gSnap = await getDoc(doc(db, "guias", id));
                 dadosGuiaOriginal = gSnap.data();
-
                 const snap = await getDocs(collection(db, "guias", id, "documentos"));
                 let html = `<table class="tabela-docs-arquivamento"><thead><tr>
                     <th>Nº Ordem</th>
-                    <th>Documento</th>
+                    <th>Documento / Processo Orig.</th>
                     <th style="width:90px">Qtd Folhas*</th>
-                    <th style="width:170px">Nº Processo SEI*</th>
-                    <th style="width:130px">Data Digitalização*</th>
-                    <th style="width:110px">Tipo Anexo</th>
-                    <th style="width:70px">Págs Anexo</th>
-                    <th style="width:160px">Prot. Anexo</th>
-                    <th>Observação</th>
+                    <th style="width:170px">Protocolo SEI*</th>
+                    <th style="width:130px">Data Digitaliz.*</th>
+                    <th style="width:100px">Mídia</th>
+                    <th style="width:160px">Prot. Mídia</th>
+                    <th>Obs.</th>
                 </tr></thead><tbody>`;
-
                 let i = 1;
                 snap.forEach(docSnap => {
-                    documentosDaGuia.push(docSnap.id);
                     const d = docSnap.data();
+                    documentosDaGuia.push(docSnap.id);
+                    listaDocumentosCache.push({ id: docSnap.id, processoOriginal: d.numeroProcesso });
                     html += `<tr>
                         <td style="text-align:center"><b>${i++}</b></td>
-                        <td><small><b>${d.nomeDocumento}</b><br>${d.numeroProcesso}</small></td>
+                        <td><small><b>${d.nomeDocumento}</b><br>Processo: ${d.numeroProcesso}</small></td>
                         <td><input type="number" id="pags_${docSnap.id}" class="campo-obrigatorio" required></td>
-                        <td><input type="text" id="sei_${docSnap.id}" class="campo-obrigatorio" value="${d.numeroProcesso}" required></td>
+                        <td><input type="text" id="sei_${docSnap.id}" class="campo-obrigatorio" placeholder="Número Protocolo" required></td>
                         <td><input type="date" id="data_${docSnap.id}" class="campo-obrigatorio" required></td>
                         <td><select id="tAnexo_${docSnap.id}"><option value="Nenhum">Não</option><option value="CD">CD</option><option value="DVD">DVD</option><option value="Pen Drive">Pen Drive</option></select></td>
-                        <td><input type="number" id="qAnexo_${docSnap.id}" value="0"></td>
-                        <td><input type="text" id="protAnexo_${docSnap.id}" placeholder="Protocolo"></td>
-                        <td><input type="text" id="obs_${docSnap.id}" placeholder="Obs"></td>
+                        <td><input type="text" id="protAnexo_${docSnap.id}" placeholder="Se houver"></td>
+                        <td><input type="text" id="obs_${docSnap.id}"></td>
                     </tr>`;
                 });
                 areaDocs.innerHTML = html + "</tbody></table>";
@@ -206,12 +190,9 @@
         document.getElementById("formDadosArquivamento").onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById("btnConfirmarArq");
-            btn.disabled = true; btn.innerText = "Registrando Auditoria...";
-
+            btn.disabled = true; btn.innerText = "Gravando...";
             try {
-                const dataM = document.getElementById("dataArquivamentoManual").value;
-                const dataF = dataM.split("-").reverse().join("/");
-
+                const dataF = document.getElementById("dataArquivamentoManual").value.split("-").reverse().join("/");
                 await updateDoc(doc(db, "guias", guiaAtualId), {
                     status: "Arquivada",
                     locCaixaFinal: document.getElementById("locCaixa").value,
@@ -219,81 +200,68 @@
                     dataArquivamentoSistema: dataF,
                     arquivadoPor: auth.currentUser.email
                 });
-
                 const promessas = documentosDaGuia.map(docId => {
                     return updateDoc(doc(db, "guias", guiaAtualId, "documentos", docId), {
                         protocoloSeiDigitalizado: document.getElementById(`sei_${docId}`).value,
                         paginasPdf: document.getElementById(`pags_${docId}`).value,
                         dataDigitalizacao: document.getElementById(`data_${docId}`).value,
                         tipoAnexo: document.getElementById(`tAnexo_${docId}`).value,
-                        qtdPagsAnexo: document.getElementById(`qAnexo_${docId}`).value || 0,
                         protocoloAnexo: document.getElementById(`protAnexo_${docId}`).value || "",
                         observacaoDigitalizacao: document.getElementById(`obs_${docId}`).value || ""
                     });
                 });
-
                 await Promise.all(promessas);
-                alert("Documento Arquivado com Sucesso!");
+                alert("Arquivamento Finalizado! Gere a Folha de Rosto abaixo.");
                 document.getElementById("btnGerarFolhaRosto").style.display = "block";
-                btn.innerText = "ARQUIVAMENTO CONCLUÍDO ✅";
-            } catch (err) { 
-                alert("Erro ao salvar."); 
-                btn.disabled = false; btn.innerText = "Finalizar Arquivamento"; 
-            }
+                btn.innerText = "FINALIZADO ✅";
+            } catch (err) { alert("Erro ao salvar."); btn.disabled = false; btn.innerText = "FINALIZAR ARQUIVAMENTO"; }
         };
 
-        // GERAÇÃO DA FOLHA DE ROSTO EM ORIENTAÇÃO PAISAGEM (DEITADA)
         document.getElementById("btnGerarFolhaRosto").onclick = () => {
             const { jsPDF } = window.jspdf;
-            const docPdf = new jsPDF('l', 'mm', 'a4'); // 'l' para Landscape/Paisagem
-            
-            docPdf.setFontSize(10);
+            const docPdf = new jsPDF('l', 'mm', 'a4');
+            const matricula = document.getElementById("matriculaOperador").value;
+
+            // Título Principal ampliado
+            docPdf.setFontSize(14);
             docPdf.setFont("helvetica", "bold");
             docPdf.text("FOLHA DE ROSTO DE DIGITALIZAÇÃO PARA GUIA DE REMESSA DE DOCUMENTOS", 148.5, 15, { align: "center" });
 
             let rows = [];
-            documentosDaGuia.forEach((id, idx) => {
-                const midiaSel = document.getElementById(`tAnexo_${id}`).value;
+            listaDocumentosCache.forEach((item, idx) => {
+                const midiaSel = document.getElementById(`tAnexo_${item.id}`).value;
                 const contemMidia = midiaSel !== "Nenhum" ? "S" : "N";
-                const numSei = document.getElementById(`sei_${id}`).value;
-
                 rows.push([
-                    idx + 1, // Nº DA ORDEM DOS DOCUMENTOS NA GUIA
-                    document.getElementById(`pags_${id}`).value, // QUANTIDADE DE FOLHAS COM INFORMAÇÃO
-                    document.getElementById(`data_${id}`).value.split('-').reverse().join('/'), // DATA DA DIGITALIZAÇÃO
-                    numSei, // Nº DO PROCESSO NO SEI
-                    numSei, // NÚMERO DO PROTOCOLO DO DOCUMENTO (Repete SEI conforme pedido)
-                    contemMidia, // CONTÉM MÍDIA
-                    midiaSel === "Nenhum" ? "" : midiaSel, // TIPO DE MÍDIA
-                    document.getElementById(`protAnexo_${id}`).value || "" // NÚMERO DO PROTOCOLO DA MÍDIA
+                    idx + 1, // Nº ORDEM
+                    document.getElementById(`pags_${item.id}`).value, // QTD FOLHAS
+                    document.getElementById(`data_${item.id}`).value.split('-').reverse().join('/'), // DATA DIGIT.
+                    item.processoOriginal, // Nº DO PROCESSO NO SEI (Original do sistema)
+                    document.getElementById(`sei_${item.id}`).value, // Nº PROTOCOLO DO DOCUMENTO (Preenchido nesta etapa)
+                    contemMidia,
+                    midiaSel === "Nenhum" ? "" : midiaSel,
+                    document.getElementById(`protAnexo_${item.id}`).value || ""
                 ]);
             });
 
-            // Preenchimento de 7 linhas conforme modelo
-            while(rows.length < 7) {
-                rows.push([rows.length + 1, "", "", "", "", "N", "", ""]);
-            }
+            while(rows.length < 7) { rows.push([rows.length + 1, "", "", "", "", "N", "", ""]); }
 
             docPdf.autoTable({
                 startY: 25,
-                head: [['Nº ORDEM', 'QTD FOLHAS', 'DATA DIGIT.', 'Nº PROCESSO SEI', 'Nº PROT. DOCUMENTO', 'MÍDIA', 'TIPO MÍDIA', 'PROT. MÍDIA']],
+                head: [['Nº ORDEM', 'QTD FOLHAS', 'DATA DIGIT.', 'Nº PROCESSO SEI', 'Nº PROTOCOLO DO DOCUMENTO', 'MÍDIA', 'TIPO MÍDIA', 'PROT. MÍDIA']],
                 body: rows,
                 theme: 'grid',
-                styles: { fontSize: 8, halign: 'center', textColor: 0 },
-                headStyles: { fillColor: [230, 230, 230], textColor: 0, fontStyle: 'bold' }
+                styles: { fontSize: 9, halign: 'center', textColor: 0, cellPadding: 3 },
+                headStyles: { fillColor: [230, 230, 230], textColor: 0, fontStyle: 'bold', fontSize: 10 }
             });
 
-            const finalY = docPdf.lastAutoTable.finalY + 15;
-            docPdf.setFontSize(9);
+            const finalY = docPdf.lastAutoTable.finalY + 20;
+            docPdf.setFontSize(12);
             docPdf.text(`GUIA Nº: ${dadosGuiaOriginal.numero || dadosGuiaOriginal.numeroGuia}`, 20, finalY);
-            docPdf.text(`RECEBIDO EM: ${dadosGuiaOriginal.dataRecebimento.split('-').reverse().join('/')}`, 20, finalY + 7);
-            
-            docPdf.setFont("helvetica", "bold");
-            docPdf.text(`${auth.currentUser.displayName || 'OPERADOR NUDOF'}`, 20, finalY + 18);
-            docPdf.setFont("helvetica", "normal");
-            docPdf.text("MATRÍCULA: _______________________", 20, finalY + 25);
+            docPdf.text(`RECEBIDO EM: ${dadosGuiaOriginal.dataRecebimento.split('-').reverse().join('/')}`, 20, finalY + 10);
+            docPdf.text(`OPERADOR: ${auth.currentUser.displayName || '---'}`, 20, finalY + 20);
+            docPdf.text(`MATRÍCULA: ${matricula}`, 20, finalY + 30);
 
-            docPdf.save(`Folha_Rosto_Paisagem_Guia_${dadosGuiaOriginal.numero}.pdf`);
+            docPdf.save(`Folha_Rosto_NUDOF_Guia_${dadosGuiaOriginal.numero}.pdf`);
             location.reload();
         };
 
@@ -302,3 +270,4 @@
     </script>
 </body>
 </html>
+```
