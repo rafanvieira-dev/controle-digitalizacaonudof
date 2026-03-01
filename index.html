@@ -6,7 +6,6 @@
     <title>CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Estilo das Abas de Status/Data */
         .aba-header-btn {
             width: 100%; padding: 12px; border: none; border-radius: 5px;
             text-align: left; font-weight: bold; margin: 15px 0 5px 0;
@@ -14,28 +13,22 @@
         }
         .aba-aberta { background: #003366; color: white; }
         .aba-arquivada { background: #7f8c8d; color: white; }
-        
         .contador-index {
             background: rgba(255,255,255,0.2); color: white; padding: 2px 10px;
             border-radius: 12px; font-size: 0.85em; font-weight: normal;
         }
-
         .grupo-conteudo { display: none; margin-bottom: 20px; padding: 10px; }
-
         .card-historico {
             background: white; border-radius: 8px; padding: 15px; margin-bottom: 8px;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #3498db;
         }
-        .status-badge {
-            padding: 4px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold;
-        }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; }
         .badge-aberta { background: #e8f4fd; color: #003366; }
         .badge-arquivada { background: #dcfce7; color: #166534; }
     </style>
 </head>
 <body>
-
     <div id="loginSection">
         <div class="login-box" style="background: white; padding: 40px; border-radius: 8px; margin: 50px auto; width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center;">
             <div style="background-color: #003366; color: white; padding: 15px; margin: -40px -40px 30px -40px; border-radius: 8px 8px 0 0; font-weight: bold;">
@@ -55,7 +48,8 @@
                 <a href="index.html" class="ativo">🏠 Início / Histórico</a>
                 <a href="guia.html">➕ Nova Guia</a>
                 <a href="documentos.html">📄 Inserir Documentos</a>
-                <a href="documentosRecebidos.html">📁 Arquivar Guia</a>
+                <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
+                <a href="arquivamentoFisico.html">📦 Arquivar Guia Físico</a>
                 <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
                 <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
             </nav>
@@ -63,9 +57,7 @@
 
         <main id="content">
             <h2 id="pageTitle" class="page-title">Painel de Monitoramento</h2>
-            <div id="mainDisplay">
-                <p>A carregar histórico...</p>
-            </div>
+            <div id="mainDisplay"><p>A carregar histórico...</p></div>
         </main>
     </div>
 
@@ -125,7 +117,6 @@
                     return;
                 }
 
-                // Agrupar por Status e Data
                 const grupos = { "Abertas": {}, "Arquivadas": {} };
 
                 snap.forEach(d => {
@@ -143,7 +134,6 @@
                     const datas = grupos[status];
                     if (Object.keys(datas).length === 0) continue;
 
-                    // Header do Status (Aba Principal)
                     const totalStatus = Object.values(datas).flat().length;
                     const btnStatus = document.createElement("button");
                     btnStatus.className = `aba-header-btn ${status === 'Abertas' ? 'aba-aberta' : 'aba-arquivada'}`;
@@ -159,7 +149,6 @@
                     display.appendChild(btnStatus);
                     display.appendChild(containerStatus);
 
-                    // Sub-abas por Data
                     for (const data in datas) {
                         const dataF = data !== "Sem Data" ? data.split('-').reverse().join('/') : "Sem Data";
                         const guias = datas[data];
