@@ -5,6 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilo das Abas de Status/Data */
+        .aba-header-btn {
+            width: 100%; padding: 12px; border: none; border-radius: 5px;
+            text-align: left; font-weight: bold; margin: 15px 0 5px 0;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+        }
+        .aba-aberta { background: #003366; color: white; }
+        .aba-arquivada { background: #7f8c8d; color: white; }
+        
+        .contador-index {
+            background: rgba(255,255,255,0.2); color: white; padding: 2px 10px;
+            border-radius: 12px; font-size: 0.85em; font-weight: normal;
+        }
+
+        .grupo-conteudo { display: none; margin-bottom: 20px; padding: 10px; }
+
+        .card-historico {
+            background: white; border-radius: 8px; padding: 15px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #3498db;
+        }
+        .status-badge {
+            padding: 4px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold;
+        }
+        .badge-aberta { background: #e8f4fd; color: #003366; }
+        .badge-arquivada { background: #dcfce7; color: #166534; }
+    </style>
 </head>
 <body>
 
@@ -15,15 +43,14 @@
             </div>
             <h2 style="margin-bottom: 20px;">Acesso Restrito</h2>
             <p style="margin-bottom: 20px; color: #666;">Utilize o seu e-mail institucional da Defensoria Pública para entrar.</p>
-            
-            <button id="btnGoogle" class="btn-primary" style="background-color: #4285F4; margin-bottom: 10px; font-size: 1.1em;">🌐 Entrar com Google</button>
+            <button id="btnGoogle" class="btn-primary" style="background-color: #4285F4; margin-bottom: 10px; font-size: 1.1em; width: 100%;">🌐 Entrar com Google</button>
             <p id="erroMsg" style="color: #e74c3c; font-weight: bold; min-height: 20px; margin-top: 10px;"></p>
         </div>
     </div>
 
     <div id="appInterface" style="display: none;">
         <aside id="sidebar">
-            <div class="sidebar-logo">CONTROLE DE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
+            <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
             <nav>
                 <a href="index.html" class="ativo">🏠 Início / Histórico</a>
                 <a href="guia.html">➕ Nova Guia</a>
@@ -35,21 +62,171 @@
         </aside>
 
         <main id="content">
-            <h2 id="pageTitle" class="page-title">Histórico de Guias Ativas</h2>
+            <h2 id="pageTitle" class="page-title">Painel de Monitoramento</h2>
             <div id="mainDisplay">
-                <p>A carregar dados...</p>
+                <p>A carregar histórico...</p>
             </div>
         </main>
     </div>
 
-    <script type="module" src="app_final.js"></script>
     <div id="modalDetalhes" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
-            <h3 id="modalTitulo" style="color: var(--primary); margin-bottom: 15px;"></h3>
+        <div class="modal-content" style="width: 80%; max-width: 900px;">
+            <span class="close-btn" id="closeModal" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
+            <h3 id="modalTitulo" style="color: #003366; margin-bottom: 15px;"></h3>
             <div id="modalCorpo"></div>
         </div>
     </div>
+
     <div id="loading" class="loading-overlay">Verificando acesso...</div>
+
+    <script type="module">
+        import { db, auth } from "./firebase.js";
+        import { collection, getDocs, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+        const loginSection = document.getElementById("loginSection");
+        const appInterface = document.getElementById("appInterface");
+        const loading = document.getElementById("loading");
+
+        onAuthStateChanged(auth, (user) => {
+            loading.style.display = "none";
+            if (user) {
+                if (user.email.endsWith("@defensoria.rj.def.br")) {
+                    loginSection.style.display = "none";
+                    appInterface.style.display = "flex";
+                    carregarHistorico();
+                } else {
+                    signOut(auth);
+                    document.getElementById("erroMsg").innerText = "Acesso negado. Use seu e-mail @defensoria.rj.def.br";
+                }
+            } else {
+                loginSection.style.display = "block";
+                appInterface.style.display = "none";
+            }
+        });
+
+        document.getElementById("btnGoogle").onclick = () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(err => {
+                document.getElementById("erroMsg").innerText = "Erro ao autenticar.";
+            });
+        };
+
+        document.getElementById("btnLogout").onclick = () => signOut(auth);
+
+        async function carregarHistorico() {
+            const display = document.getElementById("mainDisplay");
+            try {
+                const q = query(collection(db, "guias"), orderBy("dataRecebimento", "desc"));
+                const snap = await getDocs(q);
+                
+                if (snap.empty) {
+                    display.innerHTML = "<p>Nenhuma guia cadastrada no sistema.</p>";
+                    return;
+                }
+
+                // Agrupar por Status e Data
+                const grupos = { "Abertas": {}, "Arquivadas": {} };
+
+                snap.forEach(d => {
+                    const g = d.data();
+                    const status = g.status === "Arquivada" ? "Arquivadas" : "Abertas";
+                    const data = g.dataRecebimento || "Sem Data";
+                    
+                    if (!grupos[status][data]) grupos[status][data] = [];
+                    grupos[status][data].push({ id: d.id, ...g });
+                });
+
+                display.innerHTML = "";
+
+                for (const status in grupos) {
+                    const datas = grupos[status];
+                    if (Object.keys(datas).length === 0) continue;
+
+                    // Header do Status (Aba Principal)
+                    const totalStatus = Object.values(datas).flat().length;
+                    const btnStatus = document.createElement("button");
+                    btnStatus.className = `aba-header-btn ${status === 'Abertas' ? 'aba-aberta' : 'aba-arquivada'}`;
+                    btnStatus.innerHTML = `<span>📂 Guias ${status}</span> <span class="contador-index">${totalStatus}</span>`;
+                    
+                    const containerStatus = document.createElement("div");
+                    containerStatus.className = "grupo-conteudo";
+                    
+                    btnStatus.onclick = () => {
+                        containerStatus.style.display = containerStatus.style.display === "block" ? "none" : "block";
+                    };
+
+                    display.appendChild(btnStatus);
+                    display.appendChild(containerStatus);
+
+                    // Sub-abas por Data
+                    for (const data in datas) {
+                        const dataF = data !== "Sem Data" ? data.split('-').reverse().join('/') : "Sem Data";
+                        const guias = datas[data];
+                        
+                        const btnData = document.createElement("button");
+                        btnData.className = "aba-header-btn";
+                        btnData.style.background = "#eef2f7";
+                        btnData.style.color = "#333";
+                        btnData.style.border = "1px solid #ccc";
+                        btnData.innerHTML = `<span>📅 ${dataF}</span> <span class="contador-index" style="background:#7f8c8d">${guias.length}</span>`;
+                        
+                        const containerData = document.createElement("div");
+                        containerData.className = "grupo-conteudo";
+                        
+                        btnData.onclick = () => {
+                            containerData.style.display = containerData.style.display === "block" ? "none" : "block";
+                        };
+
+                        containerStatus.appendChild(btnData);
+                        containerStatus.appendChild(containerData);
+
+                        guias.forEach(g => {
+                            const card = document.createElement("div");
+                            card.className = "card-historico";
+                            card.innerHTML = `
+                                <div>
+                                    <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
+                                    <small>${g.unidade}</small>
+                                </div>
+                                <div style="text-align:right">
+                                    <span class="status-badge ${g.status === 'Arquivada' ? 'badge-arquivada' : 'badge-aberta'}">${g.status}</span><br>
+                                    <button class="btn-ver" onclick="window.verResumo('${g.id}')" style="margin-top:5px; padding:5px 10px; font-size:0.8em;">Ver Itens</button>
+                                </div>
+                            `;
+                            containerData.appendChild(card);
+                        });
+                    }
+                }
+            } catch (e) { console.error(e); display.innerHTML = "Erro ao carregar histórico."; }
+        }
+
+        window.verResumo = async (id) => {
+            const corpo = document.getElementById("modalCorpo");
+            document.getElementById("modalTitulo").innerText = "Itens da Guia";
+            document.getElementById("modalDetalhes").style.display = "block";
+            corpo.innerHTML = "Carregando...";
+
+            const docsSnap = await getDocs(collection(db, "guias", id, "documentos"));
+            if (docsSnap.empty) { corpo.innerHTML = "Nenhum documento inserido."; return; }
+
+            let table = `<table style="width:100%; border-collapse: collapse; font-size:0.9em;">
+                <tr style="background:#f0f2f5;">
+                    <th style="padding:8px; border:1px solid #ddd;">Documento</th>
+                    <th style="padding:8px; border:1px solid #ddd;">Processo SEI</th>
+                </tr>`;
+            
+            docsSnap.forEach(d => {
+                const data = d.data();
+                table += `<tr>
+                    <td style="padding:8px; border:1px solid #ddd;">${data.nomeDocumento}</td>
+                    <td style="padding:8px; border:1px solid #ddd;">${data.numeroProcesso || '---'}</td>
+                </tr>`;
+            });
+            corpo.innerHTML = table + "</table>";
+        }
+
+        document.getElementById("closeModal").onclick = () => document.getElementById("modalDetalhes").style.display = "none";
+    </script>
 </body>
 </html>
