@@ -262,11 +262,9 @@
                                 divMes.appendChild(btnDia);
                                 divMes.appendChild(divDia);
 
-                                // Adicionar os cards de cada GUIA no dia (já vem da query Firestore em ordem crescente)
                                 guiasDoDia.forEach(g => {
                                     const card = document.createElement("div");
                                     card.className = "card-historico";
-                                    // Cor customizada baseada no status
                                     let borderCor = "#3498db";
                                     if(g.status === "Arquivada") borderCor = "#27ae60";
                                     else if(g.status === "Digitalizada") borderCor = "#f39c12";
