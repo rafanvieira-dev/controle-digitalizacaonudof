@@ -2,214 +2,100 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta Acervo - NUDOF</title>
     <link rel="stylesheet" href="style.css">
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-
-    <style>
-        .guia-card-arquivada {
-            background: white; border-radius: 8px; padding: 20px; margin-bottom: 15px;
-            display: flex; justify-content: space-between; align-items: center; 
-            border-left: 6px solid #7f8c8d; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .info-box strong { color: #003366; font-size: 1.1em; }
-        .badge-user { font-size: 0.75em; color: #666; display: block; margin-top: 5px; }
-        .badge-local { background: #e8f4fd; color: #003366; padding: 8px; border-radius: 4px; font-weight: bold; font-size: 0.9em; }
-        .filtros-relatorio { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: flex-end; border: 1px solid #ddd; }
-        .filtros-relatorio div { display: flex; flex-direction: column; gap: 5px; }
-        .filtros-relatorio input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-    </style>
 </head>
 <body>
     <div id="appInterface">
         <aside id="sidebar">
-            <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
+            <div class="sidebar-logo">CONTROLE NUDOF</div>
             <nav>
-                <a href="index.html">🏠 Início / Histórico</a>
+                <a href="index.html">🏠 Início</a>
                 <a href="guia.html">➕ Nova Guia</a>
                 <a href="documentos.html">📄 Inserir Documentos</a>
                 <a href="documentosRecebidos.html">📁 Arquivar Guia</a>
                 <a href="documentosArquivados.html" class="ativo">📚 Guias Arquivadas</a>
-                <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
             </nav>
         </aside>
 
         <main id="content">
-            <h2 class="page-title">Consulta de Acervo e Relatórios</h2>
-
-            <div class="filtros-relatorio">
-                <div>
-                    <label>📅 Início (Arquivamento):</label>
-                    <input type="date" id="dataInicioRel">
-                </div>
-                <div>
-                    <label>📅 Fim (Arquivamento):</label>
-                    <input type="date" id="dataFimRel">
-                </div>
-                <button class="btn-primary" onclick="window.gerarPDF()" style="width: auto; padding: 10px 20px;">📄 Gerar Relatório PDF</button>
+            <h2 class="page-title">Consulta de Acervo Digitalizado</h2>
+            <div class="filtros-relatorio" style="background:#fff; padding:20px; border-radius:8px; margin-bottom:20px;">
+                <label>Data Início:</label> <input type="date" id="filtroDataInicio">
+                <label>Data Fim:</label> <input type="date" id="filtroDataFim">
+                <button id="btnGerarRelatorio" class="btn-primary" style="width:auto; padding:10px 20px;">📄 Gerar PDF de Auditoria</button>
             </div>
-
-            <div id="listaArquivadas"><p>A carregar acervo...</p></div>
+            <div id="listaArquivados"></div>
         </main>
     </div>
 
-    <div id="modalDetalhes" class="modal">
-        <div class="modal-content" style="width: 95%; max-width: 1200px;">
-            <span class="close-btn" id="closeModal" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
-            <h3 id="modalTitulo" style="color: #003366; margin-bottom: 15px;"></h3>
-            <div id="detalhesGuiaGrid"></div>
-        </div>
-    </div>
-
     <script type="module">
-        import { db, auth } from "./firebase.js";
-        import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+        import { db } from "./firebase.js";
+        import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-        let todasAsGuiasArquivadas = [];
+        const carregar = async () => {
+            const q = query(collection(db, "guias"), where("status", "==", "Arquivada"));
+            const snap = await getDocs(q);
+            const container = document.getElementById("listaArquivados");
+            container.innerHTML = "";
 
-        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; });
-        document.getElementById("btnLogout").onclick = () => signOut(auth);
-
-        async function carregar() {
-            const container = document.getElementById("listaArquivadas");
-            try {
-                const q = query(collection(db, "guias"), where("status", "==", "Arquivada"));
-                const snap = await getDocs(q);
-                if(snap.empty) { container.innerHTML = "<p>Nenhuma guia arquivada encontrada.</p>"; return; }
-
-                todasAsGuiasArquivadas = [];
-                container.innerHTML = "";
-
-                snap.forEach(d => {
-                    const g = { id: d.id, ...d.data() };
-                    todasAsGuiasArquivadas.push(g);
-
-                    const div = document.createElement("div");
-                    div.className = "guia-card-arquivada";
-                    div.innerHTML = `
-                        <div class="info-box">
-                            <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
-                            <small>Unidade: ${g.unidade}</small><br>
-                            <small>Data Arq: ${g.dataArquivamentoSistema || '--'}</small>
-                            <span class="badge-user">👤 Responsável: ${g.arquivadoPor || 'Não informado'}</span>
-                        </div>
-                        <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
-                            <div class="badge-local">📦 G: ${g.locCaixaFinal} / D: ${g.locCaixaDocumentos}</div>
-                            <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Detalhes</button>
-                        </div>`;
-                    container.appendChild(div);
-                });
-            } catch (err) { container.innerHTML = "Erro ao carregar acervo."; }
-        }
-
-        window.verDetalhes = async (id, num) => {
-            const grid = document.getElementById("detalhesGuiaGrid");
-            document.getElementById("modalTitulo").innerText = "Auditoria da Guia " + num;
-            document.getElementById("modalDetalhes").style.display = "block";
-            grid.innerHTML = "Buscando detalhes...";
-
-            try {
-                const gSnap = await getDoc(doc(db, "guias", id));
-                const gData = gSnap.data();
-
-                const docsSnap = await getDocs(collection(db, "guias", id, "documentos"));
-                let html = `
-                    <div style="margin-bottom:20px; padding:15px; background:#e8f4fd; border-radius:8px; border:1px solid #b6d4fe;">
-                        <p><b>Guia Criada por:</b> ${gData.criadoPor || 'Não informado'}</p>
-                        <p><b>Arquivamento Finalizado por:</b> ${gData.arquivadoPor || 'Não informado'}</p>
+            snap.forEach(g => {
+                const d = g.data();
+                const card = document.createElement("div");
+                card.className = "guia-card-arquivada";
+                card.style = "background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid #7f8c8d; display: flex; justify-content: space-between;";
+                card.innerHTML = `
+                    <div>
+                        <strong>Guia: ${d.numero}</strong> | Unidade: ${d.unidade}<br>
+                        <small>Arquivado em: ${d.dataArquivamentoSistema} por ${d.arquivadoPor}</small>
                     </div>
-                    <table class="sei-table" style="width:100%; font-size:0.85em; border-collapse: collapse;">
-                    <thead><tr style="background:#f0f2f5;">
-                        <th style="padding:10px; border:1px solid #ddd;">Documento</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Inserido por</th>
-                        <th style="padding:10px; border:1px solid #ddd;">SEI Digitalizado</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Anexo</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Obs.</th>
-                    </tr></thead><tbody>`;
-
-                docsSnap.forEach(docItem => {
-                    const d = docItem.data();
-                    const infoAnexo = d.tipoAnexo && d.tipoAnexo !== "Nenhum" ? `<b>${d.tipoAnexo}</b> (${d.qtdPagsAnexo} pgs)` : "Nenhum";
-                    
-                    html += `<tr>
-                        <td style="padding:10px; border:1px solid #ddd;"><b>${d.nomeDocumento}</b><br><small>${d.numeroProcesso}</small></td>
-                        <td style="padding:10px; border:1px solid #ddd;">${d.inseridoPor || '--'}</td>
-                        <td style="padding:10px; border:1px solid #ddd; color:#27ae60; font-weight:bold;">${d.protocoloSeiDigitalizado || '--'}</td>
-                        <td style="padding:10px; border:1px solid #ddd;">${infoAnexo}</td>
-                        <td style="padding:10px; border:1px solid #ddd;">${d.observacaoDigitalizacao || '--'}</td>
-                    </tr>`;
-                });
-                grid.innerHTML = html + "</tbody></table>";
-            } catch (e) { grid.innerHTML = "Erro ao buscar detalhes."; }
+                    <div class="badge-local">Caixa: ${d.locCaixaFinal}</div>
+                `;
+                container.appendChild(card);
+            });
         };
 
-        window.gerarPDF = async function() {
-            const dataInicio = document.getElementById("dataInicioRel").value;
-            const dataFim = document.getElementById("dataFimRel").value;
-            if (!dataInicio || !dataFim) return alert("Selecione o período.");
-
+        document.getElementById("btnGerarRelatorio").onclick = async () => {
             const { jsPDF } = window.jspdf;
-            const docPdf = new jsPDF('landscape');
+            const docPdf = new jsPDF('l', 'mm', 'a4'); // Paisagem para caber tudo
             
-            const dIni = parseInt(dataInicio.replace(/-/g, ""));
-            const dFim = parseInt(dataFim.replace(/-/g, ""));
-
-            const guiasFiltradas = todasAsGuiasArquivadas.filter(g => {
-                if(!g.dataArquivamentoSistema) return false;
-                const p = g.dataArquivamentoSistema.split('/');
-                const dG = parseInt(p[2] + p[1] + p[0]);
-                return dG >= dIni && dG <= dFim;
-            });
-
-            if(guiasFiltradas.length === 0) return alert("Nenhum dado neste período.");
-
+            const q = query(collection(db, "guias"), where("status", "==", "Arquivada"));
+            const snap = await getDocs(q);
             let dadosTabela = [];
-            for (let g of guiasFiltradas) {
-                const docsSnap = await getDocs(collection(db, "guias", g.id, "documentos"));
-                docsSnap.forEach(dItem => {
-                    const dd = dItem.data();
-                    const anexoStr = dd.tipoAnexo && dd.tipoAnexo !== "Nenhum" ? `${dd.tipoAnexo} (${dd.qtdPagsAnexo} pgs)` : "Não";
+
+            for (const gDoc of snap.docs) {
+                const g = gDoc.data();
+                const docsSnap = await getDocs(collection(db, "guias", gDoc.id, "documentos"));
+                
+                docsSnap.forEach(docItem => {
+                    const dd = docItem.data();
                     dadosTabela.push([
-                        g.numero || g.numeroGuia,
+                        g.numero,
                         dd.nomeDocumento,
-                        g.criadoPor || '--',         // Quem criou a Guia
-                        dd.inseridoPor || '--',      // Quem inseriu o Item
-                        g.arquivadoPor || '--',      // Quem digitalizou/arquivou
+                        dd.numeroProcesso, // SEI Origem
+                        dd.protocoloSeiDigitalizado || 'N/A', // SEI Digitalizado
+                        dd.paginasPdf,
+                        dd.tipoAnexo,
                         g.dataArquivamentoSistema,
-                        `G:${g.locCaixaFinal}\nD:${g.locCaixaDocumentos}`,
+                        g.arquivadoPor,
                         dd.observacaoDigitalizacao || ''
                     ]);
                 });
             }
 
-            docPdf.setFontSize(14);
-            docPdf.text("NUDOF - RELATÓRIO DE AUDITORIA COMPLETO", 14, 15);
-            docPdf.setFontSize(8);
-            docPdf.text(`Período: ${dataInicio.split('-').reverse().join('/')}, a ${dataFim.split('-').reverse().join('/')}`, 14, 22);
-
+            docPdf.text("RELATÓRIO DE AUDITORIA DE DIGITALIZAÇÃO - NUDOF", 14, 15);
             docPdf.autoTable({
-                startY: 28,
-                head: [['Guia', 'Documento', 'Criado por', 'Inserido por', 'Arquivado por', 'Data Arq.', 'Caixas', 'Observação']],
+                startY: 20,
+                head: [['Guia', 'Documento', 'SEI Origem', 'SEI Dig.', 'Pgs', 'Anexo', 'Data', 'Responsável', 'Obs']],
                 body: dadosTabela,
-                theme: 'striped',
-                styles: { fontSize: 6, cellPadding: 1.5 },
-                headStyles: { fillColor: [0, 51, 102] },
-                columnStyles: { 
-                    2: { cellWidth: 40 }, // Criado por
-                    3: { cellWidth: 40 }, // Inserido por
-                    4: { cellWidth: 40 }, // Arquivado por
-                    7: { cellWidth: 30 }  // Obs
-                }
+                styles: { fontSize: 7 }
             });
 
-            docPdf.save(`Relatorio_NUDOF_Auditoria_${dataInicio}.pdf`);
+            docPdf.save("Relatorio_NUDOF.pdf");
         };
 
-        document.getElementById("closeModal").onclick = () => document.getElementById("modalDetalhes").style.display = "none";
         carregar();
     </script>
 </body>
