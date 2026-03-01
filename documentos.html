@@ -91,7 +91,9 @@
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         let guiaAtivaId = "";
+        let numeroGuiaAtiva = ""; // NOVO: Armazena o número da guia selecionada
         let docEmEdicaoId = null; 
+        let ultimaDataRecebimento = ""; 
 
         onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregarMenuGuias(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
@@ -167,19 +169,32 @@
                         lista.appendChild(btnData);
                         lista.appendChild(divGrupo);
                     }
+                    const numGuia = g.numero || g.numeroGuia || "S/N";
                     const btnGuia = document.createElement("button");
                     btnGuia.className = "btn-guia-item";
-                    btnGuia.innerHTML = `Guia: ${g.numero || g.numeroGuia} <span class="badge-docs">${g.qtdDocs}</span>`;
-                    btnGuia.onclick = () => window.iniciarInclusao(g.id, `Guia: ${g.numero || g.numeroGuia}`);
+                    btnGuia.innerHTML = `Guia: ${numGuia} <span class="badge-docs">${g.qtdDocs}</span>`;
+                    
+                    // Passamos o número da guia como 3º parâmetro
+                    btnGuia.onclick = () => window.iniciarInclusao(g.id, `Guia: ${numGuia}`, numGuia);
                     divGrupo.appendChild(btnGuia);
                 });
             } catch (e) { console.error(e); }
         }
 
-        window.iniciarInclusao = async function(id, texto) {
-            guiaAtivaId = id; window.cancelarEdicao(); 
+        window.iniciarInclusao = async function(id, texto, numGuia) {
+            guiaAtivaId = id; 
+            numeroGuiaAtiva = numGuia; // Salva o número da guia ativa
+            ultimaDataRecebimento = ""; // Limpa a memória de data ao abrir uma nova guia
+            window.cancelarEdicao(); 
+
             document.getElementById("areaDocumentos").style.display = "block";
             document.getElementById("tituloGuia").innerText = texto;
+
+            // NOVO: Preenche e trava o campo da Guia de Remessa
+            const inputGuia = document.getElementById("guiaRemessa");
+            inputGuia.disabled = true;
+            inputGuia.style.background = "#e9ecef"; // Fundo cinza para mostrar que está bloqueado
+
             await window.atualizarListaDocumentos(id);
             document.getElementById("areaDocumentos").scrollIntoView({ behavior: 'smooth' });
         };
@@ -215,7 +230,7 @@
             document.getElementById("nomeDocumento").value = d.nomeDocumento;
             document.getElementById("numeroProcesso").value = d.numeroProcesso;
             document.getElementById("dataRecebimento").value = d.dataRecebimento;
-            document.getElementById("guiaRemessa").value = d.guiaRemessa;
+            document.getElementById("guiaRemessa").value = d.guiaRemessa; // Mesma guia
             document.getElementById("btnSalvar").innerText = "🔄 Atualizar Documento";
             document.getElementById("btnCancelarEdicao").style.display = "block";
         };
@@ -223,6 +238,17 @@
         window.cancelarEdicao = () => {
             docEmEdicaoId = null; 
             document.getElementById("formDocumento").reset();
+            
+            // Recoloca a última data usada caso exista
+            if (ultimaDataRecebimento) {
+                document.getElementById("dataRecebimento").value = ultimaDataRecebimento;
+            }
+
+            // NOVO: Recoloca a guia de remessa travada
+            if (numeroGuiaAtiva) {
+                document.getElementById("guiaRemessa").value = numeroGuiaAtiva;
+            }
+
             document.getElementById("btnSalvar").innerText = "Gravar Documento";
             document.getElementById("btnCancelarEdicao").style.display = "none";
         };
@@ -245,16 +271,20 @@
                 nomeDocumento: document.getElementById("nomeDocumento").value,
                 numeroProcesso: document.getElementById("numeroProcesso").value,
                 dataRecebimento: document.getElementById("dataRecebimento").value,
-                guiaRemessa: document.getElementById("guiaRemessa").value,
+                guiaRemessa: document.getElementById("guiaRemessa").value, // Pega o valor travado
                 ultimaAtualizacao: new Date(),
                 atualizadoPor: auth.currentUser.email
             };
             
+            // Atualiza a memória com a data recém inserida
+            ultimaDataRecebimento = document.getElementById("dataRecebimento").value;
+
             try {
                 if (docEmEdicaoId) {
                     await updateDoc(doc(db, "guias", guiaAtivaId, "documentos", docEmEdicaoId), docDados);
                     alert("Documento atualizado!");
                 } else {
+                    docDados.dataInsercao = new Date();
                     docDados.inseridoPor = auth.currentUser.email;
                     await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), docDados);
                     alert("Documento inserido!");
