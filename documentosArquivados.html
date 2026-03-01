@@ -164,7 +164,7 @@
                         </div>
                         <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
                             <div class="badge-local">📦 G: ${g.locCaixaFinal} / D: ${g.locCaixaDocumentos}</div>
-                            <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Auditoria</button>
+                            <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Detalhes</button>
                         </div>`;
                     divGrupoAtual.appendChild(div);
                 });
@@ -254,7 +254,7 @@
             if (dadosTabela.length === 0) return alert("Nenhum dado encontrado.");
 
             docPdf.setFontSize(14);
-            docPdf.text("NUDOF - RELATÓRIO DE AUDITORIA", 14, 15);
+            docPdf.text("CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS - NUDOF", 14, 15);
             docPdf.autoTable({
                 startY: 25,
                 head: [['Guia', 'Documento', 'Prot. SEI', 'Criador', 'Inserido', 'Digitalizador', 'Data Arq.', 'Caixas', 'Observação']],
