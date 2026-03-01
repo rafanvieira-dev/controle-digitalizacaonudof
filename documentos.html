@@ -102,6 +102,9 @@
         import { collection, getDocs, addDoc, updateDoc, doc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
+        // ==========================================
+        // 🔒 CONFIGURAÇÃO DOS ADMINISTRADORES
+        // ==========================================
         const ADMIN_USERS = [
             "rafael.nascimento-vieira@defensoria.rj.def.br", 
         ];
@@ -144,14 +147,21 @@
         async function carregarMenuGuias() {
             const lista = document.getElementById("listaGuias");
             try {
-                const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
+                // AQUI ESTÁ A CORREÇÃO: Busca APENAS guias com status "Aberta"
+                const q = query(collection(db, "guias"), where("status", "==", "Aberta"));
                 const snap = await getDocs(q);
+                
                 let guias = [];
                 for (const d of snap.docs) {
                     const docsSnap = await getDocs(collection(db, "guias", d.id, "documentos"));
                     guias.push({ id: d.id, qtdDocs: docsSnap.size, ...d.data() });
                 }
                 
+                if (guias.length === 0) {
+                    lista.innerHTML = "<p>Não há guias abertas aguardando documentos.</p>";
+                    return;
+                }
+
                 guias.sort((a, b) => {
                     const dataA = a.dataRecebimento || "";
                     const dataB = b.dataRecebimento || "";
@@ -184,7 +194,6 @@
 
                         const btnData = document.createElement("button");
                         btnData.className = "data-header-btn";
-                        // A classe toggle-icon no final resolve o problema do alerta sumir
                         btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span> <span class="contador-abas">${totalGuias} guia(s)</span> ${alertaHtml}</div><span class="toggle-icon">➕</span>`;
                         
                         divGrupo = document.createElement("div");
