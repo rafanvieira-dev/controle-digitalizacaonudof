@@ -16,20 +16,39 @@
             display: flex; justify-content: space-between; align-items: center; 
             border-left: 6px solid #7f8c8d; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
+        
+        /* Estilos base dos botões de sanfona */
         .data-header-btn {
-            width: 100%; background: #003366; color: white; padding: 12px;
+            width: 100%; color: white; padding: 12px;
             border: none; border-radius: 5px; text-align: left; font-weight: bold;
-            margin: 15px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between;
-            align-items: center;
+            margin: 10px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between;
+            align-items: center; transition: background 0.2s;
         }
-        .data-header-btn:hover { background: #004080; }
+
+        /* Cores e recuos hierárquicos */
+        .btn-ano { background: #003366; font-size: 1.1em; }
+        .btn-ano:hover { background: #002244; }
+        
+        .btn-mes { background: #2c3e50; margin-left: 20px; width: calc(100% - 20px); padding: 10px 15px; font-size: 1em; }
+        .btn-mes:hover { background: #1a252f; }
+        
+        .btn-dia { background: #7f8c8d; margin-left: 40px; width: calc(100% - 40px); padding: 8px 15px; font-size: 0.9em; }
+        .btn-dia:hover { background: #626c6d; }
+
+        .grupo-ano { display: none; margin-bottom: 15px; }
+        .grupo-mes { display: none; margin-bottom: 10px; }
+        .grupo-dia { display: none; margin-bottom: 10px; }
+
+        /* Ajusta o card da guia para ficar alinhado debaixo do dia */
+        .grupo-dia .guia-card-arquivada {
+            margin-left: 40px;
+            width: calc(100% - 40px);
+        }
         
         .contador-guias {
             background: #27ae60; color: white; padding: 2px 10px; border-radius: 12px;
             font-size: 0.85em; margin-left: 10px; font-weight: normal;
         }
-
-        .grupo-guias { display: none; margin-bottom: 20px; transition: all 0.3s ease; }
         
         .info-box strong { color: #003366; font-size: 1.1em; }
         .badge-user { font-size: 0.75em; color: #666; display: block; margin-top: 5px; }
@@ -64,7 +83,7 @@
         </aside>
 
         <main id="content">
-            <h2 class="page-title">Consulta de Acervo por Data</h2>
+            <h2 class="page-title">Consulta de Acervo Hierárquico</h2>
 
             <div class="filtros-relatorio">
                 <div>
@@ -130,8 +149,14 @@
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         let todasAsGuiasArquivadas = [];
-        let estatisticasGlobais = []; // Cache dos dados do dashboard
+        let estatisticasGlobais = [];
         let chartProducao = null;
+        
+        const nomeMeses = {
+            "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril",
+            "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto",
+            "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro"
+        };
 
         onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregar(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
@@ -150,70 +175,120 @@
                 todasAsGuiasArquivadas = [];
                 snap.forEach(d => todasAsGuiasArquivadas.push({ id: d.id, ...d.data() }));
 
-                // Ordena por data (mais recente primeiro)
-                todasAsGuiasArquivadas.sort((a, b) => {
-                    const dataA = a.dataArquivamentoSistema.split('/').reverse().join('');
-                    const dataB = b.dataArquivamentoSistema.split('/').reverse().join('');
-                    return dataB.localeCompare(dataA);
-                });
-
-                const contagemPorData = {};
+                // 1. Criar a Árvore Hierárquica: Ano -> Mês -> Dia -> [Guias]
+                const arvore = {};
+                
                 todasAsGuiasArquivadas.forEach(g => {
-                    contagemPorData[g.dataArquivamentoSistema] = (contagemPorData[g.dataArquivamentoSistema] || 0) + 1;
+                    const dataA = g.dataArquivamentoSistema; // Formato DD/MM/YYYY
+                    if(!dataA) return;
+                    
+                    const partes = dataA.split('/');
+                    if(partes.length !== 3) return;
+
+                    const dia = partes[0];
+                    const mes = partes[1];
+                    const ano = partes[2];
+                    
+                    if(!arvore[ano]) arvore[ano] = { totalGuias: 0, meses: {} };
+                    if(!arvore[ano].meses[mes]) arvore[ano].meses[mes] = { totalGuias: 0, dias: {} };
+                    if(!arvore[ano].meses[mes].dias[dataA]) arvore[ano].meses[mes].dias[dataA] = [];
+                    
+                    arvore[ano].meses[mes].dias[dataA].push(g);
+                    
+                    // Incrementa os contadores
+                    arvore[ano].totalGuias++;
+                    arvore[ano].meses[mes].totalGuias++;
                 });
 
                 container.innerHTML = "";
-                let dataAtual = "";
-                let divGrupoAtual = null;
 
-                todasAsGuiasArquivadas.forEach(g => {
-                    if (g.dataArquivamentoSistema !== dataAtual) {
-                        dataAtual = g.dataArquivamentoSistema;
-                        const dataParaOId = dataAtual.replace(/\//g, '-');
-                        const totalNoDia = contagemPorData[dataAtual];
+                // 2. Renderizar Ano (Ordem Decrescente: 2026, 2025...)
+                Object.keys(arvore).sort((a,b) => b.localeCompare(a)).forEach(anoStr => {
+                    const anoObj = arvore[anoStr];
+                    
+                    const btnAno = document.createElement("button");
+                    btnAno.className = "data-header-btn btn-ano";
+                    btnAno.innerHTML = `<div><span>📁 Acervo de ${anoStr}</span> <span class="contador-guias">${anoObj.totalGuias} guias</span></div><span>➕</span>`;
+                    
+                    const divAno = document.createElement("div");
+                    divAno.className = "grupo-ano";
+                    
+                    btnAno.onclick = () => {
+                        const aberto = divAno.style.display === "block";
+                        divAno.style.display = aberto ? "none" : "block";
+                        btnAno.querySelector('span:last-child').innerText = aberto ? "➕" : "➖";
+                    };
+                    container.appendChild(btnAno);
+                    container.appendChild(divAno);
+
+                    // 3. Renderizar Mês (Ordem Decrescente: 12, 11...)
+                    Object.keys(anoObj.meses).sort((a,b) => b.localeCompare(a)).forEach(mesStr => {
+                        const mesObj = anoObj.meses[mesStr];
+                        const nomeMes = nomeMeses[mesStr] || mesStr;
                         
-                        const btnData = document.createElement("button");
-                        btnData.className = "data-header-btn";
-                        btnData.innerHTML = `
-                            <div>
-                                <span>📅 Arquivadas em: ${dataAtual}</span>
-                                <span class="contador-guias">${totalNoDia} ${totalNoDia > 1 ? 'guias' : 'guia'}</span>
-                            </div>
-                            <span>➕</span>`;
+                        const btnMes = document.createElement("button");
+                        btnMes.className = "data-header-btn btn-mes";
+                        btnMes.innerHTML = `<div><span>📂 ${nomeMes}</span> <span class="contador-guias" style="background:#16a085;">${mesObj.totalGuias} guias</span></div><span>➕</span>`;
                         
-                        divGrupoAtual = document.createElement("div");
-                        divGrupoAtual.className = "grupo-guias";
-                        divGrupoAtual.id = `grupo-${dataParaOId}`;
+                        const divMes = document.createElement("div");
+                        divMes.className = "grupo-mes";
                         
-                        btnData.onclick = () => {
-                            const target = document.getElementById(`grupo-${dataParaOId}`);
-                            const icon = btnData.querySelector('span:last-child');
-                            if (target.style.display === "block") {
-                                target.style.display = "none";
-                                icon.innerText = "➕";
-                            } else {
-                                target.style.display = "block";
-                                icon.innerText = "➖";
-                            }
+                        btnMes.onclick = () => {
+                            const aberto = divMes.style.display === "block";
+                            divMes.style.display = aberto ? "none" : "block";
+                            btnMes.querySelector('span:last-child').innerText = aberto ? "➕" : "➖";
                         };
+                        divAno.appendChild(btnMes);
+                        divAno.appendChild(divMes);
 
-                        container.appendChild(btnData);
-                        container.appendChild(divGrupoAtual);
-                    }
+                        // 4. Renderizar Dia (Ordem Decrescente pelo dia numérico)
+                        Object.keys(mesObj.dias).sort((a,b) => {
+                            const diaA = parseInt(a.split('/')[0]);
+                            const diaB = parseInt(b.split('/')[0]);
+                            return diaB - diaA; // Decrescente
+                        }).forEach(dataStr => {
+                            const guiasDoDia = mesObj.dias[dataStr];
+                            
+                            // Ordena as guias do dia por Número Crescente
+                            guiasDoDia.sort((g1, g2) => {
+                                const numA = g1.numero || g1.numeroGuia || "";
+                                const numB = g2.numero || g2.numeroGuia || "";
+                                return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
+                            });
 
-                    const div = document.createElement("div");
-                    div.className = "guia-card-arquivada";
-                    div.innerHTML = `
-                        <div class="info-box">
-                            <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
-                            <small>Unidade: ${g.unidade}</small><br>
-                            <span class="badge-user">👤 Responsável: ${g.arquivadoPor || '---'}</span>
-                        </div>
-                        <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
-                            <div class="badge-local">📦 G: ${g.locCaixaFinal} / D: ${g.locCaixaDocumentos}</div>
-                            <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Detalhes</button>
-                        </div>`;
-                    divGrupoAtual.appendChild(div);
+                            const btnDia = document.createElement("button");
+                            btnDia.className = "data-header-btn btn-dia";
+                            btnDia.innerHTML = `<div><span>📅 ${dataStr}</span> <span class="contador-guias" style="background:#555;">${guiasDoDia.length} guias</span></div><span>➕</span>`;
+                            
+                            const divDia = document.createElement("div");
+                            divDia.className = "grupo-dia";
+
+                            btnDia.onclick = () => {
+                                const aberto = divDia.style.display === "block";
+                                divDia.style.display = aberto ? "none" : "block";
+                                btnDia.querySelector('span:last-child').innerText = aberto ? "➕" : "➖";
+                            };
+                            divMes.appendChild(btnDia);
+                            divMes.appendChild(divDia);
+
+                            // 5. Renderizar Cards das Guias
+                            guiasDoDia.forEach(g => {
+                                const div = document.createElement("div");
+                                div.className = "guia-card-arquivada";
+                                div.innerHTML = `
+                                    <div class="info-box">
+                                        <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
+                                        <small>Unidade: ${g.unidade}</small><br>
+                                        <span class="badge-user">👤 Responsável: ${g.arquivadoPor || '---'}</span>
+                                    </div>
+                                    <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
+                                        <div class="badge-local">📦 G: ${g.locCaixaFinal} / D: ${g.locCaixaDocumentos}</div>
+                                        <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Detalhes</button>
+                                    </div>`;
+                                divDia.appendChild(div);
+                            });
+                        });
+                    });
                 });
             } catch (err) { 
                 console.error(err);
@@ -228,7 +303,6 @@
         window.abrirDashboard = async () => {
             document.getElementById("modalDashboard").style.display = "block";
             
-            // Se já tiver carregado os dados, apenas atualiza o gráfico
             if (estatisticasGlobais.length > 0) {
                 window.atualizarGrafico();
                 return;
@@ -237,7 +311,6 @@
             document.getElementById("loadingDashboard").style.display = "inline";
             
             try {
-                // Busca documentos de todas as guias arquivadas simultaneamente
                 const promessas = todasAsGuiasArquivadas.map(g => getDocs(collection(db, "guias", g.id, "documentos")));
                 const resultados = await Promise.all(promessas);
 
@@ -269,12 +342,10 @@
             const tipo = document.getElementById("tipoAgrupamento").value;
             const agrupado = {};
 
-            // Atualiza os Cards Totais
             const totalFolhas = estatisticasGlobais.reduce((acc, curr) => acc + curr.paginas, 0);
             document.getElementById("dashTotalFolhas").innerText = totalFolhas.toLocaleString('pt-BR');
             document.getElementById("dashTotalDocs").innerText = estatisticasGlobais.length.toLocaleString('pt-BR');
 
-            // Lógica de Agrupamento
             estatisticasGlobais.forEach(item => {
                 let chave = "";
                 const [ano, mes, dia] = item.dataOrig.split('-');
@@ -294,10 +365,8 @@
                 agrupado[chave] += item.paginas;
             });
 
-            // Ordena Cronologicamente as Chaves
             const chavesOrdenadas = Object.keys(agrupado).sort();
             
-            // Formata o texto para exibição bonita no gráfico
             const labels = chavesOrdenadas.map(c => {
                 if (tipo === "diaria") return c.split('-').reverse().join('/');
                 if (tipo === "mensal") return `${c.split('-')[1]}/${c.split('-')[0]}`;
@@ -306,10 +375,8 @@
             });
             const values = chavesOrdenadas.map(c => agrupado[c]);
 
-            // Renderiza o Gráfico com Chart.js
             const ctx = document.getElementById('graficoProducao').getContext('2d');
-            
-            if (chartProducao) { chartProducao.destroy(); } // Limpa gráfico anterior
+            if (chartProducao) { chartProducao.destroy(); } 
 
             chartProducao = new Chart(ctx, {
                 type: 'bar',
