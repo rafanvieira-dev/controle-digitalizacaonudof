@@ -119,7 +119,6 @@
                 let guias = [];
                 snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
                 
-                // ORDENAÇÃO: Mais antigo primeiro E crescente pelo número da guia
                 guias.sort((a, b) => {
                     const dataA = a.dataRecebimento || "";
                     const dataB = b.dataRecebimento || "";
@@ -140,7 +139,6 @@
                 let dataAtual = "";
 
                 guias.forEach(g => {
-                    // Lógica de Alerta de Atraso
                     const hoje = new Date(); hoje.setHours(0,0,0,0);
                     const [ano, mes, dia] = g.dataRecebimento.split('-');
                     const dataGuia = new Date(ano, mes - 1, dia);
@@ -177,13 +175,10 @@
             } catch (err) { console.error(err); }
         }
 
-        // NOVO: Função que espalha a data para os campos vazios da tabela
         window.sincronizarDatas = function(valorAlterado) {
-            if (!valorAlterado) return; // Se apagou a data, ignora
-            
+            if (!valorAlterado) return; 
             documentosDaGuia.forEach(docId => {
                 const inputData = document.getElementById(`data_${docId}`);
-                // Se o campo de data deste documento estiver vazio, auto-preenche
                 if (inputData && !inputData.value) {
                     inputData.value = valorAlterado;
                 }
@@ -222,7 +217,6 @@
                     documentosDaGuia.push(docSnap.id);
                     listaDocumentosCache.push({ id: docSnap.id, processoOriginal: d.numeroProcesso });
                     
-                    // NOVO: O input de data agora possui onchange="window.sincronizarDatas(this.value)"
                     html += `<tr>
                         <td style="text-align:center"><b>${i++}</b></td>
                         <td><small><b>${d.nomeDocumento}</b><br>Processo: ${d.numeroProcesso}</small></td>
@@ -245,12 +239,16 @@
             
             try {
                 const dataF = document.getElementById("dataArquivamentoManual").value.split("-").reverse().join("/");
+                
+                // NOVO: Adicionado nomeOperador e matriculaOperador no banco de dados!
                 await updateDoc(doc(db, "guias", guiaAtualId), {
                     status: "Arquivada",
                     locCaixaFinal: document.getElementById("locCaixa").value,
                     locCaixaDocumentos: document.getElementById("locCaixaDocs").value,
                     dataArquivamentoSistema: dataF,
-                    arquivadoPor: auth.currentUser.email
+                    arquivadoPor: auth.currentUser.email,
+                    nomeOperador: auth.currentUser.displayName || auth.currentUser.email, 
+                    matriculaOperador: document.getElementById("matriculaOperador").value 
                 });
 
                 const promessas = documentosDaGuia.map(docId => {
@@ -300,7 +298,7 @@
 
             docPdf.autoTable({
                 startY: 25,
-                head: [['Nº ORDEM', 'QTD FOLHAS COM INFORMAÇÃO', 'DATA DA DIGITALIZAÇÃO.', 'Nº DO PROCESSO SEI', 'Nº PROTOCOLO DO DOCUMENTO', 'CONTÉM MÍDIA', 'TIPO DE MÍDIA', 'Nº PROTOCOLO DA MÍDIA']],
+                head: [['Nº ORDEM', 'QTD FOLHAS', 'DATA DIGIT.', 'Nº PROCESSO SEI', 'Nº PROTOCOLO DO DOCUMENTO', 'MÍDIA', 'TIPO MÍDIA', 'PROT. MÍDIA']],
                 body: rows,
                 theme: 'grid',
                 styles: { fontSize: 10, halign: 'center', textColor: 0, cellPadding: 4, lineColor: [0, 0, 0], lineWidth: 0.5 },
@@ -312,10 +310,9 @@
             docPdf.setFontSize(12);
             docPdf.text(`GUIA Nº: ${dadosGuiaOriginal.numero || dadosGuiaOriginal.numeroGuia}`, 20, finalY);
             docPdf.text(`RECEBIDO EM: ${dadosGuiaOriginal.dataRecebimento.split('-').reverse().join('/')}`, 20, finalY + 10);
-            docPdf.text(`OPERADOR: ${auth.currentUser.displayName || '---'}`, 20, finalY + 20);
+            docPdf.text(`OPERADOR: ${auth.currentUser.displayName || auth.currentUser.email}`, 20, finalY + 20);
             docPdf.text(`MATRÍCULA: ${matricula}`, 20, finalY + 30);
 
-            // Abre visualização em nova aba
             window.open(docPdf.output('bloburl'), '_blank');
             location.reload();
         };
