@@ -23,7 +23,6 @@
         }
         .data-header-btn:hover { background: #004080; }
         
-        /* Estilo do Contador */
         .contador-guias {
             background: #27ae60; color: white; padding: 2px 10px; border-radius: 12px;
             font-size: 0.85em; margin-left: 10px; font-weight: normal;
@@ -35,6 +34,13 @@
         .badge-user { font-size: 0.75em; color: #666; display: block; margin-top: 5px; }
         .badge-local { background: #e8f4fd; color: #003366; padding: 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
         .filtros-relatorio { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: flex-end; border: 1px solid #ddd; }
+        
+        .btn-reimprimir {
+            background: #27ae60; color: white; border: none; padding: 10px 15px;
+            border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 15px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .btn-reimprimir:hover { background: #219150; }
     </style>
 </head>
 <body>
@@ -102,14 +108,12 @@
                 todasAsGuiasArquivadas = [];
                 snap.forEach(d => todasAsGuiasArquivadas.push({ id: d.id, ...d.data() }));
 
-                // Ordena por data (mais recente primeiro)
                 todasAsGuiasArquivadas.sort((a, b) => {
                     const dataA = a.dataArquivamentoSistema.split('/').reverse().join('');
                     const dataB = b.dataArquivamentoSistema.split('/').reverse().join('');
                     return dataB.localeCompare(dataA);
                 });
 
-                // Primeiro, vamos contar quantas guias existem por data
                 const contagemPorData = {};
                 todasAsGuiasArquivadas.forEach(g => {
                     contagemPorData[g.dataArquivamentoSistema] = (contagemPorData[g.dataArquivamentoSistema] || 0) + 1;
@@ -141,13 +145,8 @@
                         btnData.onclick = () => {
                             const target = document.getElementById(`grupo-${dataParaOId}`);
                             const icon = btnData.querySelector('span:last-child');
-                            if (target.style.display === "block") {
-                                target.style.display = "none";
-                                icon.innerText = "➕";
-                            } else {
-                                target.style.display = "block";
-                                icon.innerText = "➖";
-                            }
+                            target.style.display = target.style.display === "block" ? "none" : "block";
+                            icon.innerText = target.style.display === "block" ? "➖" : "➕";
                         };
 
                         container.appendChild(btnData);
@@ -191,6 +190,9 @@
                         <div><b>👤 Digitalizada por:</b> ${g.arquivadoPor || '--'}</div>
                         <div><b>📦 Caixa da Guia:</b> ${g.locCaixaFinal || '--'}</div>
                         <div><b>📦 Caixa de Documentos:</b> ${g.locCaixaDocumentos || '--'}</div>
+                        <div style="grid-column: span 2; margin-top: 10px;">
+                            <button class="btn-reimprimir" onclick="window.reimprimirFolha('${id}')">🖨️ Reimprimir Folha de Rosto (Paisagem)</button>
+                        </div>
                     </div>
                     <table style="width:100%; border-collapse: collapse; font-size:12px;">
                     <thead><tr style="background:#003366; color:white;">
@@ -203,7 +205,7 @@
 
                 docsSnap.forEach(docItem => {
                     const d = docItem.data();
-                    const anexoStr = d.tipoAnexo && d.tipoAnexo !== "Nenhum" ? `<b>${d.tipoAnexo}</b> (${d.qtdPagsAnexo} pgs)` : "Nenhum";
+                    const anexoStr = d.tipoAnexo && d.tipoAnexo !== "Nenhum" ? `<b>${d.tipoAnexo}</b> (${d.protocoloAnexo || 'S/P'})` : "Nenhum";
                     html += `<tr>
                         <td style="padding:10px; border:1px solid #ddd;"><b>${d.nomeDocumento}</b><br><small>${d.numeroProcesso}</small></td>
                         <td style="padding:10px; border:1px solid #ddd;">${d.inseridoPor || '--'}</td>
@@ -214,6 +216,61 @@
                 });
                 grid.innerHTML = html + "</tbody></table>";
             } catch (e) { grid.innerHTML = "Erro ao carregar detalhes."; }
+        };
+
+        window.reimprimirFolha = async (id) => {
+            const { jsPDF } = window.jspdf;
+            const docPdf = new jsPDF('l', 'mm', 'a4');
+            
+            try {
+                const gSnap = await getDoc(doc(db, "guias", id));
+                const g = gSnap.data();
+                const docsSnap = await getDocs(collection(db, "guias", id, "documentos"));
+
+                docPdf.setFontSize(14);
+                docPdf.setFont("helvetica", "bold");
+                docPdf.text("FOLHA DE ROSTO DE DIGITALIZAÇÃO PARA GUIA DE REMESSA DE DOCUMENTOS", 148.5, 15, { align: "center" });
+
+                let rows = [];
+                let idx = 1;
+                docsSnap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    const contemMidia = d.tipoAnexo !== "Nenhum" ? "S" : "N";
+                    rows.push([
+                        idx++, 
+                        d.paginasPdf || "", 
+                        d.dataDigitalizacao ? d.dataDigitalizacao.split('-').reverse().join('/') : "", 
+                        d.numeroProcesso || "", 
+                        d.protocoloSeiDigitalizado || "", 
+                        contemMidia,
+                        d.tipoAnexo === "Nenhum" ? "" : d.tipoAnexo,
+                        d.protocoloAnexo || ""
+                    ]);
+                });
+
+                while(rows.length < 7) { rows.push([rows.length + 1, "", "", "", "", "N", "", ""]); }
+
+                docPdf.autoTable({
+                    startY: 25,
+                    head: [['Nº ORDEM', 'QTD FOLHAS', 'DATA DIGIT.', 'Nº PROCESSO SEI', 'Nº PROTOCOLO DO DOCUMENTO', 'MÍDIA', 'TIPO MÍDIA', 'PROT. MÍDIA']],
+                    body: rows,
+                    theme: 'grid',
+                    styles: { fontSize: 10, halign: 'center', textColor: 0, cellPadding: 4, lineColor: [0, 0, 0], lineWidth: 0.5 },
+                    headStyles: { fillColor: [60, 60, 60], textColor: 255, fontStyle: 'bold', fontSize: 11 },
+                    alternateRowStyles: { fillColor: [220, 220, 220] }
+                });
+
+                const finalY = docPdf.lastAutoTable.finalY + 15;
+                docPdf.setFontSize(12);
+                docPdf.text(`GUIA Nº: ${g.numero || g.numeroGuia}`, 20, finalY);
+                docPdf.text(`RECEBIDO EM: ${g.dataRecebimento.split('-').reverse().join('/')}`, 20, finalY + 8);
+                docPdf.text(`DIGITALIZADO POR: ${g.arquivadoPor || '---'}`, 20, finalY + 16);
+                docPdf.text(`DATA ARQUIVAMENTO: ${g.dataArquivamentoSistema}`, 20, finalY + 24);
+
+                // MODIFICAÇÃO: Abre visualização em vez de baixar direto
+                window.open(docPdf.output('bloburl'), '_blank');
+                
+            } catch (e) { alert("Erro ao gerar PDF."); }
         };
 
         window.gerarPDF = async function() {
