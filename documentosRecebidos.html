@@ -26,7 +26,6 @@
         }
         .grupo-guias-arquivar { display: none; margin-bottom: 20px; padding: 10px; background: #f9f9f9; border-radius: 0 0 8px 8px; }
         
-        /* Modal de Input de Dados Técnicos */
         .modal-arquivamento {
             display: none; position: fixed; z-index: 2000; left: 0; top: 0;
             width: 100%; height: 100%; background: rgba(0,0,0,0.7);
@@ -38,6 +37,12 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #003366; }
         .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+
+        .alerta-atraso {
+            background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px;
+            font-size: 0.7em; font-weight: bold; margin-left: 10px; animation: blink 1s infinite;
+        }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -104,6 +109,9 @@
                 const guias = [];
                 snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
 
+                // Ordenação: Mais antigo primeiro
+                guias.sort((a,b) => (a.dataRecebimento || "").localeCompare(b.dataRecebimento || ""));
+
                 const contagemPorData = {};
                 guias.forEach(g => {
                     contagemPorData[g.dataRecebimento] = (contagemPorData[g.dataRecebimento] || 0) + 1;
@@ -113,22 +121,41 @@
                 let dataAtual = "";
                 let divGrupoAtual = null;
 
-                guias.sort((a,b) => a.dataRecebimento.localeCompare(b.dataRecebimento)).forEach(g => {
+                guias.forEach(g => {
+                    // Lógica de Alerta de Atraso
+                    const hoje = new Date();
+                    hoje.setHours(0,0,0,0);
+                    const [ano, mes, dia] = g.dataRecebimento.split('-');
+                    const dataGuia = new Date(ano, mes - 1, dia);
+                    const alertaHtml = dataGuia < hoje ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
+
                     if (g.dataRecebimento !== dataAtual) {
                         dataAtual = g.dataRecebimento;
                         const totalNoDia = contagemPorData[dataAtual];
+                        
                         const btnData = document.createElement("button");
                         btnData.className = "data-header-btn";
-                        btnData.innerHTML = `<span>📅 Recebidas em: ${dataAtual.split('-').reverse().join('/')}</span> <span class="contador-abas">${totalNoDia}</span>`;
+                        btnData.innerHTML = `
+                            <div>
+                                <span>📅 Recebidas em: ${dataAtual.split('-').reverse().join('/')}</span> 
+                                <span class="contador-abas">${totalNoDia}</span>
+                                ${alertaHtml}
+                            </div>
+                            <span>➕</span>`;
                         
-                        divGrupoAtual = document.createElement("div");
-                        divGrupoAtual.className = "grupo-guias-arquivar";
-                        const dataId = dataAtual;
+                        const divGrupoSendoCriado = document.createElement("div");
+                        divGrupoSendoCriado.className = "grupo-guias-arquivar";
+                        divGrupoSendoCriado.style.display = "none";
+
                         btnData.onclick = () => {
-                            divGrupoAtual.style.display = divGrupoAtual.style.display === "block" ? "none" : "block";
+                            const estaVisivel = divGrupoSendoCriado.style.display === "block";
+                            divGrupoSendoCriado.style.display = estaVisivel ? "none" : "block";
+                            btnData.querySelector('span:last-child').innerText = estaVisivel ? "➕" : "➖";
                         };
+
                         container.appendChild(btnData);
-                        container.appendChild(divGrupoAtual);
+                        container.appendChild(divGrupoSendoCriado);
+                        divGrupoAtual = divGrupoSendoCriado;
                     }
 
                     const div = document.createElement("div");
@@ -139,9 +166,13 @@
                             <small>Unidade: ${g.unidade}</small>
                         </div>
                         <button class="btn-primary" onclick="window.abrirModalArquivamento('${g.id}')" style="width:auto; padding:8px 15px;">📥 Arquivar</button>`;
+                    
                     divGrupoAtual.appendChild(div);
                 });
-            } catch (err) { container.innerHTML = "Erro ao carregar."; }
+            } catch (err) { 
+                console.error(err);
+                container.innerHTML = "Erro ao carregar."; 
+            }
         }
 
         window.abrirModalArquivamento = async (id) => {
@@ -178,7 +209,6 @@
         async function gerarFolhaRosto(matricula) {
             const { jsPDF } = window.jspdf;
             const docPdf = new jsPDF('l', 'mm', 'a4');
-            
             const docsSnap = await getDocs(collection(db, "guias", guiaParaFinalizarId, "documentos"));
             
             docPdf.setFontSize(14);
@@ -191,20 +221,15 @@
                 const d = docSnap.data();
                 const contemMidia = d.tipoAnexo !== "Nenhum" ? "S" : "N";
                 rows.push([
-                    idx++, 
-                    d.paginasPdf || "", 
+                    idx++, d.paginasPdf || "", 
                     d.dataDigitalizacao ? d.dataDigitalizacao.split('-').reverse().join('/') : "", 
                     d.numeroProcesso || "", 
                     d.protocoloSeiDigitalizado || "", 
-                    contemMidia,
-                    d.tipoAnexo === "Nenhum" ? "" : d.tipoAnexo,
-                    d.protocoloAnexo || ""
+                    contemMidia, d.tipoAnexo === "Nenhum" ? "" : d.tipoAnexo, d.protocoloAnexo || ""
                 ]);
             });
 
-            while(rows.length < 7) {
-                rows.push([rows.length + 1, "", "", "", "", "N", "", ""]);
-            }
+            while(rows.length < 7) { rows.push([rows.length + 1, "", "", "", "", "N", "", ""]); }
 
             docPdf.autoTable({
                 startY: 25,
@@ -223,7 +248,6 @@
             docPdf.text(`OPERADOR: ${auth.currentUser.displayName || auth.currentUser.email}`, 20, finalY + 20);
             docPdf.text(`MATRÍCULA: ${matricula}`, 20, finalY + 30);
 
-            // MUDANÇA: Agora abre em nova aba para imprimir em vez de baixar direto
             window.open(docPdf.output('bloburl'), '_blank');
         }
     </script>
