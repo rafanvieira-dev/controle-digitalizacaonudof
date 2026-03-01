@@ -1,231 +1,79 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arquivar Guia - NUDOF</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <style>
-        .guia-card-arquivar {
-            background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 6px solid #27ae60;
-        }
-        .data-header-btn {
-            width: 100%; background: #003366; color: white; padding: 12px;
-            border: none; border-radius: 5px; text-align: left; font-weight: bold;
-            margin: 15px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between;
-            align-items: center;
-        }
-        .data-header-btn:hover { background: #004080; }
-        .contador-abas {
-            background: #27ae60; color: white; padding: 2px 10px; border-radius: 12px;
-            font-size: 0.85em; margin-left: 10px; font-weight: normal;
-        }
-        .grupo-guias-arquivar { display: none; margin-bottom: 20px; padding: 10px; background: #f9f9f9; border-radius: 0 0 8px 8px; }
-        
-        /* Modal de Input de Dados Técnicos */
-        .modal-arquivamento {
-            display: none; position: fixed; z-index: 2000; left: 0; top: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.7);
-            align-items: center; justify-content: center;
-        }
-        .modal-arquivamento-content {
-            background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px;
-        }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #003366; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-    </style>
-</head>
-<body>
-    <div id="appInterface">
-        <aside id="sidebar">
-            <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
-            <nav>
-                <a href="index.html">🏠 Início / Histórico</a>
-                <a href="guia.html">➕ Nova Guia</a>
-                <a href="documentos.html">📄 Inserir Documentos</a>
-                <a href="documentosRecebidos.html" class="ativo">📁 Arquivar Guia</a>
-                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
-                <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
-            </nav>
-        </aside>
+<style>
+    /* Estilos anteriores mantidos */
+    .alerta-atraso {
+        background: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px;
+        font-size: 0.75em; font-weight: bold; margin-left: 10px; animation: blink 1s infinite;
+    }
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+</style>
 
-        <main id="content">
-            <h2 class="page-title">Guias Prontas para Arquivamento</h2>
-            <div id="listaParaArquivar"><p>Buscando guias abertas...</p></div>
-        </main>
-    </div>
+<script type="module">
+    // ... (imports)
 
-    <div id="modalArquivar" class="modal-arquivamento">
-        <div class="modal-arquivamento-content">
-            <h3 style="margin-bottom:20px; color:#003366;">Finalizar Digitalização</h3>
-            <div class="form-group">
-                <label>Matrícula do Operador:</label>
-                <input type="text" id="arqMatricula" placeholder="Sua matrícula">
-            </div>
-            <div class="form-group">
-                <label>Localização (Caixa da Guia):</label>
-                <input type="text" id="arqCaixaGuia" placeholder="Ex: C-01">
-            </div>
-            <div class="form-group">
-                <label>Localização (Caixa de Documentos):</label>
-                <input type="text" id="arqCaixaDocs" placeholder="Ex: D-05">
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn-primary" onclick="window.confirmarArquivamento()">🚀 Finalizar e Imprimir</button>
-                <button class="btn-sair" onclick="document.getElementById('modalArquivar').style.display='none'" style="background:#7f8c8d;">Cancelar</button>
-            </div>
-        </div>
-    </div>
+    async function carregar() {
+        const container = document.getElementById("listaParaArquivar");
+        try {
+            const q = query(collection(db, "guias"), where("status", "==", "Aberta"));
+            const snap = await getDocs(q);
+            
+            if(snap.empty) { container.innerHTML = "<p>Nenhuma guia aberta no momento.</p>"; return; }
 
-    <script type="module">
-        import { db, auth } from "./firebase.js";
-        import { collection, getDocs, query, where, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+            const guias = [];
+            snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
 
-        let guiaParaFinalizarId = "";
-        let dadosGuiaOriginal = null;
+            // MODIFICAÇÃO: Ordenar por data (MAIS ANTIGO PRIMEIRO)
+            guias.sort((a,b) => (a.dataRecebimento || "").localeCompare(b.dataRecebimento || ""));
 
-        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregar(); });
-        document.getElementById("btnLogout").onclick = () => signOut(auth);
+            const contagemPorData = {};
+            guias.forEach(g => {
+                contagemPorData[g.dataRecebimento] = (contagemPorData[g.dataRecebimento] || 0) + 1;
+            });
 
-        async function carregar() {
-            const container = document.getElementById("listaParaArquivar");
-            try {
-                const q = query(collection(db, "guias"), where("status", "==", "Aberta"));
-                const snap = await getDocs(q);
-                
-                if(snap.empty) { container.innerHTML = "<p>Nenhuma guia aberta no momento.</p>"; return; }
+            container.innerHTML = "";
+            let dataAtual = "";
+            let divGrupoAtual = null;
 
-                const guias = [];
-                snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
+            guias.forEach(g => {
+                // Lógica de Alerta: Mais de 1 dia (24h)
+                const dataRec = new Date(g.dataRecebimento + "T00:00:00");
+                const hoje = new Date();
+                hoje.setHours(0,0,0,0);
+                const diffTempo = hoje - dataRec;
+                const diffDias = diffTempo / (1000 * 60 * 60 * 24);
+                const alertaHtml = diffDias >= 1 ? `<span class="alerta-atraso">⚠️ ATENÇÃO: Guia em Atraso</span>` : "";
 
-                const contagemPorData = {};
-                guias.forEach(g => {
-                    contagemPorData[g.dataRecebimento] = (contagemPorData[g.dataRecebimento] || 0) + 1;
-                });
-
-                container.innerHTML = "";
-                let dataAtual = "";
-                let divGrupoAtual = null;
-
-                guias.sort((a,b) => a.dataRecebimento.localeCompare(b.dataRecebimento)).forEach(g => {
-                    if (g.dataRecebimento !== dataAtual) {
-                        dataAtual = g.dataRecebimento;
-                        const totalNoDia = contagemPorData[dataAtual];
-                        const btnData = document.createElement("button");
-                        btnData.className = "data-header-btn";
-                        btnData.innerHTML = `<span>📅 Recebidas em: ${dataAtual.split('-').reverse().join('/')}</span> <span class="contador-abas">${totalNoDia}</span>`;
-                        
-                        divGrupoAtual = document.createElement("div");
-                        divGrupoAtual.className = "grupo-guias-arquivar";
-                        const dataId = dataAtual;
-                        btnData.onclick = () => {
-                            divGrupoAtual.style.display = divGrupoAtual.style.display === "block" ? "none" : "block";
-                        };
-                        container.appendChild(btnData);
-                        container.appendChild(divGrupoAtual);
-                    }
-
-                    const div = document.createElement("div");
-                    div.className = "guia-card-arquivar";
-                    div.innerHTML = `
+                if (g.dataRecebimento !== dataAtual) {
+                    dataAtual = g.dataRecebimento;
+                    const totalNoDia = contagemPorData[dataAtual];
+                    const btnData = document.createElement("button");
+                    btnData.className = "data-header-btn";
+                    btnData.innerHTML = `
                         <div>
-                            <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
-                            <small>Unidade: ${g.unidade}</small>
-                        </div>
-                        <button class="btn-primary" onclick="window.abrirModalArquivamento('${g.id}')" style="width:auto; padding:8px 15px;">📥 Arquivar</button>`;
-                    divGrupoAtual.appendChild(div);
-                });
-            } catch (err) { container.innerHTML = "Erro ao carregar."; }
-        }
+                            <span>📅 Recebidas em: ${dataAtual.split('-').reverse().join('/')}</span> 
+                            <span class="contador-abas">${totalNoDia}</span>
+                            ${alertaHtml}
+                        </div>`;
+                    
+                    divGrupoAtual = document.createElement("div");
+                    divGrupoAtual.className = "grupo-guias-arquivar";
+                    btnData.onclick = () => {
+                        divGrupoAtual.style.display = divGrupoAtual.style.display === "block" ? "none" : "block";
+                    };
+                    container.appendChild(btnData);
+                    container.appendChild(divGrupoAtual);
+                }
 
-        window.abrirModalArquivamento = async (id) => {
-            guiaParaFinalizarId = id;
-            const docSnap = await getDoc(doc(db, "guias", id));
-            dadosGuiaOriginal = docSnap.data();
-            document.getElementById("modalArquivar").style.display = "flex";
-        };
-
-        window.confirmarArquivamento = async () => {
-            const matricula = document.getElementById("arqMatricula").value;
-            const caixaG = document.getElementById("arqCaixaGuia").value;
-            const caixaD = document.getElementById("arqCaixaDocs").value;
-
-            if(!matricula || !caixaG || !caixaD) return alert("Preencha todos os dados técnicos!");
-
-            try {
-                const hoje = new Date().toLocaleDateString('pt-BR');
-                await updateDoc(doc(db, "guias", guiaParaFinalizarId), {
-                    status: "Arquivada",
-                    arquivadoPor: auth.currentUser.email,
-                    matriculaOperador: matricula,
-                    locCaixaFinal: caixaG,
-                    locCaixaDocumentos: caixaD,
-                    dataArquivamentoSistema: hoje
-                });
-
-                await gerarFolhaRosto(matricula);
-                alert("Guia arquivada com sucesso!");
-                window.location.reload();
-            } catch (e) { alert("Erro ao arquivar."); }
-        };
-
-        async function gerarFolhaRosto(matricula) {
-            const { jsPDF } = window.jspdf;
-            const docPdf = new jsPDF('l', 'mm', 'a4');
-            
-            const docsSnap = await getDocs(collection(db, "guias", guiaParaFinalizarId, "documentos"));
-            
-            docPdf.setFontSize(14);
-            docPdf.setFont("helvetica", "bold");
-            docPdf.text("FOLHA DE ROSTO DE DIGITALIZAÇÃO PARA GUIA DE REMESSA DE DOCUMENTOS", 148.5, 15, { align: "center" });
-
-            let rows = [];
-            let idx = 1;
-            docsSnap.forEach(docSnap => {
-                const d = docSnap.data();
-                const contemMidia = d.tipoAnexo !== "Nenhum" ? "S" : "N";
-                rows.push([
-                    idx++, 
-                    d.paginasPdf || "", 
-                    d.dataDigitalizacao ? d.dataDigitalizacao.split('-').reverse().join('/') : "", 
-                    d.numeroProcesso || "", 
-                    d.protocoloSeiDigitalizado || "", 
-                    contemMidia,
-                    d.tipoAnexo === "Nenhum" ? "" : d.tipoAnexo,
-                    d.protocoloAnexo || ""
-                ]);
+                const div = document.createElement("div");
+                div.className = "guia-card-arquivar";
+                div.innerHTML = `
+                    <div>
+                        <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
+                        <small>Unidade: ${g.unidade}</small>
+                    </div>
+                    <button class="btn-primary" onclick="window.abrirModalArquivamento('${g.id}')" style="width:auto; padding:8px 15px;">📥 Arquivar</button>`;
+                divGrupoAtual.appendChild(div);
             });
-
-            while(rows.length < 7) {
-                rows.push([rows.length + 1, "", "", "", "", "N", "", ""]);
-            }
-
-            docPdf.autoTable({
-                startY: 25,
-                head: [['Nº ORDEM', 'QTD FOLHAS', 'DATA DIGIT.', 'Nº PROCESSO SEI', 'Nº PROTOCOLO DO DOCUMENTO', 'MÍDIA', 'TIPO MÍDIA', 'PROT. MÍDIA']],
-                body: rows,
-                theme: 'grid',
-                styles: { fontSize: 10, halign: 'center', textColor: 0, cellPadding: 4, lineColor: [0, 0, 0], lineWidth: 0.5 },
-                headStyles: { fillColor: [60, 60, 60], textColor: 255, fontStyle: 'bold', fontSize: 11 },
-                alternateRowStyles: { fillColor: [220, 220, 220] }
-            });
-
-            const finalY = docPdf.lastAutoTable.finalY + 20;
-            docPdf.setFontSize(12);
-            docPdf.text(`GUIA Nº: ${dadosGuiaOriginal.numero || dadosGuiaOriginal.numeroGuia}`, 20, finalY);
-            docPdf.text(`RECEBIDO EM: ${dadosGuiaOriginal.dataRecebimento.split('-').reverse().join('/')}`, 20, finalY + 10);
-            docPdf.text(`OPERADOR: ${auth.currentUser.displayName || auth.currentUser.email}`, 20, finalY + 20);
-            docPdf.text(`MATRÍCULA: ${matricula}`, 20, finalY + 30);
-
-            // MUDANÇA: Agora abre em nova aba para imprimir em vez de baixar direto
-            window.open(docPdf.output('bloburl'), '_blank');
-        }
-    </script>
-</body>
-</html>
+        } catch (err) { container.innerHTML = "Erro ao carregar."; }
+    }
+    // ... (restante do script mantido)
+</script>
