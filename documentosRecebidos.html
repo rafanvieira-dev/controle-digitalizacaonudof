@@ -20,29 +20,22 @@
             align-items: center;
         }
         .data-header-btn:hover { background: #004080; }
-        .contador-abas {
-            background: #27ae60; color: white; padding: 2px 10px; border-radius: 12px;
-            font-size: 0.85em; margin-left: 10px; font-weight: normal;
-        }
-        .grupo-guias-arquivar { display: none; margin-bottom: 20px; padding: 10px; background: #f9f9f9; border-radius: 0 0 8px 8px; }
+        .contador-pendentes { background: #e74c3c; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85em; margin-left: 10px; font-weight: normal; }
+        .grupo-pendentes { display: none; margin-bottom: 20px; }
+        .form-grid-arquivar { display: flex; flex-direction: column; gap: 15px; text-align: left; }
+        .input-group label { display: block; font-weight: bold; font-size: 12px; margin-bottom: 5px; color: #34495e; }
+        .input-group input, .input-group select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
+        .tabela-docs-arquivamento { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.82em; }
+        .tabela-docs-arquivamento th, .tabela-docs-arquivamento td { padding: 8px; border: 1px solid #ccc; vertical-align: top; }
+        .tabela-docs-arquivamento th { background: #f0f2f5; color: #003366; }
+        .campo-obrigatorio:invalid { border: 2px solid #e74c3c !important; background: #fff6f6; }
         
-        .modal-arquivamento {
-            display: none; position: fixed; z-index: 2000; left: 0; top: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.7);
-            align-items: center; justify-content: center;
-        }
-        .modal-arquivamento-content {
-            background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px;
-        }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #003366; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-
+        /* Alerta de Atraso */
         .alerta-atraso {
-            background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px;
-            font-size: 0.7em; font-weight: bold; margin-left: 10px; animation: blink 1s infinite;
+            background: #ffeb3b; color: #000; padding: 2px 8px; border-radius: 4px;
+            font-size: 0.7em; font-weight: bold; margin-left: 10px; animation: blink 1.5s infinite;
         }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -60,40 +53,59 @@
         </aside>
 
         <main id="content">
-            <h2 class="page-title">Guias Prontas para Arquivamento</h2>
-            <div id="listaParaArquivar"><p>Buscando guias abertas...</p></div>
+            <h2 class="page-title">Arquivamento de Guias e Digitalização</h2>
+            <div id="listaParaArquivar"><p>Buscando guias pendentes...</p></div>
         </main>
     </div>
 
-    <div id="modalArquivar" class="modal-arquivamento">
-        <div class="modal-arquivamento-content">
-            <h3 style="margin-bottom:20px; color:#003366;">Finalizar Digitalização</h3>
-            <div class="form-group">
-                <label>Matrícula do Operador:</label>
-                <input type="text" id="arqMatricula" placeholder="Sua matrícula">
-            </div>
-            <div class="form-group">
-                <label>Localização (Caixa da Guia):</label>
-                <input type="text" id="arqCaixaGuia" placeholder="Ex: C-01">
-            </div>
-            <div class="form-group">
-                <label>Localização (Caixa de Documentos):</label>
-                <input type="text" id="arqCaixaDocs" placeholder="Ex: D-05">
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn-primary" onclick="window.confirmarArquivamento()">🚀 Finalizar e Imprimir</button>
-                <button class="btn-sair" onclick="document.getElementById('modalArquivar').style.display='none'" style="background:#7f8c8d;">Cancelar</button>
-            </div>
+    <div id="modalArquivar" class="modal">
+        <div class="modal-content" style="width: 98%; max-width: 1400px; margin: 1% auto;">
+            <span class="close-btn" id="closeArquivar" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
+            <h3 id="tituloModalArquivar" style="margin-bottom: 15px; color: #003366;"></h3>
+            
+            <form id="formDadosArquivamento" class="form-grid-arquivar">
+                <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b6d4fe; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px;">
+                    <h4 style="grid-column: span 4; color: #003366;">1. Informações de Controle</h4>
+                    <div class="input-group">
+                        <label>📦 Nº Caixa da Guia:</label>
+                        <input type="text" id="locCaixa" required>
+                    </div>
+                    <div class="input-group">
+                        <label>📦 Nº Caixa dos Documentos:</label>
+                        <input type="text" id="locCaixaDocs" required>
+                    </div>
+                    <div class="input-group">
+                        <label>📅 Data de Arquivamento:</label>
+                        <input type="date" id="dataArquivamentoManual" required>
+                    </div>
+                    <div class="input-group">
+                        <label>🆔 Sua Matrícula (Para Folha de Rosto):</label>
+                        <input type="text" id="matriculaOperador" placeholder="Digite sua matrícula" required>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+                    <h4 style="margin-bottom: 10px; color: #003366;">2. Detalhamento dos Itens</h4>
+                    <div id="areaDocumentosArquivar" style="overflow-x: auto;"></div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#27ae60; padding: 15px; font-weight: bold; flex: 2;">✅ FINALIZAR ARQUIVAMENTO</button>
+                    <button type="button" class="btn-primary" id="btnGerarFolhaRosto" style="background:#003366; padding: 15px; font-weight: bold; flex: 1; display: none;">📄 GERAR FOLHA DE ROSTO (PAISAGEM)</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { collection, getDocs, query, where, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { collection, getDocs, updateDoc, doc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-        let guiaParaFinalizarId = "";
+        let guiaAtualId = "";
+        let documentosDaGuia = [];
         let dadosGuiaOriginal = null;
+        let listaDocumentosCache = [];
 
         onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregar(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
@@ -101,131 +113,163 @@
         async function carregar() {
             const container = document.getElementById("listaParaArquivar");
             try {
-                const q = query(collection(db, "guias"), where("status", "==", "Aberta"));
+                const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
                 const snap = await getDocs(q);
+                if(snap.empty) { container.innerHTML = "<p>Não há guias pendentes.</p>"; return; }
                 
-                if(snap.empty) { container.innerHTML = "<p>Nenhuma guia aberta no momento.</p>"; return; }
-
-                const guias = [];
+                let guias = [];
                 snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
-
-                // Ordenação: Mais antigo primeiro
-                guias.sort((a,b) => (a.dataRecebimento || "").localeCompare(b.dataRecebimento || ""));
-
-                const contagemPorData = {};
-                guias.forEach(g => {
-                    contagemPorData[g.dataRecebimento] = (contagemPorData[g.dataRecebimento] || 0) + 1;
-                });
-
+                
+                // ORDENAÇÃO: Mais antigo primeiro
+                guias.sort((a, b) => (a.dataRecebimento || "").localeCompare(b.dataRecebimento || ""));
+                
+                const contagem = {};
+                guias.forEach(g => { const dRec = g.dataRecebimento || "Sem Data"; contagem[dRec] = (contagem[dRec] || 0) + 1; });
+                
                 container.innerHTML = "";
                 let dataAtual = "";
-                let divGrupoAtual = null;
 
                 guias.forEach(g => {
                     // Lógica de Alerta de Atraso
-                    const hoje = new Date();
-                    hoje.setHours(0,0,0,0);
+                    const hoje = new Date(); hoje.setHours(0,0,0,0);
                     const [ano, mes, dia] = g.dataRecebimento.split('-');
                     const dataGuia = new Date(ano, mes - 1, dia);
-                    const alertaHtml = dataGuia < hoje ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
+                    const alertaHtml = dataGuia < hoje ? `<span class="alerta-atraso">⚠️ EM ATRASO</span>` : "";
 
                     if (g.dataRecebimento !== dataAtual) {
                         dataAtual = g.dataRecebimento;
-                        const totalNoDia = contagemPorData[dataAtual];
+                        const dataF = dataAtual !== "Sem Data" ? dataAtual.split('-').reverse().join('/') : "Sem Data";
                         
                         const btnData = document.createElement("button");
                         btnData.className = "data-header-btn";
-                        btnData.innerHTML = `
-                            <div>
-                                <span>📅 Recebidas em: ${dataAtual.split('-').reverse().join('/')}</span> 
-                                <span class="contador-abas">${totalNoDia}</span>
-                                ${alertaHtml}
-                            </div>
-                            <span>➕</span>`;
+                        btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span><span class="contador-pendentes">${contagem[dataAtual]} pendente(s)</span> ${alertaHtml}</div><span>➕</span>`;
                         
                         const divGrupoSendoCriado = document.createElement("div");
-                        divGrupoSendoCriado.className = "grupo-guias-arquivar";
-                        divGrupoSendoCriado.style.display = "none";
-
+                        divGrupoSendoCriado.className = "grupo-pendentes";
+                        
                         btnData.onclick = () => {
-                            const estaVisivel = divGrupoSendoCriado.style.display === "block";
-                            divGrupoSendoCriado.style.display = estaVisivel ? "none" : "block";
-                            btnData.querySelector('span:last-child').innerText = estaVisivel ? "➕" : "➖";
+                            const estaAberto = divGrupoSendoCriado.style.display === "block";
+                            divGrupoSendoCriado.style.display = estaAberto ? "none" : "block";
+                            btnData.querySelector('span:last-child').innerText = estaAberto ? "➕" : "➖";
                         };
-
+                        
                         container.appendChild(btnData);
                         container.appendChild(divGrupoSendoCriado);
-                        divGrupoAtual = divGrupoSendoCriado;
+                        // Atribui o grupo atual para que os cartões seguintes caiam nele
+                        window.grupoTemp = divGrupoSendoCriado;
                     }
 
+                    const num = g.numero || g.numeroGuia || "S/N";
                     const div = document.createElement("div");
                     div.className = "guia-card-arquivar";
-                    div.innerHTML = `
-                        <div>
-                            <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
-                            <small>Unidade: ${g.unidade}</small>
-                        </div>
-                        <button class="btn-primary" onclick="window.abrirModalArquivamento('${g.id}')" style="width:auto; padding:8px 15px;">📥 Arquivar</button>`;
-                    
-                    divGrupoAtual.appendChild(div);
+                    div.innerHTML = `<div><strong>Guia ${num}</strong><br><small>${g.unidade}</small></div><button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#27ae60; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📁 Iniciar Arquivamento</button>`;
+                    window.grupoTemp.appendChild(div);
                 });
-            } catch (err) { 
-                console.error(err);
-                container.innerHTML = "Erro ao carregar."; 
-            }
+            } catch (err) { console.error(err); }
         }
 
-        window.abrirModalArquivamento = async (id) => {
-            guiaParaFinalizarId = id;
-            const docSnap = await getDoc(doc(db, "guias", id));
-            dadosGuiaOriginal = docSnap.data();
-            document.getElementById("modalArquivar").style.display = "flex";
+        window.abrirArq = async (id, num) => {
+            guiaAtualId = id; documentosDaGuia = []; listaDocumentosCache = [];
+            document.getElementById("btnGerarFolhaRosto").style.display = "none";
+            document.getElementById("btnConfirmarArq").disabled = false;
+            document.getElementById("btnConfirmarArq").innerText = "✅ FINALIZAR ARQUIVAMENTO";
+            document.getElementById("tituloModalArquivar").innerText = "Digitalização da Guia: " + num;
+            document.getElementById("dataArquivamentoManual").value = new Date().toISOString().split('T')[0];
+            const areaDocs = document.getElementById("areaDocumentosArquivar");
+            document.getElementById("modalArquivar").style.display = "block";
+            
+            try {
+                const gSnap = await getDoc(doc(db, "guias", id));
+                dadosGuiaOriginal = gSnap.data();
+                const snap = await getDocs(collection(db, "guias", id, "documentos"));
+                
+                let html = `<table class="tabela-docs-arquivamento"><thead><tr>
+                    <th>Nº Ordem</th>
+                    <th>Documento / Processo Orig.</th>
+                    <th style="width:90px">Qtd Folhas*</th>
+                    <th style="width:170px">Protocolo SEI*</th>
+                    <th style="width:130px">Data Digitaliz.*</th>
+                    <th style="width:100px">Mídia</th>
+                    <th style="width:160px">Prot. Mídia</th>
+                    <th>Obs.</th>
+                </tr></thead><tbody>`;
+                
+                let i = 1;
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    documentosDaGuia.push(docSnap.id);
+                    listaDocumentosCache.push({ id: docSnap.id, processoOriginal: d.numeroProcesso });
+                    
+                    html += `<tr>
+                        <td style="text-align:center"><b>${i++}</b></td>
+                        <td><small><b>${d.nomeDocumento}</b><br>Processo: ${d.numeroProcesso}</small></td>
+                        <td><input type="number" id="pags_${docSnap.id}" class="campo-obrigatorio" required></td>
+                        <td><input type="text" id="sei_${docSnap.id}" class="campo-obrigatorio" placeholder="Número Protocolo" required></td>
+                        <td><input type="date" id="data_${docSnap.id}" class="campo-obrigatorio" required></td>
+                        <td><select id="tAnexo_${docSnap.id}"><option value="Nenhum">Não</option><option value="CD">CD</option><option value="DVD">DVD</option><option value="Pen Drive">Pen Drive</option></select></td>
+                        <td><input type="text" id="protAnexo_${docSnap.id}" placeholder="Se houver"></td>
+                        <td><input type="text" id="obs_${docSnap.id}"></td>
+                    </tr>`;
+                });
+                areaDocs.innerHTML = html + "</tbody></table>";
+            } catch (e) { areaDocs.innerHTML = "<p>Erro ao carregar documentos.</p>"; }
         };
 
-        window.confirmarArquivamento = async () => {
-            const matricula = document.getElementById("arqMatricula").value;
-            const caixaG = document.getElementById("arqCaixaGuia").value;
-            const caixaD = document.getElementById("arqCaixaDocs").value;
-
-            if(!matricula || !caixaG || !caixaD) return alert("Preencha todos os dados técnicos!");
-
+        document.getElementById("formDadosArquivamento").onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById("btnConfirmarArq");
+            btn.disabled = true; btn.innerText = "Gravando...";
+            
             try {
-                const hoje = new Date().toLocaleDateString('pt-BR');
-                await updateDoc(doc(db, "guias", guiaParaFinalizarId), {
+                const dataF = document.getElementById("dataArquivamentoManual").value.split("-").reverse().join("/");
+                await updateDoc(doc(db, "guias", guiaAtualId), {
                     status: "Arquivada",
-                    arquivadoPor: auth.currentUser.email,
-                    matriculaOperador: matricula,
-                    locCaixaFinal: caixaG,
-                    locCaixaDocumentos: caixaD,
-                    dataArquivamentoSistema: hoje
+                    locCaixaFinal: document.getElementById("locCaixa").value,
+                    locCaixaDocumentos: document.getElementById("locCaixaDocs").value,
+                    dataArquivamentoSistema: dataF,
+                    arquivadoPor: auth.currentUser.email
                 });
 
-                await gerarFolhaRosto(matricula);
-                alert("Guia arquivada com sucesso!");
-                window.location.reload();
-            } catch (e) { alert("Erro ao arquivar."); }
+                const promessas = documentosDaGuia.map(docId => {
+                    return updateDoc(doc(db, "guias", guiaAtualId, "documentos", docId), {
+                        protocoloSeiDigitalizado: document.getElementById(`sei_${docId}`).value,
+                        paginasPdf: document.getElementById(`pags_${docId}`).value,
+                        dataDigitalizacao: document.getElementById(`data_${docId}`).value,
+                        tipoAnexo: document.getElementById(`tAnexo_${docId}`).value,
+                        protocoloAnexo: document.getElementById(`protAnexo_${docId}`).value || "",
+                        observacaoDigitalizacao: document.getElementById(`obs_${docId}`).value || ""
+                    });
+                });
+                
+                await Promise.all(promessas);
+                alert("Arquivamento Finalizado! Gere a Folha de Rosto abaixo.");
+                document.getElementById("btnGerarFolhaRosto").style.display = "block";
+                btn.innerText = "FINALIZADO ✅";
+            } catch (err) { alert("Erro ao salvar."); btn.disabled = false; btn.innerText = "FINALIZAR ARQUIVAMENTO"; }
         };
 
-        async function gerarFolhaRosto(matricula) {
+        document.getElementById("btnGerarFolhaRosto").onclick = () => {
             const { jsPDF } = window.jspdf;
-            const docPdf = new jsPDF('l', 'mm', 'a4');
-            const docsSnap = await getDocs(collection(db, "guias", guiaParaFinalizarId, "documentos"));
-            
+            const docPdf = new jsPDF('l', 'mm', 'a4'); 
+            const matricula = document.getElementById("matriculaOperador").value;
+
             docPdf.setFontSize(14);
             docPdf.setFont("helvetica", "bold");
             docPdf.text("FOLHA DE ROSTO DE DIGITALIZAÇÃO PARA GUIA DE REMESSA DE DOCUMENTOS", 148.5, 15, { align: "center" });
 
             let rows = [];
-            let idx = 1;
-            docsSnap.forEach(docSnap => {
-                const d = docSnap.data();
-                const contemMidia = d.tipoAnexo !== "Nenhum" ? "S" : "N";
+            listaDocumentosCache.forEach((item, idx) => {
+                const midiaSel = document.getElementById(`tAnexo_${item.id}`).value;
+                const contemMidia = midiaSel !== "Nenhum" ? "S" : "N";
                 rows.push([
-                    idx++, d.paginasPdf || "", 
-                    d.dataDigitalizacao ? d.dataDigitalizacao.split('-').reverse().join('/') : "", 
-                    d.numeroProcesso || "", 
-                    d.protocoloSeiDigitalizado || "", 
-                    contemMidia, d.tipoAnexo === "Nenhum" ? "" : d.tipoAnexo, d.protocoloAnexo || ""
+                    idx + 1, 
+                    document.getElementById(`pags_${item.id}`).value, 
+                    document.getElementById(`data_${item.id}`).value.split('-').reverse().join('/'), 
+                    item.processoOriginal, 
+                    document.getElementById(`sei_${item.id}`).value, 
+                    contemMidia,
+                    midiaSel === "Nenhum" ? "" : midiaSel,
+                    document.getElementById(`protAnexo_${item.id}`).value || ""
                 ]);
             });
 
@@ -245,11 +289,16 @@
             docPdf.setFontSize(12);
             docPdf.text(`GUIA Nº: ${dadosGuiaOriginal.numero || dadosGuiaOriginal.numeroGuia}`, 20, finalY);
             docPdf.text(`RECEBIDO EM: ${dadosGuiaOriginal.dataRecebimento.split('-').reverse().join('/')}`, 20, finalY + 10);
-            docPdf.text(`OPERADOR: ${auth.currentUser.displayName || auth.currentUser.email}`, 20, finalY + 20);
+            docPdf.text(`OPERADOR: ${auth.currentUser.displayName || '---'}`, 20, finalY + 20);
             docPdf.text(`MATRÍCULA: ${matricula}`, 20, finalY + 30);
 
+            // Abre visualização em nova aba
             window.open(docPdf.output('bloburl'), '_blank');
-        }
+            location.reload();
+        };
+
+        document.getElementById("closeArquivar").onclick = () => document.getElementById("modalArquivar").style.display = "none";
+        carregar();
     </script>
 </body>
 </html>
