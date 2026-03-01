@@ -47,13 +47,19 @@
 
         <main id="content">
             <h2 class="page-title">Inserir Documentos na Guia</h2>
-            <div class="form-container">
+            <div class="form-container" id="containerListaGuias">
                 <h3>1. Selecione a Guia de Destino (Por data de recebimento)</h3>
                 <div id="listaGuias" style="margin-top: 15px;"><p>Buscando guias abertas...</p></div>
             </div>
 
             <div id="areaDocumentos" style="display:none;">
-                <h3 id="tituloGuia" style="color: #003366; margin-bottom: 15px; border-top: 1px solid #ccc; padding-top: 20px;"></h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #ccc; padding-top: 20px; margin-bottom: 15px;">
+                    <h3 id="tituloGuia" style="color: #003366; margin: 0;"></h3>
+                    <button type="button" onclick="window.fecharAreaDocumentos()" style="background: #7f8c8d; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+                        ❌ Fechar Guia
+                    </button>
+                </div>
+
                 <div class="form-container">
                     <form id="formDocumento">
                         <label>Nome do Documento:</label>
@@ -91,7 +97,7 @@
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         let guiaAtivaId = "";
-        let numeroGuiaAtiva = ""; // NOVO: Armazena o número da guia selecionada
+        let numeroGuiaAtiva = ""; 
         let docEmEdicaoId = null; 
         let ultimaDataRecebimento = ""; 
 
@@ -109,7 +115,6 @@
                     guias.push({ id: d.id, qtdDocs: docsSnap.size, ...d.data() });
                 }
                 
-                // ORDENAÇÃO: Mais antigo primeiro pela data E crescente pelo número da guia
                 guias.sort((a, b) => {
                     const dataA = a.dataRecebimento || "";
                     const dataB = b.dataRecebimento || "";
@@ -174,7 +179,6 @@
                     btnGuia.className = "btn-guia-item";
                     btnGuia.innerHTML = `Guia: ${numGuia} <span class="badge-docs">${g.qtdDocs}</span>`;
                     
-                    // Passamos o número da guia como 3º parâmetro
                     btnGuia.onclick = () => window.iniciarInclusao(g.id, `Guia: ${numGuia}`, numGuia);
                     divGrupo.appendChild(btnGuia);
                 });
@@ -183,20 +187,28 @@
 
         window.iniciarInclusao = async function(id, texto, numGuia) {
             guiaAtivaId = id; 
-            numeroGuiaAtiva = numGuia; // Salva o número da guia ativa
-            ultimaDataRecebimento = ""; // Limpa a memória de data ao abrir uma nova guia
+            numeroGuiaAtiva = numGuia; 
+            ultimaDataRecebimento = ""; 
             window.cancelarEdicao(); 
 
             document.getElementById("areaDocumentos").style.display = "block";
             document.getElementById("tituloGuia").innerText = texto;
 
-            // NOVO: Preenche e trava o campo da Guia de Remessa
             const inputGuia = document.getElementById("guiaRemessa");
             inputGuia.disabled = true;
-            inputGuia.style.background = "#e9ecef"; // Fundo cinza para mostrar que está bloqueado
+            inputGuia.style.background = "#e9ecef";
 
             await window.atualizarListaDocumentos(id);
             document.getElementById("areaDocumentos").scrollIntoView({ behavior: 'smooth' });
+        };
+
+        // NOVO: Função para fechar a área de documentos e voltar à lista
+        window.fecharAreaDocumentos = function() {
+            document.getElementById("areaDocumentos").style.display = "none";
+            window.cancelarEdicao();
+            guiaAtivaId = "";
+            numeroGuiaAtiva = "";
+            document.getElementById("containerListaGuias").scrollIntoView({ behavior: 'smooth' });
         };
 
         window.atualizarListaDocumentos = async function(id) {
@@ -230,21 +242,20 @@
             document.getElementById("nomeDocumento").value = d.nomeDocumento;
             document.getElementById("numeroProcesso").value = d.numeroProcesso;
             document.getElementById("dataRecebimento").value = d.dataRecebimento;
-            document.getElementById("guiaRemessa").value = d.guiaRemessa; // Mesma guia
+            document.getElementById("guiaRemessa").value = d.guiaRemessa; 
             document.getElementById("btnSalvar").innerText = "🔄 Atualizar Documento";
             document.getElementById("btnCancelarEdicao").style.display = "block";
+            document.getElementById("formDocumento").scrollIntoView({ behavior: 'smooth' });
         };
 
         window.cancelarEdicao = () => {
             docEmEdicaoId = null; 
             document.getElementById("formDocumento").reset();
             
-            // Recoloca a última data usada caso exista
             if (ultimaDataRecebimento) {
                 document.getElementById("dataRecebimento").value = ultimaDataRecebimento;
             }
 
-            // NOVO: Recoloca a guia de remessa travada
             if (numeroGuiaAtiva) {
                 document.getElementById("guiaRemessa").value = numeroGuiaAtiva;
             }
@@ -271,12 +282,11 @@
                 nomeDocumento: document.getElementById("nomeDocumento").value,
                 numeroProcesso: document.getElementById("numeroProcesso").value,
                 dataRecebimento: document.getElementById("dataRecebimento").value,
-                guiaRemessa: document.getElementById("guiaRemessa").value, // Pega o valor travado
+                guiaRemessa: document.getElementById("guiaRemessa").value, 
                 ultimaAtualizacao: new Date(),
                 atualizadoPor: auth.currentUser.email
             };
             
-            // Atualiza a memória com a data recém inserida
             ultimaDataRecebimento = document.getElementById("dataRecebimento").value;
 
             try {
