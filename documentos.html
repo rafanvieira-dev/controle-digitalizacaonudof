@@ -55,7 +55,12 @@
 
             <div id="areaDocumentos" style="display:none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #ccc; padding-top: 20px; margin-bottom: 15px;">
-                    <h3 id="tituloGuia" style="color: #003366; margin: 0;"></h3>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h3 id="tituloGuia" style="color: #003366; margin: 0;"></h3>
+                        <button type="button" id="btnEditarGuia" onclick="window.editarGuiaAtual()" style="display: none; background: #f39c12; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em;">
+                            ✏️ Editar Dados da Guia
+                        </button>
+                    </div>
                     <button type="button" onclick="window.fecharAreaDocumentos()" style="background: #7f8c8d; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
                         ❌ Fechar Guia
                     </button>
@@ -94,8 +99,15 @@
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { collection, getDocs, addDoc, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { collection, getDocs, addDoc, updateDoc, doc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+        // ==========================================
+        // 🔒 CONFIGURAÇÃO DOS ADMINISTRADORES
+        // ==========================================
+        const ADMIN_USERS = [
+            "rafael.nascimento-vieira@defensoria.rj.def.br", 
+        ];
 
         let guiaAtivaId = "";
         let numeroGuiaAtiva = ""; 
@@ -191,12 +203,53 @@
             document.getElementById("areaDocumentos").style.display = "block";
             document.getElementById("tituloGuia").innerText = texto;
 
+            // Mostrar botão de edição apenas para Administradores
+            const isAdmin = auth.currentUser && ADMIN_USERS.includes(auth.currentUser.email);
+            document.getElementById("btnEditarGuia").style.display = isAdmin ? "block" : "none";
+
             const inputGuia = document.getElementById("guiaRemessa");
             inputGuia.disabled = true;
             inputGuia.style.background = "#e9ecef";
 
             await window.atualizarListaDocumentos(id);
             document.getElementById("areaDocumentos").scrollIntoView({ behavior: 'smooth' });
+        };
+
+        // ==========================================
+        // 🛠️ FUNÇÃO DE EDITAR GUIA (ADMIN)
+        // ==========================================
+        window.editarGuiaAtual = async () => {
+            try {
+                // Busca os dados originais da guia para colocar no prompt
+                const gSnap = await getDoc(doc(db, "guias", guiaAtivaId));
+                const g = gSnap.data();
+                
+                const novoNum = prompt("Digite o NOVO número da Guia:", g.numero || g.numeroGuia);
+                if(!novoNum) return; // Cancela se o usuário deixar em branco ou cancelar
+                
+                const novaUnidade = prompt("Digite o NOVO nome da Unidade:", g.unidade);
+                if(!novaUnidade) return;
+
+                // Atualiza o Firestore
+                await updateDoc(doc(db, "guias", guiaAtivaId), { 
+                    numero: novoNum, 
+                    numeroGuia: novoNum, 
+                    unidade: novaUnidade 
+                });
+                
+                alert("Metadados da guia atualizados com sucesso!");
+                
+                // Atualiza a interface da área de documentos
+                document.getElementById("tituloGuia").innerText = `Guia: ${novoNum}`;
+                numeroGuiaAtiva = novoNum;
+                document.getElementById("guiaRemessa").value = novoNum;
+                
+                // Recarrega o menu lateral de guias
+                carregarMenuGuias(); 
+            } catch(e) { 
+                alert("Erro ao atualizar os metadados da guia."); 
+                console.error(e);
+            }
         };
 
         window.fecharAreaDocumentos = function() {
