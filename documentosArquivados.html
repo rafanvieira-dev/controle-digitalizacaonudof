@@ -38,15 +38,15 @@
         </aside>
 
         <main id="content">
-            <h2 class="page-title">Consulta de Acervo e Relatórios</h2>
+            <h2 class="page-title">Consulta de Acervo e Auditoria</h2>
 
             <div class="filtros-relatorio">
                 <div>
-                    <label>📅 Início (Arquivamento):</label>
+                    <label>📅 Data Inicial (Arquivamento):</label>
                     <input type="date" id="dataInicioRel">
                 </div>
                 <div>
-                    <label>📅 Fim (Arquivamento):</label>
+                    <label>📅 Data Final (Arquivamento):</label>
                     <input type="date" id="dataFimRel">
                 </div>
                 <button class="btn-primary" onclick="window.gerarPDF()" style="width: auto; padding: 10px 20px;">📄 Gerar Relatório PDF</button>
@@ -71,7 +71,7 @@
 
         let todasAsGuiasArquivadas = [];
 
-        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; });
+        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregar(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
         async function carregar() {
@@ -94,12 +94,11 @@
                         <div class="info-box">
                             <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
                             <small>Unidade: ${g.unidade}</small><br>
-                            <small>Data Arq: ${g.dataArquivamentoSistema || '--'}</small>
-                            <span class="badge-user">👤 Responsável: ${g.arquivadoPor || 'Não informado'}</span>
+                            <span class="badge-user">👤 Responsável Final: ${g.arquivadoPor || 'Não informado'}</span>
                         </div>
                         <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
                             <div class="badge-local">📦 G: ${g.locCaixaFinal} / D: ${g.locCaixaDocumentos}</div>
-                            <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Detalhes</button>
+                            <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Auditoria</button>
                         </div>`;
                     container.appendChild(div);
                 });
@@ -108,43 +107,45 @@
 
         window.verDetalhes = async (id, num) => {
             const grid = document.getElementById("detalhesGuiaGrid");
-            document.getElementById("modalTitulo").innerText = "Auditoria da Guia " + num;
+            document.getElementById("modalTitulo").innerText = "Auditoria Detalhada - Guia " + num;
             document.getElementById("modalDetalhes").style.display = "block";
-            grid.innerHTML = "Buscando detalhes...";
+            grid.innerHTML = "Consultando base de dados...";
 
             try {
                 const gSnap = await getDoc(doc(db, "guias", id));
-                const gData = gSnap.data();
-
+                const g = gSnap.data();
                 const docsSnap = await getDocs(collection(db, "guias", id, "documentos"));
+                
                 let html = `
-                    <div style="margin-bottom:20px; padding:15px; background:#e8f4fd; border-radius:8px; border:1px solid #b6d4fe;">
-                        <p><b>Guia Criada por:</b> ${gData.criadoPor || 'Não informado'}</p>
-                        <p><b>Arquivamento Finalizado por:</b> ${gData.arquivadoPor || 'Não informado'}</p>
+                    <div style="margin-bottom:20px; padding:15px; background:#f8f9fa; border-radius:8px; border:1px solid #ddd; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div><b>👤 Criada por:</b> ${g.criadoPor || '--'}</div>
+                        <div><b>👤 Digitalizada por:</b> ${g.arquivadoPor || '--'}</div>
+                        <div><b>📦 Caixa da Guia:</b> ${g.locCaixaFinal || '--'}</div>
+                        <div><b>📦 Caixa de Documentos:</b> ${g.locCaixaDocumentos || '--'}</div>
                     </div>
-                    <table class="sei-table" style="width:100%; font-size:0.85em; border-collapse: collapse;">
-                    <thead><tr style="background:#f0f2f5;">
+                    <table style="width:100%; border-collapse: collapse; font-size:12px;">
+                    <thead><tr style="background:#003366; color:white;">
                         <th style="padding:10px; border:1px solid #ddd;">Documento</th>
                         <th style="padding:10px; border:1px solid #ddd;">Inserido por</th>
-                        <th style="padding:10px; border:1px solid #ddd;">SEI Digitalizado</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Prot. SEI</th>
                         <th style="padding:10px; border:1px solid #ddd;">Anexo</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Obs.</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Observação</th>
                     </tr></thead><tbody>`;
 
                 docsSnap.forEach(docItem => {
                     const d = docItem.data();
-                    const infoAnexo = d.tipoAnexo && d.tipoAnexo !== "Nenhum" ? `<b>${d.tipoAnexo}</b> (${d.qtdPagsAnexo} pgs)` : "Nenhum";
+                    const anexoStr = d.tipoAnexo && d.tipoAnexo !== "Nenhum" ? `<b>${d.tipoAnexo}</b> (${d.qtdPagsAnexo} pgs)` : "Nenhum";
                     
                     html += `<tr>
                         <td style="padding:10px; border:1px solid #ddd;"><b>${d.nomeDocumento}</b><br><small>${d.numeroProcesso}</small></td>
                         <td style="padding:10px; border:1px solid #ddd;">${d.inseridoPor || '--'}</td>
                         <td style="padding:10px; border:1px solid #ddd; color:#27ae60; font-weight:bold;">${d.protocoloSeiDigitalizado || '--'}</td>
-                        <td style="padding:10px; border:1px solid #ddd;">${infoAnexo}</td>
+                        <td style="padding:10px; border:1px solid #ddd;">${anexoStr}</td>
                         <td style="padding:10px; border:1px solid #ddd;">${d.observacaoDigitalizacao || '--'}</td>
                     </tr>`;
                 });
                 grid.innerHTML = html + "</tbody></table>";
-            } catch (e) { grid.innerHTML = "Erro ao buscar detalhes."; }
+            } catch (e) { grid.innerHTML = "Erro ao carregar detalhes."; }
         };
 
         window.gerarPDF = async function() {
@@ -158,59 +159,54 @@
             const dIni = parseInt(dataInicio.replace(/-/g, ""));
             const dFim = parseInt(dataFim.replace(/-/g, ""));
 
-            const guiasFiltradas = todasAsGuiasArquivadas.filter(g => {
-                if(!g.dataArquivamentoSistema) return false;
+            let dadosTabela = [];
+
+            for (let g of todasAsGuiasArquivadas) {
                 const p = g.dataArquivamentoSistema.split('/');
                 const dG = parseInt(p[2] + p[1] + p[0]);
-                return dG >= dIni && dG <= dFim;
-            });
 
-            if(guiasFiltradas.length === 0) return alert("Nenhum dado neste período.");
-
-            let dadosTabela = [];
-            for (let g of guiasFiltradas) {
-                const docsSnap = await getDocs(collection(db, "guias", g.id, "documentos"));
-                docsSnap.forEach(dItem => {
-                    const dd = dItem.data();
-                    const anexoStr = dd.tipoAnexo && dd.tipoAnexo !== "Nenhum" ? `${dd.tipoAnexo} (${dd.qtdPagsAnexo} pgs)` : "Não";
-                    dadosTabela.push([
-                        g.numero || g.numeroGuia,
-                        dd.nomeDocumento,
-                        g.criadoPor || '--',         // Quem criou a Guia
-                        dd.inseridoPor || '--',      // Quem inseriu o Item
-                        g.arquivadoPor || '--',      // Quem digitalizou/arquivou
-                        g.dataArquivamentoSistema,
-                        `G:${g.locCaixaFinal}\nD:${g.locCaixaDocumentos}`,
-                        dd.observacaoDigitalizacao || ''
-                    ]);
-                });
+                if (dG >= dIni && dG <= dFim) {
+                    const docsSnap = await getDocs(collection(db, "guias", g.id, "documentos"));
+                    docsSnap.forEach(dItem => {
+                        const dd = dItem.data();
+                        dadosTabela.push([
+                            g.numero || g.numeroGuia,
+                            dd.nomeDocumento,
+                            dd.protocoloSeiDigitalizado || '--',
+                            g.criadoPor || '--',
+                            dd.inseridoPor || '--',
+                            g.arquivadoPor || '--',
+                            g.dataArquivamentoSistema,
+                            `G:${g.locCaixaFinal}\nD:${g.locCaixaDocumentos}`,
+                            dd.observacaoDigitalizacao || ''
+                        ]);
+                    });
+                }
             }
 
+            if (dadosTabela.length === 0) return alert("Nenhuma guia encontrada neste intervalo.");
+
             docPdf.setFontSize(14);
-            docPdf.text("NUDOF - RELATÓRIO DE AUDITORIA COMPLETO", 14, 15);
-            docPdf.setFontSize(8);
-            docPdf.text(`Período: ${dataInicio.split('-').reverse().join('/')}, a ${dataFim.split('-').reverse().join('/')}`, 14, 22);
+            docPdf.text("NUDOF - RELATÓRIO DE AUDITORIA DE PROCESSO DIGITALIZADO", 14, 15);
 
             docPdf.autoTable({
-                startY: 28,
-                head: [['Guia', 'Documento', 'Criado por', 'Inserido por', 'Arquivado por', 'Data Arq.', 'Caixas', 'Observação']],
+                startY: 25,
+                head: [['Guia', 'Documento', 'Prot. SEI', 'Criado por', 'Inserido por', 'Digitalizado por', 'Data Arq.', 'Caixas', 'Observações']],
                 body: dadosTabela,
                 theme: 'striped',
                 styles: { fontSize: 6, cellPadding: 1.5 },
                 headStyles: { fillColor: [0, 51, 102] },
                 columnStyles: { 
-                    2: { cellWidth: 40 }, // Criado por
-                    3: { cellWidth: 40 }, // Inserido por
-                    4: { cellWidth: 40 }, // Arquivado por
-                    7: { cellWidth: 30 }  // Obs
+                    3: { cellWidth: 35 }, 
+                    4: { cellWidth: 35 }, 
+                    5: { cellWidth: 35 } 
                 }
             });
 
-            docPdf.save(`Relatorio_NUDOF_Auditoria_${dataInicio}.pdf`);
+            docPdf.save(`Relatorio_Auditoria_NUDOF_${dataInicio}.pdf`);
         };
 
         document.getElementById("closeModal").onclick = () => document.getElementById("modalDetalhes").style.display = "none";
-        carregar();
     </script>
 </body>
 </html>
