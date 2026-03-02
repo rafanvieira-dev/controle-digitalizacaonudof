@@ -291,7 +291,7 @@
             while(rows.length < 7) { rows.push([rows.length + 1, "", "", "", "", "N", "", ""]); }
 
             docPdf.autoTable({
-                startY: 25, head: [['Nº ORDEM', 'QTD FOLHAS COM INFORMAÇÃO, 'DATA DIGIT.', 'Nº PROCESSO SEI', 'Nº PROTOCOLO DO DOCUMENTO', 'MÍDIA', 'TIPO MÍDIA', 'PROT. MÍDIA']], body: rows, theme: 'grid', styles: { fontSize: 10, halign: 'center', textColor: 0, cellPadding: 4, lineColor: [0, 0, 0], lineWidth: 0.5 }, headStyles: { fillColor: [60, 60, 60], textColor: 255, fontStyle: 'bold', fontSize: 11 }, alternateRowStyles: { fillColor: [220, 220, 220] }
+                startY: 25, head: [['Nº ORDEM', 'QTD FOLHAS', 'DATA DIGIT.', 'Nº PROCESSO SEI', 'Nº PROTOCOLO DO DOCUMENTO', 'MÍDIA', 'TIPO MÍDIA', 'PROT. MÍDIA']], body: rows, theme: 'grid', styles: { fontSize: 10, halign: 'center', textColor: 0, cellPadding: 4, lineColor: [0, 0, 0], lineWidth: 0.5 }, headStyles: { fillColor: [60, 60, 60], textColor: 255, fontStyle: 'bold', fontSize: 11 }, alternateRowStyles: { fillColor: [220, 220, 220] }
             });
 
             const finalY = docPdf.lastAutoTable.finalY + 20;
