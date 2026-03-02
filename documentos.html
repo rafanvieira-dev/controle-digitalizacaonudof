@@ -24,57 +24,54 @@
             font-weight: bold; display: flex; align-items: center; gap: 8px;
         }
         .badge-docs { background: #27ae60; color: white; padding: 1px 7px; border-radius: 10px; font-size: 0.75em; }
-        
-        /* Alerta de Atraso Visual */
         .alerta-atraso {
             background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px;
             font-size: 0.7em; font-weight: bold; margin-left: 10px; animation: blink 1s infinite;
         }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        
-        .item-doc-lista {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px; background: #fff; margin-bottom: 8px; border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 4px solid #003366;
-        }
     </style>
 </head>
 <body>
     <div id="appInterface">
         <aside id="sidebar">
-            <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO NUDOF</div>
+            <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
             <nav>
                 <a href="index.html">🏠 Início / Histórico</a>
                 <a href="guia.html">➕ Nova Guia</a>
                 <a href="documentos.html" class="ativo">📄 Inserir Documentos</a>
                 <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
+                <a href="arquivamentoFisico.html">📦 Arquivar Guia Físico</a>
                 <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
-                <button id="btnLogout" class="btn-sair">🚪 Sair</button>
+                <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
             </nav>
         </aside>
 
         <main id="content">
             <h2 class="page-title">Inserir Documentos na Guia</h2>
-            
             <div class="form-container" id="containerListaGuias">
-                <h3>1. Selecione a Guia de Destino</h3>
-                <div id="listaGuias"><p>Buscando guias...</p></div>
+                <h3>1. Selecione a Guia de Destino (Por data de recebimento)</h3>
+                <div id="listaGuias" style="margin-top: 15px;"><p>Buscando guias abertas...</p></div>
             </div>
 
-            <div id="areaDocumentos" style="display:none; margin-top: 30px; border-top: 2px solid #003366; padding-top: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 id="tituloGuia" style="color: #003366;"></h3>
-                    <button type="button" onclick="window.fecharAreaDocumentos()" style="background: #7f8c8d; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">❌ Fechar</button>
+            <div id="areaDocumentos" style="display:none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #ccc; padding-top: 20px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h3 id="tituloGuia" style="color: #003366; margin: 0;"></h3>
+                        <button type="button" id="btnEditarGuia" onclick="window.editarGuiaAtual()" style="display: none; background: #f39c12; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em;">
+                            ✏️ Editar Dados da Guia
+                        </button>
+                    </div>
+                    <button type="button" onclick="window.fecharAreaDocumentos()" style="background: #7f8c8d; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+                        ❌ Fechar Guia
+                    </button>
                 </div>
 
                 <div class="form-container">
                     <form id="formDocumento">
                         <label>Nome do Documento:</label>
                         <input type="text" id="nomeDocumento" placeholder="Ex: Ofício de Encaminhamento" required>
-                        
                         <label>Nº do Processo SEI:</label>
-                        <input type="text" id="numeroProcesso" placeholder="00000.000/2026-00">
-
+                        <input type="text" id="numeroProcesso" placeholder="Ex: 00000.000/2026-00">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                             <div>
                                 <label>Data de Recebimento:</label>
@@ -82,21 +79,19 @@
                             </div>
                             <div>
                                 <label>Guia de Remessa:</label>
-                                <input type="text" id="guiaRemessa" readonly style="background: #eee;">
+                                <input type="text" id="guiaRemessa" placeholder="Nº da Guia" required>
                             </div>
                         </div>
-
-                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <div style="display: flex; gap: 10px;">
                             <button type="submit" class="btn-primary" id="btnSalvar">Gravar Documento</button>
-                            <button type="button" id="btnCancelarEdicao" onclick="window.cancelarEdicao()" style="display: none; background: #7f8c8d; color: white; padding: 12px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                            <button type="button" id="btnCancelarEdicao" onclick="window.cancelarEdicao()" style="display: none; background: #7f8c8d; color: white; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">Cancelar Edição</button>
                         </div>
                     </form>
-                    <p id="contadorDocs" style="margin-top: 10px; font-weight: bold;"></p>
+                    <p id="contadorDocs">0 / 7 documentos cadastrados</p>
                 </div>
-
                 <div class="form-container">
-                    <h3>Ordem de Digitalização (Folha de Rosto):</h3>
-                    <div id="listaDocumentos" style="margin-top: 10px;"></div>
+                    <h3>Itens inseridos nesta guia (Ordem de Digitalização):</h3>
+                    <ul id="listaDocumentos" class="sei-table" style="list-style: none; padding: 0; margin-top: 10px;"></ul>
                 </div>
             </div>
         </main>
@@ -104,93 +99,336 @@
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { collection, getDocs, addDoc, updateDoc, doc, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        // IMPORTANTE: orderBy e serverTimestamp adicionados
+        import { collection, getDocs, addDoc, updateDoc, doc, query, where, getDoc, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
+        // ==========================================
+        // 🔒 CONFIGURAÇÃO DOS ADMINISTRADORES
+        // ==========================================
+        const ADMIN_USERS = [
+            "rafael.nascimento-vieira@defensoria.rj.def.br", 
+        ];
+
+        const nomeMeses = { "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril", "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto", "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro" };
+
         let guiaAtivaId = "";
-        let numeroGuiaAtiva = "";
-        let docEmEdicaoId = null;
+        let numeroGuiaAtiva = ""; 
+        let docEmEdicaoId = null; 
+        let ultimaDataRecebimento = ""; 
 
         onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregarMenuGuias(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
-        // Função para formatar data (AAAA-MM-DD -> DD/MM/AAAA)
-        const formatarDataBR = (s) => s ? s.split('-').reverse().join('/') : "---";
-
-        // Verifica atraso de 1 dia ou mais (Útil para o badge 02/03/2026)
-        function temAtraso(dataStr) {
-            if (!dataStr) return false;
+        // FUNÇÃO DE CÁLCULO DE ATRASO IGNORANDO FINAIS DE SEMANA (Sua lógica original preservada)
+        function verificarAtraso(dataStr) {
+            if (!dataStr || dataStr === "Sem Data") return false;
+            
             const hoje = new Date(); hoje.setHours(0,0,0,0);
-            const dataG = new Date(dataStr + "T00:00:00");
-            const diff = (hoje - dataG) / (1000 * 60 * 60 * 24);
-            return diff >= 1; 
+            const [ano, mes, dia] = dataStr.split('-');
+            const dataGuia = new Date(ano, mes - 1, dia); dataGuia.setHours(0,0,0,0);
+            
+            if (dataGuia >= hoje) return false;
+            
+            let diasUteis = 0;
+            let d = new Date(dataGuia);
+            d.setDate(d.getDate() + 1); 
+            
+            while (d <= hoje) {
+                const diaSemana = d.getDay();
+                if (diaSemana !== 0 && diaSemana !== 6) { diasUteis++; }
+                d.setDate(d.getDate() + 1);
+            }
+            return diasUteis > 0;
         }
 
         async function carregarMenuGuias() {
             const lista = document.getElementById("listaGuias");
-            const q = query(collection(db, "guias"), where("status", "==", "Aberta"));
-            const snap = await getDocs(q);
-            lista.innerHTML = "";
-
-            const grupos = {};
-            snap.forEach(d => {
-                const data = d.data().dataRecebimento || "Sem Data";
-                if (!grupos[data]) grupos[data] = [];
-                grupos[data].push({ id: d.id, ...d.data() });
-            });
-
-            Object.keys(grupos).sort().reverse().forEach(dataKey => {
-                const secao = document.createElement("div");
-                const alerta = temAtraso(dataKey) ? '<span class="alerta-atraso">⚠️ ATENÇÃO</span>' : '';
+            try {
+                const q = query(collection(db, "guias"), where("status", "==", "Aberta"));
+                const snap = await getDocs(q);
                 
-                secao.innerHTML = `
-                    <button class="data-header-btn" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'flex' ? 'none' : 'flex'">
-                        <div>📅 ${formatarDataBR(dataKey)} ${alerta}</div>
-                        <span class="contador-abas">${grupos[dataKey].length} guias</span>
-                    </button>
-                    <div class="grupo-guias-inserir" style="flex-wrap: wrap; gap: 10px;"></div>`;
+                let guias = [];
+                for (const d of snap.docs) {
+                    const docsSnap = await getDocs(collection(db, "guias", d.id, "documentos"));
+                    guias.push({ id: d.id, qtdDocs: docsSnap.size, ...d.data() });
+                }
                 
-                const divBotoes = secao.querySelector(".grupo-guias-inserir");
-                grupos[dataKey].forEach(g => {
-                    const btn = document.createElement("button");
-                    btn.className = "btn-guia-item";
-                    btn.innerHTML = `Guia: ${g.numero || g.numeroGuia}`;
-                    btn.onclick = () => window.iniciarInclusao(g.id, g.numero || g.numeroGuia, dataKey);
-                    divBotoes.appendChild(btn);
+                if (guias.length === 0) {
+                    lista.innerHTML = "<p>Não há guias abertas aguardando documentos.</p>";
+                    return;
+                }
+
+                guias.sort((a, b) => {
+                    const dataA = a.dataRecebimento || "";
+                    const dataB = b.dataRecebimento || "";
+                    if (dataA !== dataB) return dataA.localeCompare(dataB);
+                    const numA = a.numero || a.numeroGuia || "";
+                    const numB = b.numero || b.numeroGuia || "";
+                    return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
                 });
-                lista.appendChild(secao);
-            });
+
+                const contagemPorData = {};
+                guias.forEach(g => {
+                    const dRec = g.dataRecebimento || "Sem Data";
+                    contagemPorData[dRec] = (contagemPorData[dRec] || 0) + 1;
+                });
+
+                lista.innerHTML = "";
+                const datasUnicas = Object.keys(contagemPorData);
+
+                // --- LÓGICA INTELIGENTE: SE MAIS DE 5 DATAS, AGRUPA POR MÊS ---
+                if (datasUnicas.length > 5) {
+                    const arvore = {};
+                    guias.forEach(g => {
+                        const recVal = g.dataRecebimento || "Sem Data";
+                        let mesAno = "Sem Data";
+                        if (recVal !== "Sem Data" && recVal.includes('-')) {
+                            const [ano, mes, dia] = recVal.split('-');
+                            mesAno = `${ano}-${mes}`;
+                        }
+                        if (!arvore[mesAno]) arvore[mesAno] = { total: 0, dias: {} };
+                        if (!arvore[mesAno].dias[recVal]) arvore[mesAno].dias[recVal] = [];
+                        
+                        arvore[mesAno].dias[recVal].push(g);
+                        arvore[mesAno].total++;
+                    });
+
+                    const mesesOrdenados = Object.keys(arvore).sort((a,b) => a.localeCompare(b));
+                    
+                    mesesOrdenados.forEach(mesAnoStr => {
+                        const mesObj = arvore[mesAnoStr];
+                        let nomeMesExibicao = mesAnoStr;
+                        if (mesAnoStr !== "Sem Data") {
+                            const [a, m] = mesAnoStr.split('-');
+                            nomeMesExibicao = `${nomeMeses[m] || m}/${a}`;
+                        }
+
+                        const btnMes = document.createElement("button");
+                        btnMes.className = "data-header-btn";
+                        btnMes.style.background = "#2c3e50"; 
+                        btnMes.innerHTML = `<div><span>📂 ${nomeMesExibicao}</span> <span class="contador-abas" style="background:#16a085;">${mesObj.total} guia(s)</span></div><span class="toggle-icon">➕</span>`;
+                        
+                        const divMes = document.createElement("div");
+                        divMes.className = "grupo-guias-inserir";
+                        divMes.style.display = "none";
+                        divMes.style.flexDirection = "column";
+
+                        btnMes.onclick = () => {
+                            const estaFechado = divMes.style.display === "none";
+                            divMes.style.display = estaFechado ? "flex" : "none";
+                            btnMes.querySelector('.toggle-icon').innerText = estaFechado ? "➖" : "➕";
+                        };
+                        
+                        lista.appendChild(btnMes);
+                        lista.appendChild(divMes);
+
+                        const diasOrdenados = Object.keys(mesObj.dias).sort((a,b) => a.localeCompare(b));
+                        diasOrdenados.forEach(diaStr => {
+                            const guiasDoDia = mesObj.dias[diaStr];
+                            const dataF = diaStr !== "Sem Data" ? diaStr.split('-').reverse().join('/') : "Sem Data";
+                            let alertaHtml = verificarAtraso(diaStr) ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
+
+                            const btnDia = document.createElement("button");
+                            btnDia.className = "data-header-btn";
+                            btnDia.style.background = "#7f8c8d";
+                            btnDia.style.width = "calc(100% - 20px)";
+                            btnDia.style.marginLeft = "20px";
+                            btnDia.innerHTML = `<div><span>📅 ${dataF}</span> <span class="contador-abas">${guiasDoDia.length} guia(s)</span> ${alertaHtml}</div><span class="toggle-icon">➕</span>`;
+
+                            const divDia = document.createElement("div");
+                            divDia.className = "grupo-guias-inserir";
+                            divDia.style.display = "none";
+                            divDia.style.flexWrap = "wrap";
+                            divDia.style.gap = "10px";
+                            divDia.style.width = "calc(100% - 20px)";
+                            divDia.style.marginLeft = "20px";
+
+                            btnDia.onclick = () => {
+                                const estaFechado = divDia.style.display === "none" || divDia.style.display === "";
+                                divDia.style.display = estaFechado ? "flex" : "none";
+                                btnDia.querySelector('.toggle-icon').innerText = estaFechado ? "➖" : "➕";
+                            };
+
+                            divMes.appendChild(btnDia);
+                            divMes.appendChild(divDia);
+
+                            guiasDoDia.forEach(g => {
+                                const numGuia = g.numero || g.numeroGuia || "S/N";
+                                const btnGuia = document.createElement("button");
+                                btnGuia.className = "btn-guia-item";
+                                btnGuia.innerHTML = `Guia: ${numGuia} <span class="badge-docs">${g.qtdDocs}</span>`;
+                                btnGuia.onclick = () => window.iniciarInclusao(g.id, `Guia: ${numGuia}`, numGuia);
+                                divDia.appendChild(btnGuia);
+                            });
+                        });
+                    });
+
+                } else {
+                    // --- LÓGICA ORIGINAL: SE ATÉ 5 DATAS, MOSTRA SÓ OS DIAS DIRETO ---
+                    let dataAtual = "";
+                    let divGrupo = null;
+
+                    guias.forEach(g => {
+                        const recVal = g.dataRecebimento || "Sem Data";
+                        let alertaHtml = verificarAtraso(recVal) ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
+
+                        if (recVal !== dataAtual) {
+                            dataAtual = recVal;
+                            const dataF = dataAtual !== "Sem Data" ? dataAtual.split('-').reverse().join('/') : "Sem Data";
+                            const idGrupo = `grupo-ins-${dataAtual.replace(/-/g, '_').replace(/ /g, '')}`;
+                            const totalGuias = contagemPorData[dataAtual];
+
+                            const btnData = document.createElement("button");
+                            btnData.className = "data-header-btn";
+                            btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span> <span class="contador-abas">${totalGuias} guia(s)</span> ${alertaHtml}</div><span class="toggle-icon">➕</span>`;
+                            
+                            divGrupo = document.createElement("div");
+                            divGrupo.className = "grupo-guias-inserir";
+                            divGrupo.id = idGrupo;
+                            divGrupo.style.flexWrap = "wrap"; 
+                            divGrupo.style.gap = "10px";
+
+                            btnData.onclick = () => {
+                                const target = document.getElementById(idGrupo);
+                                const icon = btnData.querySelector('.toggle-icon');
+                                const estaFechado = target.style.display === "none" || target.style.display === "";
+                                target.style.display = estaFechado ? "flex" : "none";
+                                icon.innerText = estaFechado ? "➖" : "➕";
+                            };
+                            lista.appendChild(btnData);
+                            lista.appendChild(divGrupo);
+                        }
+                        const numGuia = g.numero || g.numeroGuia || "S/N";
+                        const btnGuia = document.createElement("button");
+                        btnGuia.className = "btn-guia-item";
+                        btnGuia.innerHTML = `Guia: ${numGuia} <span class="badge-docs">${g.qtdDocs}</span>`;
+                        
+                        btnGuia.onclick = () => window.iniciarInclusao(g.id, `Guia: ${numGuia}`, numGuia);
+                        divGrupo.appendChild(btnGuia);
+                    });
+                }
+            } catch (e) { console.error(e); }
         }
 
-        window.iniciarInclusao = async (id, num, dataG) => {
-            guiaAtivaId = id;
-            numeroGuiaAtiva = num;
+        window.iniciarInclusao = async function(id, texto, numGuia) {
+            guiaAtivaId = id; 
+            numeroGuiaAtiva = numGuia; 
+            ultimaDataRecebimento = ""; 
+            window.cancelarEdicao(); 
+
             document.getElementById("areaDocumentos").style.display = "block";
-            document.getElementById("tituloGuia").innerText = `Guia: ${num} (Recebida: ${formatarDataBR(dataG)})`;
-            document.getElementById("guiaRemessa").value = num;
-            document.getElementById("dataRecebimento").value = dataG;
-            window.atualizarListaDocumentos(id);
+            document.getElementById("tituloGuia").innerText = texto;
+
+            const isAdmin = auth.currentUser && ADMIN_USERS.includes(auth.currentUser.email);
+            document.getElementById("btnEditarGuia").style.display = isAdmin ? "block" : "none";
+
+            const inputGuia = document.getElementById("guiaRemessa");
+            inputGuia.disabled = true;
+            inputGuia.style.background = "#e9ecef";
+
+            await window.atualizarListaDocumentos(id);
+            document.getElementById("areaDocumentos").scrollIntoView({ behavior: 'smooth' });
         };
 
-        window.atualizarListaDocumentos = async (id) => {
-            const container = document.getElementById("listaDocumentos");
-            // ORDEM: Inseridos primeiro aparecem primeiro (1, 2, 3...)
-            const q = query(collection(db, "guias", id, "documentos"), orderBy("dataInsercao", "asc"));
-            const snap = await getDocs(q);
-            container.innerHTML = "";
-            let i = 1;
-            snap.forEach(docSnap => {
-                const d = docSnap.data();
-                const item = document.createElement("div");
-                item.className = "item-doc-lista";
-                item.innerHTML = `
-                    <div><strong>${i}º. ${d.nomeDocumento}</strong><br><small>SEI: ${d.numeroProcesso || '---'}</small></div>
-                    <button class="btn-primary" onclick="window.prepararEdicao('${docSnap.id}', ${JSON.stringify(d).replace(/"/g, '&quot;')})" style="width:auto; background:#f39c12; padding: 5px 10px;">✏️ Editar</button>
-                `;
-                container.appendChild(item);
-                i++;
-            });
-            document.getElementById("contadorDocs").innerText = `${snap.size} / 7 documentos cadastrados`;
+        window.editarGuiaAtual = async () => {
+            try {
+                const gSnap = await getDoc(doc(db, "guias", guiaAtivaId));
+                const g = gSnap.data();
+                
+                const novoNum = prompt("Digite o NOVO número da Guia:", g.numero || g.numeroGuia);
+                if(!novoNum) return; 
+                
+                const novaUnidade = prompt("Digite o NOVO nome da Unidade:", g.unidade);
+                if(!novaUnidade) return;
+
+                const novaData = prompt("Digite a NOVA data de recebimento (Formato AAAA-MM-DD):", g.dataRecebimento);
+                if(!novaData) return;
+
+                await updateDoc(doc(db, "guias", guiaAtivaId), { 
+                    numero: novoNum, 
+                    numeroGuia: novoNum, 
+                    unidade: novaUnidade,
+                    dataRecebimento: novaData
+                });
+                
+                alert("Metadados da guia atualizados com sucesso!");
+                
+                document.getElementById("tituloGuia").innerText = `Guia: ${novoNum}`;
+                numeroGuiaAtiva = novoNum;
+                document.getElementById("guiaRemessa").value = novoNum;
+                
+                carregarMenuGuias(); 
+            } catch(e) { 
+                alert("Erro ao atualizar os metadados da guia."); 
+                console.error(e);
+            }
+        };
+
+        window.fecharAreaDocumentos = function() {
+            document.getElementById("areaDocumentos").style.display = "none";
+            window.cancelarEdicao();
+            guiaAtivaId = "";
+            numeroGuiaAtiva = "";
+            document.getElementById("containerListaGuias").scrollIntoView({ behavior: 'smooth' });
+        };
+
+        // 🌟 CORREÇÃO APLICADA AQUI: ORDEM ASCENDENTE COM NUMERAÇÃO (1º, 2º)
+        window.atualizarListaDocumentos = async function(id) {
+            const containerReal = document.getElementById("listaDocumentos");
+            const contador = document.getElementById("contadorDocs");
+            try {
+                // A query agora obriga a trazer o primeiro documento inserido na guia primeiro
+                const qDocs = query(collection(db, "guias", id, "documentos"), orderBy("dataInsercao", "asc"));
+                const snap = await getDocs(qDocs);
+                
+                containerReal.innerHTML = ""; 
+                let numItem = 1;
+                
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    const li = document.createElement("li");
+                    li.className = "sei-table li";
+                    li.style.display = "flex"; li.style.justifyContent = "space-between"; li.style.padding = "10px"; li.style.background = "#fff"; li.style.marginBottom = "5px"; li.style.borderRadius = "4px";
+                    
+                    // Exibe o número do item (1º, 2º) antes do nome do documento
+                    li.innerHTML = `<div><strong>${numItem}º. ${d.nomeDocumento}</strong><br><small>SEI: ${d.numeroProcesso || '---'}</small></div>
+                                    <button class="btn-primary" onclick="window.prepararEdicao('${docSnap.id}', ${JSON.stringify(d).replace(/"/g, '&quot;')})" style="width:auto; background:#f39c12">✏️ Editar</button>`;
+                    containerReal.appendChild(li);
+                    numItem++;
+                });
+                
+                if(snap.size >= 7) {
+                    contador.style.color = "#e74c3c";
+                    contador.innerText = `LIMITE MÁXIMO ATINGIDO: ${snap.size} / 7 documentos`;
+                } else {
+                    contador.style.color = "#d35400";
+                    contador.innerText = `${snap.size} / 7 documentos cadastrados`;
+                }
+            } catch (e) { 
+                console.error("Aviso do Firebase:", e);
+                containerReal.innerHTML = "<p style='color:red;'>Aguarde... o Firebase está ordenando sua lista.</p>";
+            }
+        }
+
+        window.prepararEdicao = (id, d) => {
+            docEmEdicaoId = id;
+            document.getElementById("nomeDocumento").value = d.nomeDocumento;
+            document.getElementById("numeroProcesso").value = d.numeroProcesso;
+            document.getElementById("dataRecebimento").value = d.dataRecebimento;
+            document.getElementById("guiaRemessa").value = d.guiaRemessa; 
+            document.getElementById("btnSalvar").innerText = "🔄 Atualizar Documento";
+            document.getElementById("btnCancelarEdicao").style.display = "block";
+            document.getElementById("formDocumento").scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.cancelarEdicao = () => {
+            docEmEdicaoId = null; 
+            document.getElementById("formDocumento").reset();
+            if (ultimaDataRecebimento) document.getElementById("dataRecebimento").value = ultimaDataRecebimento;
+            if (numeroGuiaAtiva) document.getElementById("guiaRemessa").value = numeroGuiaAtiva;
+            document.getElementById("btnSalvar").innerText = "Gravar Documento";
+            document.getElementById("btnCancelarEdicao").style.display = "none";
         };
 
         document.getElementById("formDocumento").onsubmit = async (e) => {
@@ -198,45 +436,41 @@
             const btn = document.getElementById("btnSalvar");
             btn.disabled = true;
 
-            const dados = {
+            if (!docEmEdicaoId) {
+                const snapCheck = await getDocs(collection(db, "guias", guiaAtivaId, "documentos"));
+                if (snapCheck.size >= 7) {
+                    alert("Limite máximo de 7 documentos por guia atingido!");
+                    btn.disabled = false;
+                    return;
+                }
+            }
+
+            const docDados = {
                 nomeDocumento: document.getElementById("nomeDocumento").value,
                 numeroProcesso: document.getElementById("numeroProcesso").value,
                 dataRecebimento: document.getElementById("dataRecebimento").value,
-                guiaRemessa: document.getElementById("guiaRemessa").value,
-                ultimaAtualizacao: serverTimestamp()
+                guiaRemessa: document.getElementById("guiaRemessa").value, 
+                ultimaAtualizacao: serverTimestamp(),
+                atualizadoPor: auth.currentUser.email
             };
-
-            if (docEmEdicaoId) {
-                await updateDoc(doc(db, "guias", guiaAtivaId, "documentos", docEmEdicaoId), dados);
-            } else {
-                dados.dataInsercao = serverTimestamp(); // Garante a ordem correta
-                await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), dados);
-            }
             
-            window.cancelarEdicao();
-            window.atualizarListaDocumentos(guiaAtivaId);
-            btn.disabled = false;
-        };
+            ultimaDataRecebimento = document.getElementById("dataRecebimento").value;
 
-        window.prepararEdicao = (id, d) => {
-            docEmEdicaoId = id;
-            document.getElementById("nomeDocumento").value = d.nomeDocumento;
-            document.getElementById("numeroProcesso").value = d.numeroProcesso;
-            document.getElementById("btnSalvar").innerText = "🔄 Atualizar";
-            document.getElementById("btnCancelarEdicao").style.display = "block";
-        };
-
-        window.cancelarEdicao = () => {
-            docEmEdicaoId = null;
-            document.getElementById("nomeDocumento").value = "";
-            document.getElementById("numeroProcesso").value = "";
-            document.getElementById("btnSalvar").innerText = "Gravar Documento";
-            document.getElementById("btnCancelarEdicao").style.display = "none";
-        };
-
-        window.fecharAreaDocumentos = () => {
-            document.getElementById("areaDocumentos").style.display = "none";
-            guiaAtivaId = "";
+            try {
+                if (docEmEdicaoId) {
+                    await updateDoc(doc(db, "guias", guiaAtivaId, "documentos", docEmEdicaoId), docDados);
+                    alert("Documento atualizado!");
+                } else {
+                    // 🌟 CORREÇÃO APLICADA AQUI: Grava com serverTimestamp para não errar a ordem
+                    docDados.dataInsercao = serverTimestamp();
+                    docDados.inseridoPor = auth.currentUser.email;
+                    await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), docDados);
+                    alert("Documento inserido!");
+                }
+                window.cancelarEdicao(); 
+                window.atualizarListaDocumentos(guiaAtivaId);
+                carregarMenuGuias();
+            } catch (err) { alert("Erro ao salvar."); } finally { btn.disabled = false; }
         };
     </script>
 </body>
