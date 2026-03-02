@@ -21,8 +21,20 @@
         .contador-pendentes { background: #e74c3c; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85em; margin-left: 10px; font-weight: normal; }
         .grupo-pendentes { display: none; margin-bottom: 20px; }
         .form-grid-arquivar { display: flex; flex-direction: column; gap: 15px; text-align: left; }
-        .input-group label { display: block; font-weight: bold; font-size: 12px; margin-bottom: 5px; color: #34495e; }
-        .input-group input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
+        .input-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #34495e; }
+        .input-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        
+        /* Ajuste específico para a linha da data lado a lado */
+        .linha-data {
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 6px; 
+            border: 1px solid #ccc;
+        }
+        .linha-data label { margin-bottom: 0; font-size: 14px; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -48,27 +60,32 @@
     </div>
 
     <div id="modalArquivar" class="modal">
-        <div class="modal-content" style="width: 50%; max-width: 600px; margin: 5% auto;">
+        <div class="modal-content" style="width: 95%; max-width: 650px; margin: 5% auto;">
             <span class="close-btn" id="closeArquivar" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
             <h3 id="tituloModalArquivar" style="margin-bottom: 15px; color: #003366;"></h3>
             
             <form id="formDadosArquivamento" class="form-grid-arquivar">
-                <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b6d4fe;">
-                    <div class="input-group">
-                        <label>📦 Nº Caixa da Guia:</label>
-                        <input type="text" id="locCaixa" required placeholder="Ex: G-012">
-                    </div>
-                    <div class="input-group">
-                        <label>📦 Nº Caixa dos Documentos:</label>
-                        <input type="text" id="locCaixaDocs" required placeholder="Ex: D-045">
-                    </div>
-                    <div class="input-group">
+                <div style="background: #e8f4fd; padding: 20px; border-radius: 8px; border: 1px solid #b6d4fe; display: flex; flex-direction: column; gap: 20px;">
+                    
+                    <div class="linha-data">
                         <label>📅 Data de Arquivamento Físico:</label>
-                        <input type="date" id="dataArquivamentoManual" required>
+                        <input type="date" id="dataArquivamentoManual" required style="width: auto; flex: 1;">
                     </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="input-group">
+                            <label>📦 Nº Caixa da Guia:</label>
+                            <input type="text" id="locCaixa" required placeholder="Ex: G-012">
+                        </div>
+                        <div class="input-group">
+                            <label>📦 Nº Caixa dos Documentos:</label>
+                            <input type="text" id="locCaixaDocs" required placeholder="Ex: D-045">
+                        </div>
+                    </div>
+
                 </div>
 
-                <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#27ae60; padding: 15px; font-weight: bold; width: 100%;">✅ CONCLUIR ARQUIVAMENTO</button>
+                <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#27ae60; padding: 15px; font-weight: bold; width: 100%; font-size: 1.1em;">✅ CONCLUIR ARQUIVAMENTO</button>
             </form>
         </div>
     </div>
@@ -112,13 +129,13 @@
                         
                         const btnData = document.createElement("button");
                         btnData.className = "data-header-btn";
-                        btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span><span class="contador-pendentes" style="background:#27ae60">${contagem[dataAtual]} pendente(s)</span></div><span>➕</span>`;
+                        btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span><span class="contador-pendentes" style="background:#27ae60">${contagem[dataAtual]} pendente(s)</span></div><span class="toggle-icon">➕</span>`;
                         
                         const divGrupo = document.createElement("div"); divGrupo.className = "grupo-pendentes";
                         btnData.onclick = () => {
                             const estaAberto = divGrupo.style.display === "block";
                             divGrupo.style.display = estaAberto ? "none" : "block";
-                            btnData.querySelector('span:last-child').innerText = estaAberto ? "➕" : "➖";
+                            btnData.querySelector('.toggle-icon').innerText = estaAberto ? "➕" : "➖";
                         };
                         container.appendChild(btnData); container.appendChild(divGrupo);
                         window.grupoTemp = divGrupo;
@@ -137,8 +154,14 @@
             document.getElementById("btnConfirmarArq").disabled = false;
             document.getElementById("btnConfirmarArq").innerText = "✅ CONCLUIR ARQUIVAMENTO";
             document.getElementById("tituloModalArquivar").innerText = "Arquivar Guia: " + num;
+            
+            // Define a data atual no input
             document.getElementById("dataArquivamentoManual").value = new Date().toISOString().split('T')[0];
             
+            // Limpa as caixas da tela anterior
+            document.getElementById("locCaixa").value = "";
+            document.getElementById("locCaixaDocs").value = "";
+
             document.getElementById("modalArquivar").style.display = "block";
         };
 
