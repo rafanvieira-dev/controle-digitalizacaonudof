@@ -38,7 +38,11 @@
         .info-box strong { color: #003366; font-size: 1.1em; }
         .badge-user { font-size: 0.75em; color: #666; display: block; margin-top: 5px; }
         .badge-local { background: #e8f4fd; color: #003366; padding: 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
-        .filtros-relatorio { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: flex-end; border: 1px solid #ddd; flex-wrap: wrap; }
+        
+        /* Ajuste do layout de filtros para incluir a barra de busca */
+        .filtros-relatorio { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
+        .linha-busca { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+        .linha-relatorios { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
         
         .btn-reimprimir { background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
         .btn-reimprimir:hover { background: #219150; }
@@ -46,6 +50,9 @@
         .dash-card { background: #e8f4fd; padding: 20px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #b6d4fe; }
         .dash-card h4 { margin: 0; color: #003366; font-size: 1.1em; }
         .dash-card h2 { margin: 10px 0 0 0; font-size: 2.5em; }
+        
+        .input-busca { width: 100%; padding: 12px; border-radius: 6px; border: 2px solid #3498db; font-size: 1.1em; outline: none; }
+        .input-busca:focus { border-color: #2980b9; box-shadow: 0 0 8px rgba(52, 152, 219, 0.3); }
     </style>
 </head>
 <body>
@@ -65,12 +72,21 @@
 
         <main id="content">
             <h2 class="page-title">Consulta de Acervo Hierárquico</h2>
+            
             <div class="filtros-relatorio">
-                <div><label>📅 Data Inicial:</label><input type="date" id="dataInicioRel"></div>
-                <div><label>📅 Data Final:</label><input type="date" id="dataFimRel"></div>
-                <button class="btn-primary" onclick="window.gerarPDF()" style="width: auto; padding: 10px 20px;">📄 Relatório de Auditoria</button>
-                <button class="btn-primary" onclick="window.abrirDashboard()" style="width: auto; padding: 10px 20px; background: #8e44ad; margin-left: auto;">📊 Dashboard de Produção</button>
+                <div class="linha-busca">
+                    <label style="font-weight: bold; color: #003366; display: block; margin-bottom: 8px;">🔍 Busca Rápida no Acervo:</label>
+                    <input type="text" id="buscaGuiaInput" class="input-busca" placeholder="Digite o Número da Guia ou Unidade..." oninput="window.filtrarAcervo()">
+                </div>
+                
+                <div class="linha-relatorios">
+                    <div><label>📅 Data Inicial:</label><input type="date" id="dataInicioRel" style="margin: 5px 0 0 0;"></div>
+                    <div><label>📅 Data Final:</label><input type="date" id="dataFimRel" style="margin: 5px 0 0 0;"></div>
+                    <button class="btn-primary" onclick="window.gerarPDF()" style="width: auto; padding: 10px 20px;">📄 Relatório de Auditoria</button>
+                    <button class="btn-primary" onclick="window.abrirDashboard()" style="width: auto; padding: 10px 20px; background: #8e44ad; margin-left: auto;">📊 Dashboard de Produção</button>
+                </div>
             </div>
+            
             <div id="listaArquivadas"><p>Buscando acervo...</p></div>
         </main>
     </div>
@@ -135,74 +151,116 @@
                 todasAsGuiasArquivadas = [];
                 snap.forEach(d => todasAsGuiasArquivadas.push({ id: d.id, ...d.data() }));
 
-                const arvore = {};
-                todasAsGuiasArquivadas.forEach(g => {
-                    const dataA = g.dataArquivamentoSistema; 
-                    if(!dataA) return;
-                    const partes = dataA.split('/');
-                    if(partes.length !== 3) return;
-                    const dia = partes[0], mes = partes[1], ano = partes[2];
+                // Em vez de montar a árvore direto, chamamos a função renderizar que faz isso
+                renderizarArvoreAcervo(todasAsGuiasArquivadas);
+
+            } catch (err) { container.innerHTML = "Erro ao carregar acervo."; }
+        }
+
+        // ==========================================
+        // 🔍 LÓGICA DA BARRA DE PESQUISA
+        // ==========================================
+        window.filtrarAcervo = function() {
+            const termo = document.getElementById("buscaGuiaInput").value.toLowerCase().trim();
+            
+            // Se o campo estiver vazio, volta a mostrar tudo normal
+            if (!termo) {
+                renderizarArvoreAcervo(todasAsGuiasArquivadas);
+                return;
+            }
+
+            // Filtra as guias cujo número OU unidade contenham o texto digitado
+            const guiasFiltradas = todasAsGuiasArquivadas.filter(g => {
+                const numero = (g.numero || g.numeroGuia || "").toLowerCase();
+                const unidade = (g.unidade || "").toLowerCase();
+                return numero.includes(termo) || unidade.includes(termo);
+            });
+
+            // Manda renderizar a árvore apenas com os resultados (ela já vai abrir automaticamente)
+            renderizarArvoreAcervo(guiasFiltradas, true);
+        };
+
+        // ==========================================
+        // 🌳 RENDERIZAÇÃO DA ÁRVORE DE ACERVO
+        // ==========================================
+        function renderizarArvoreAcervo(listaDeGuias, expandirAutomatico = false) {
+            const container = document.getElementById("listaArquivadas");
+            container.innerHTML = "";
+
+            if (listaDeGuias.length === 0) {
+                container.innerHTML = "<p style='color:#e74c3c; font-weight:bold; margin-top:20px;'>Nenhuma guia encontrada com os termos informados.</p>";
+                return;
+            }
+
+            const arvore = {};
+            listaDeGuias.forEach(g => {
+                const dataA = g.dataArquivamentoSistema; 
+                if(!dataA) return;
+                const partes = dataA.split('/');
+                if(partes.length !== 3) return;
+                const dia = partes[0], mes = partes[1], ano = partes[2];
+                
+                if(!arvore[ano]) arvore[ano] = { totalGuias: 0, meses: {} };
+                if(!arvore[ano].meses[mes]) arvore[ano].meses[mes] = { totalGuias: 0, dias: {} };
+                if(!arvore[ano].meses[mes].dias[dataA]) arvore[ano].meses[mes].dias[dataA] = [];
+                
+                arvore[ano].meses[mes].dias[dataA].push(g);
+                arvore[ano].totalGuias++; arvore[ano].meses[mes].totalGuias++;
+            });
+
+            Object.keys(arvore).sort((a,b) => b.localeCompare(a)).forEach(anoStr => {
+                const anoObj = arvore[anoStr];
+                const btnAno = document.createElement("button"); btnAno.className = "data-header-btn btn-ano";
+                btnAno.innerHTML = `<div><span>📁 Acervo de ${anoStr}</span> <span class="contador-guias">${anoObj.totalGuias} guias</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
+                const divAno = document.createElement("div"); divAno.className = "grupo-ano";
+                if(expandirAutomatico) divAno.style.display = "block";
+                
+                btnAno.onclick = () => { const aberto = divAno.style.display === "block"; divAno.style.display = aberto ? "none" : "block"; btnAno.querySelector('.toggle-icon').innerText = aberto ? "➕" : "➖"; };
+                container.appendChild(btnAno); container.appendChild(divAno);
+
+                Object.keys(anoObj.meses).sort((a,b) => b.localeCompare(a)).forEach(mesStr => {
+                    const mesObj = anoObj.meses[mesStr]; const nomeMes = nomeMeses[mesStr] || mesStr;
+                    const btnMes = document.createElement("button"); btnMes.className = "data-header-btn btn-mes";
+                    btnMes.innerHTML = `<div><span>📂 ${nomeMes}</span> <span class="contador-guias" style="background:#16a085;">${mesObj.totalGuias} guias</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
+                    const divMes = document.createElement("div"); divMes.className = "grupo-mes";
+                    if(expandirAutomatico) divMes.style.display = "block";
                     
-                    if(!arvore[ano]) arvore[ano] = { totalGuias: 0, meses: {} };
-                    if(!arvore[ano].meses[mes]) arvore[ano].meses[mes] = { totalGuias: 0, dias: {} };
-                    if(!arvore[ano].meses[mes].dias[dataA]) arvore[ano].meses[mes].dias[dataA] = [];
-                    
-                    arvore[ano].meses[mes].dias[dataA].push(g);
-                    arvore[ano].totalGuias++; arvore[ano].meses[mes].totalGuias++;
-                });
+                    btnMes.onclick = () => { const aberto = divMes.style.display === "block"; divMes.style.display = aberto ? "none" : "block"; btnMes.querySelector('.toggle-icon').innerText = aberto ? "➕" : "➖"; };
+                    divAno.appendChild(btnMes); divAno.appendChild(divMes);
 
-                container.innerHTML = "";
-                Object.keys(arvore).sort((a,b) => b.localeCompare(a)).forEach(anoStr => {
-                    const anoObj = arvore[anoStr];
-                    const btnAno = document.createElement("button"); btnAno.className = "data-header-btn btn-ano";
-                    btnAno.innerHTML = `<div><span>📁 Acervo de ${anoStr}</span> <span class="contador-guias">${anoObj.totalGuias} guias</span></div><span>➕</span>`;
-                    const divAno = document.createElement("div"); divAno.className = "grupo-ano";
-                    
-                    btnAno.onclick = () => { const aberto = divAno.style.display === "block"; divAno.style.display = aberto ? "none" : "block"; btnAno.querySelector('span:last-child').innerText = aberto ? "➕" : "➖"; };
-                    container.appendChild(btnAno); container.appendChild(divAno);
+                    Object.keys(mesObj.dias).sort((a,b) => { return parseInt(b.split('/')[0]) - parseInt(a.split('/')[0]); }).forEach(dataStr => {
+                        const guiasDoDia = mesObj.dias[dataStr];
+                        guiasDoDia.sort((g1, g2) => { const numA = g1.numero || g1.numeroGuia || ""; const numB = g2.numero || g2.numeroGuia || ""; return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' }); });
 
-                    Object.keys(anoObj.meses).sort((a,b) => b.localeCompare(a)).forEach(mesStr => {
-                        const mesObj = anoObj.meses[mesStr]; const nomeMes = nomeMeses[mesStr] || mesStr;
-                        const btnMes = document.createElement("button"); btnMes.className = "data-header-btn btn-mes";
-                        btnMes.innerHTML = `<div><span>📂 ${nomeMes}</span> <span class="contador-guias" style="background:#16a085;">${mesObj.totalGuias} guias</span></div><span>➕</span>`;
-                        const divMes = document.createElement("div"); divMes.className = "grupo-mes";
-                        
-                        btnMes.onclick = () => { const aberto = divMes.style.display === "block"; divMes.style.display = aberto ? "none" : "block"; btnMes.querySelector('span:last-child').innerText = aberto ? "➕" : "➖"; };
-                        divAno.appendChild(btnMes); divAno.appendChild(divMes);
+                        const btnDia = document.createElement("button"); btnDia.className = "data-header-btn btn-dia";
+                        btnDia.innerHTML = `<div><span>📅 ${dataStr}</span> <span class="contador-guias" style="background:#555;">${guiasDoDia.length} guias</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
+                        const divDia = document.createElement("div"); divDia.className = "grupo-dia";
+                        if(expandirAutomatico) divDia.style.display = "block";
 
-                        Object.keys(mesObj.dias).sort((a,b) => { return parseInt(b.split('/')[0]) - parseInt(a.split('/')[0]); }).forEach(dataStr => {
-                            const guiasDoDia = mesObj.dias[dataStr];
-                            guiasDoDia.sort((g1, g2) => { const numA = g1.numero || g1.numeroGuia || ""; const numB = g2.numero || g2.numeroGuia || ""; return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' }); });
+                        btnDia.onclick = () => { const aberto = divDia.style.display === "block"; divDia.style.display = aberto ? "none" : "block"; btnDia.querySelector('.toggle-icon').innerText = aberto ? "➕" : "➖"; };
+                        divMes.appendChild(btnDia); divMes.appendChild(divDia);
 
-                            const btnDia = document.createElement("button"); btnDia.className = "data-header-btn btn-dia";
-                            btnDia.innerHTML = `<div><span>📅 ${dataStr}</span> <span class="contador-guias" style="background:#555;">${guiasDoDia.length} guias</span></div><span>➕</span>`;
-                            const divDia = document.createElement("div"); divDia.className = "grupo-dia";
+                        guiasDoDia.forEach(g => {
+                            const div = document.createElement("div"); div.className = "guia-card-arquivada";
+                            
+                            let nomeVisual = g.nomeOperador;
+                            if (!nomeVisual || nomeVisual.includes('@')) {
+                                nomeVisual = "Email: " + (g.arquivadoPor || '---');
+                            }
 
-                            btnDia.onclick = () => { const aberto = divDia.style.display === "block"; divDia.style.display = aberto ? "none" : "block"; btnDia.querySelector('span:last-child').innerText = aberto ? "➕" : "➖"; };
-                            divMes.appendChild(btnDia); divMes.appendChild(divDia);
-
-                            guiasDoDia.forEach(g => {
-                                const div = document.createElement("div"); div.className = "guia-card-arquivada";
-                                
-                                let nomeVisual = g.nomeOperador;
-                                if (!nomeVisual || nomeVisual.includes('@')) {
-                                    nomeVisual = "Email: " + (g.arquivadoPor || '---');
-                                }
-
-                                div.innerHTML = `
-                                    <div class="info-box">
-                                        <strong>Guia: ${g.numero || g.numeroGuia}</strong><br><small>Unidade: ${g.unidade}</small><br><span class="badge-user">👤 Responsável: ${nomeVisual}</span>
-                                    </div>
-                                    <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
-                                        <div class="badge-local">📦 G: ${g.locCaixaFinal} / D: ${g.locCaixaDocumentos}</div>
-                                        <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Detalhes</button>
-                                    </div>`;
-                                divDia.appendChild(div);
-                            });
+                            div.innerHTML = `
+                                <div class="info-box">
+                                    <strong>Guia: ${g.numero || g.numeroGuia}</strong><br><small>Unidade: ${g.unidade}</small><br><span class="badge-user">👤 Responsável: ${nomeVisual}</span>
+                                </div>
+                                <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
+                                    <div class="badge-local">📦 G: ${g.locCaixaFinal} / D: ${g.locCaixaDocumentos}</div>
+                                    <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Detalhes</button>
+                                </div>`;
+                            divDia.appendChild(div);
                         });
                     });
                 });
-            } catch (err) { container.innerHTML = "Erro ao carregar acervo."; }
+            });
         }
 
         window.verDetalhes = async (id, num) => {
@@ -281,7 +339,6 @@
 
         window.editarMetadadosGuia = async (id, numeroAtual, unidadeAtual) => {
             try {
-                // Puxamos os dados originais para preencher a data no prompt
                 const gSnap = await getDoc(doc(db, "guias", id));
                 const g = gSnap.data();
 
@@ -303,7 +360,9 @@
                 
                 alert("Metadados atualizados com sucesso!"); 
                 document.getElementById("modalDetalhes").style.display = "none"; 
-                carregar(); // Recarrega a árvore de acervo
+                // Limpa o campo de pesquisa e recarrega tudo
+                document.getElementById("buscaGuiaInput").value = "";
+                carregar(); 
             } catch(e) { 
                 alert("Erro ao atualizar metadados."); 
                 console.error(e);
