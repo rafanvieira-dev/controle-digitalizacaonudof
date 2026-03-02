@@ -6,40 +6,38 @@
     <title>Inserir Documentos - NUDOF</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Ajustes para garantir a rolagem e o layout */
-        body { overflow-y: auto !important; height: auto !important; }
-        #appInterface { display: flex; min-height: 100vh; }
-        #content { flex: 1; padding: 30px; }
-        
+        /* Mantendo seus estilos de abas e botões */
         .data-header-btn {
             width: 100%; background: #003366; color: white; padding: 12px;
             border: none; border-radius: 5px; text-align: left; font-weight: bold;
             margin: 15px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between;
+            align-items: center;
         }
+        .contador-abas {
+            background: #4682B4; color: white; padding: 2px 10px; border-radius: 12px;
+            font-size: 0.85em; margin-left: 10px; font-weight: normal;
+        }
+        .grupo-guias-inserir { display: none; margin-bottom: 20px; padding: 10px; background: #f9f9f9; border-radius: 0 0 8px 8px; }
         .btn-guia-item {
             padding: 10px 20px; margin: 5px; border: none; border-radius: 4px;
             background: #4682B4; color: white; cursor: pointer; font-weight: bold;
         }
-        .btn-guia-item:hover { background: #35668d; }
-        .item-doc {
-            background: white; padding: 10px; border-bottom: 1px solid #eee;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .loading-msg { padding: 20px; color: #666; font-style: italic; }
+        /* Ajuste de rolagem que você pediu */
+        body { overflow-y: auto !important; height: auto !important; }
     </style>
 </head>
 <body>
 
-    <div id="appInterface">
-        <aside id="sidebar" style="width: 250px; background: #f8f9fa; border-right: 1px solid #ccc;">
-            <div style="padding: 20px; font-weight: bold; background: #003366; color: white;">NUDOF DIGITAL</div>
-            <nav style="display: flex; flex-direction: column; padding: 10px;">
-                <a href="index.html" style="padding: 10px; text-decoration: none; color: #333;">🏠 Início</a>
-                <a href="guia.html" style="padding: 10px; text-decoration: none; color: #333;">➕ Nova Guia</a>
-                <a href="documentos.html" style="padding: 10px; text-decoration: none; color: #333; background: #ddd; font-weight: bold;">📄 Inserir Documentos</a>
-                <a href="documentosRecebidos.html" style="padding: 10px; text-decoration: none; color: #333;">📁 Arquivar Guia</a>
-                <a href="documentosArquivados.html" style="padding: 10px; text-decoration: none; color: #333;">📚 Acervo</a>
-                <button id="btnLogout" style="margin-top: 20px; color: red; cursor: pointer; border: none; background: none; text-align: left; padding: 10px;">🚪 Sair</button>
+    <div id="appInterface" style="display: flex;">
+        <aside id="sidebar">
+            <div class="logo">SISTEMA NUDOF</div>
+            <nav>
+                <a href="index.html">🏠 Início / Histórico</a>
+                <a href="guia.html">➕ Inserir Nova Guia</a>
+                <a href="documentos.html" style="background-color: #d0d0d0; font-weight: bold;">📄 Documentos em Guia</a>
+                <a href="documentosRecebidos.html">📁 Arquivar Guia</a>
+                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
+                <button id="btnLogout" style="color: #e74c3c; background:none; border:none; border-top: 1px solid #ccc; margin-top: auto; padding: 15px; cursor:pointer; width: 100%; text-align: left;">🚪 Sair</button>
             </nav>
         </aside>
 
@@ -48,44 +46,37 @@
 
             <div class="form-container">
                 <h3>Selecione a Guia de Destino</h3>
-                <div id="listaGuias"><p class="loading-msg">Carregando guias abertas...</p></div>
+                <div id="listaGuiasAgrupadas">
+                    <p>Carregando guias...</p>
+                </div>
             </div>
 
-            <div id="areaDocumentos" style="display:none; margin-top: 30px; border-top: 2px solid #003366; padding-top: 20px;">
+            <div id="areaDocumentos" style="display:none; margin-top: 20px; border-top: 2px solid #003366; padding-top: 20px;">
                 <h3 id="tituloGuia" style="color: #003366; margin-bottom: 15px;"></h3>
                 
                 <div class="form-container">
                     <form id="formDocumento">
                         <input type="hidden" id="docIdEdicao">
-                        
                         <label>Nome do Documento:</label>
-                        <input type="text" id="nomeDocumento" placeholder="Ex: Ofício de Encaminhamento" required>
+                        <input type="text" id="nomeDocumento" required>
 
                         <label>Nº do Processo SEI:</label>
-                        <input type="text" id="numeroProcesso" placeholder="00000.000/2026-00" required>
+                        <input type="text" id="numeroProcesso" required>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                            <div>
-                                <label>Data de Recebimento:</label>
-                                <input type="date" id="dataRecebimento" required>
-                            </div>
-                            <div>
-                                <label>Guia de Remessa:</label>
-                                <input type="text" id="guiaRemessa" placeholder="Nº da Guia" required>
-                            </div>
+                            <div><label>Data de Recebimento:</label><input type="date" id="dataRecebimento" required></div>
+                            <div><label>Guia de Remessa:</label><input type="text" id="guiaRemessa" required></div>
                         </div>
 
-                        <button type="submit" class="btn-primary" id="btnSalvar" style="margin-top: 15px;">Gravar Documento na Guia</button>
+                        <button type="submit" class="btn-primary" id="btnSalvar" style="margin-top: 15px;">Gravar Documento</button>
                         <button type="button" id="btnCancelarEdicao" style="display:none; background: #7f8c8d;" class="btn-primary">Cancelar Edição</button>
                     </form>
-                    
-                    <p id="contadorDocs" style="margin-top: 15px; font-weight: bold; color: #d35400;">0 / 7 documentos cadastrados</p>
+                    <p id="contadorDocs" style="margin-top: 15px; font-weight: bold; color: #d35400;">0 / 7 documentos</p>
                 </div>
 
                 <div class="form-container">
-                    <h3>Ordem de Inserção (Folha de Rosto):</h3>
-                    <div id="listaDocumentos" style="margin-top: 10px;">
-                        </div>
+                    <h3>Documentos na Ordem de Digitalização:</h3>
+                    <div id="listaDocumentos" style="margin-top: 10px;"></div>
                 </div>
             </div>
         </main>
@@ -102,7 +93,6 @@
         let guiaAtivaId = "";
         let docEmEdicaoId = null;
 
-        // Monitor de Sessão
         onAuthStateChanged(auth, (user) => {
             if (!user) window.location.href = "index.html";
             else carregarMenuGuias();
@@ -110,80 +100,70 @@
 
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
-        // Carregar guias agrupadas
         async function carregarMenuGuias() {
-            const lista = document.getElementById("listaGuias");
+            const container = document.getElementById("listaGuiasAgrupadas");
             try {
                 const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
                 const snap = await getDocs(q);
-                lista.innerHTML = "";
+                container.innerHTML = "";
                 
-                snap.forEach(docSnap => {
-                    const g = docSnap.data();
-                    const btn = document.createElement("button");
-                    btn.className = "btn-guia-item";
-                    btn.innerText = "Guia: " + (g.numero || g.numeroGuia);
-                    btn.onclick = () => iniciarInclusao(docSnap.id, btn.innerText);
-                    lista.appendChild(btn);
+                // Agrupando por data (seu layout original)
+                const grupos = {};
+                snap.forEach(d => {
+                    const data = d.data().dataRecebimento || "Sem Data";
+                    if (!grupos[data]) grupos[data] = [];
+                    grupos[data].push({ id: d.id, ...d.data() });
                 });
-            } catch (e) { lista.innerHTML = "Erro ao carregar guias."; }
+
+                Object.keys(grupos).sort().reverse().forEach(data => {
+                    const secao = document.createElement("div");
+                    secao.innerHTML = `<button class="data-header-btn" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">
+                        Data: ${data} <span class="contador-abas">${grupos[data].length} guias</span>
+                    </button>
+                    <div class="grupo-guias-inserir"></div>`;
+                    
+                    const divBotoes = secao.querySelector(".grupo-guias-inserir");
+                    grupos[data].forEach(g => {
+                        const btn = document.createElement("button");
+                        btn.className = "btn-guia-item";
+                        btn.innerText = "Guia " + (g.numero || g.numeroGuia);
+                        btn.onclick = () => iniciarInclusao(g.id, btn.innerText);
+                        divBotoes.appendChild(btn);
+                    });
+                    container.appendChild(secao);
+                });
+            } catch (e) { container.innerHTML = "Erro ao carregar."; }
         }
 
-        // Selecionar Guia
-        window.iniciarInclusao = async (id, texto) => {
+        window.iniciarInclusao = (id, texto) => {
             guiaAtivaId = id;
             document.getElementById("areaDocumentos").style.display = "block";
             document.getElementById("tituloGuia").innerText = texto;
-            window.atualizarListaDocumentos(id);
-            document.getElementById("areaDocumentos").scrollIntoView({ behavior: 'smooth' });
+            atualizarListaDocumentos(id);
         };
 
-        // LISTAR DOCUMENTOS NA ORDEM CORRETA (ASCENDENTE)
         window.atualizarListaDocumentos = async (id) => {
             const container = document.getElementById("listaDocumentos");
-            const contador = document.getElementById("contadorDocs");
-            
             try {
-                // ORDENAÇÃO POR DATA DE INSERÇÃO (O primeiro que entra é o primeiro da lista)
-                const qDocs = query(
-                    collection(db, "guias", id, "documentos"), 
-                    orderBy("dataInsercao", "asc")
-                );
-                
+                // AQUI ESTÁ A CORREÇÃO: Ordem de inserção correta
+                const qDocs = query(collection(db, "guias", id, "documentos"), orderBy("dataInsercao", "asc"));
                 const snap = await getDocs(qDocs);
                 container.innerHTML = "";
-                
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
-                    const div = document.createElement("div");
-                    div.className = "item-doc";
-                    div.innerHTML = `
-                        <div>
-                            <strong>${d.nomeDocumento}</strong><br>
-                            <small>SEI: ${d.numeroProcesso}</small>
-                        </div>
-                        <div>
-                            <button onclick="prepararEdicao('${docSnap.id}', '${d.nomeDocumento}', '${d.numeroProcesso}', '${d.dataRecebimento}', '${d.guiaRemessa}')" style="cursor:pointer; background:none; border:none;">✏️</button>
-                            <button onclick="excluirDoc('${docSnap.id}')" style="cursor:pointer; background:none; border:none; margin-left:10px;">❌</button>
-                        </div>
-                    `;
-                    container.appendChild(div);
+                    const item = document.createElement("div");
+                    item.style = "padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;";
+                    item.innerHTML = `<div><strong>${d.nomeDocumento}</strong> - SEI: ${d.numeroProcesso}</div>
+                    <div><button onclick="prepararEdicao('${docSnap.id}','${d.nomeDocumento}','${d.numeroProcesso}','${d.dataRecebimento}','${d.guiaRemessa}')">✏️</button>
+                    <button onclick="excluirDoc('${docSnap.id}')">❌</button></div>`;
+                    container.appendChild(item);
                 });
-
-                contador.innerText = `${snap.size} / 7 documentos cadastrados`;
-                document.getElementById("btnSalvar").disabled = snap.size >= 7 && !docEmEdicaoId;
-            } catch (e) { 
-                console.error("Erro ao listar:", e);
-                container.innerHTML = "<p style='color:red'>Aguardando criação de índice no Firebase...</p>";
-            }
+                document.getElementById("contadorDocs").innerText = `${snap.size} / 7 documentos`;
+            } catch (e) { console.error(e); }
         };
 
-        // Gravar / Atualizar
         document.getElementById("formDocumento").onsubmit = async (e) => {
             e.preventDefault();
-            const btn = document.getElementById("btnSalvar");
-            btn.disabled = true;
-
             const dados = {
                 nomeDocumento: document.getElementById("nomeDocumento").value,
                 numeroProcesso: document.getElementById("numeroProcesso").value,
@@ -192,48 +172,35 @@
                 ultimaAtualizacao: serverTimestamp()
             };
 
-            try {
-                if (docEmEdicaoId) {
-                    await updateDoc(doc(db, "guias", guiaAtivaId, "documentos", docEmEdicaoId), dados);
-                    alert("Documento atualizado!");
-                } else {
-                    dados.dataInsercao = serverTimestamp(); // GRAVA A HORA EXATA DA ENTRADA
-                    dados.inseridoPor = auth.currentUser.email;
-                    await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), dados);
-                    alert("Documento inserido!");
-                }
-                cancelarEdicao();
-                atualizarListaDocumentos(guiaAtivaId);
-            } catch (err) { alert("Erro ao salvar: " + err.message); }
-            finally { btn.disabled = false; }
+            if (docEmEdicaoId) {
+                await updateDoc(doc(db, "guias", guiaAtivaId, "documentos", docEmEdicaoId), dados);
+            } else {
+                dados.dataInsercao = serverTimestamp();
+                await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), dados);
+            }
+            document.getElementById("formDocumento").reset();
+            docEmEdicaoId = null;
+            document.getElementById("btnCancelarEdicao").style.display = "none";
+            document.getElementById("btnSalvar").innerText = "Gravar Documento";
+            atualizarListaDocumentos(guiaAtivaId);
         };
 
-        // Funções de Apoio (Edit/Delete)
         window.prepararEdicao = (id, nome, sei, data, guia) => {
             docEmEdicaoId = id;
             document.getElementById("nomeDocumento").value = nome;
             document.getElementById("numeroProcesso").value = sei;
             document.getElementById("dataRecebimento").value = data;
             document.getElementById("guiaRemessa").value = guia;
-            document.getElementById("btnSalvar").innerText = "Atualizar Documento";
+            document.getElementById("btnSalvar").innerText = "Atualizar";
             document.getElementById("btnCancelarEdicao").style.display = "inline-block";
         };
 
-        window.cancelarEdicao = () => {
-            docEmEdicaoId = null;
-            document.getElementById("formDocumento").reset();
-            document.getElementById("btnSalvar").innerText = "Gravar Documento na Guia";
-            document.getElementById("btnCancelarEdicao").style.display = "none";
-        };
-
         window.excluirDoc = async (id) => {
-            if (confirm("Deseja excluir este item?")) {
+            if (confirm("Excluir item?")) {
                 await deleteDoc(doc(db, "guias", guiaAtivaId, "documentos", id));
                 atualizarListaDocumentos(guiaAtivaId);
             }
         };
-
-        document.getElementById("btnCancelarEdicao").onclick = cancelarEdicao;
     </script>
 </body>
 </html>
