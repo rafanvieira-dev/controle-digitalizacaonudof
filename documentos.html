@@ -109,6 +109,8 @@
             "rafael.nascimento-vieira@defensoria.rj.def.br", 
         ];
 
+        const nomeMeses = { "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril", "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto", "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro" };
+
         let guiaAtivaId = "";
         let numeroGuiaAtiva = ""; 
         let docEmEdicaoId = null; 
@@ -117,7 +119,7 @@
         onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregarMenuGuias(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
-        // FUNÇÃO INTELIGENTE DE CÁLCULO DE ATRASO IGNORANDO FINAIS DE SEMANA
+        // FUNÇÃO DE CÁLCULO DE ATRASO IGNORANDO FINAIS DE SEMANA
         function verificarAtraso(dataStr) {
             if (!dataStr || dataStr === "Sem Data") return false;
             
@@ -129,25 +131,20 @@
             
             let diasUteis = 0;
             let d = new Date(dataGuia);
-            d.setDate(d.getDate() + 1); // começa a contar no dia seguinte
+            d.setDate(d.getDate() + 1); 
             
             while (d <= hoje) {
                 const diaSemana = d.getDay();
-                // 0 = Domingo, 6 = Sábado
-                if (diaSemana !== 0 && diaSemana !== 6) {
-                    diasUteis++;
-                }
+                if (diaSemana !== 0 && diaSemana !== 6) { diasUteis++; }
                 d.setDate(d.getDate() + 1);
             }
-            
-            // Se tiver passado ao menos 1 dia útil completo, considera em atraso
             return diasUteis > 0;
         }
 
         async function carregarMenuGuias() {
             const lista = document.getElementById("listaGuias");
             try {
-                // AQUI ESTÁ A CORREÇÃO: Busca APENAS guias com status "Aberta"
+                // Busca APENAS guias com status "Aberta" (para não mostrar as já digitalizadas)
                 const q = query(collection(db, "guias"), where("status", "==", "Aberta"));
                 const snap = await getDocs(q);
                 
@@ -178,47 +175,140 @@
                 });
 
                 lista.innerHTML = "";
-                let dataAtual = "";
-                let divGrupo = null;
+                const datasUnicas = Object.keys(contagemPorData);
 
-                guias.forEach(g => {
-                    const recVal = g.dataRecebimento || "Sem Data";
+                // --- LÓGICA INTELIGENTE: SE MAIS DE 5 DATAS, AGRUPA POR MÊS ---
+                if (datasUnicas.length > 5) {
                     
-                    let alertaHtml = verificarAtraso(recVal) ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
-
-                    if (recVal !== dataAtual) {
-                        dataAtual = recVal;
-                        const dataF = dataAtual !== "Sem Data" ? dataAtual.split('-').reverse().join('/') : "Sem Data";
-                        const idGrupo = `grupo-ins-${dataAtual.replace(/-/g, '_').replace(/ /g, '')}`;
-                        const totalGuias = contagemPorData[dataAtual];
-
-                        const btnData = document.createElement("button");
-                        btnData.className = "data-header-btn";
-                        btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span> <span class="contador-abas">${totalGuias} guia(s)</span> ${alertaHtml}</div><span class="toggle-icon">➕</span>`;
+                    const arvore = {};
+                    guias.forEach(g => {
+                        const recVal = g.dataRecebimento || "Sem Data";
+                        let mesAno = "Sem Data";
+                        if (recVal !== "Sem Data" && recVal.includes('-')) {
+                            const [ano, mes, dia] = recVal.split('-');
+                            mesAno = `${ano}-${mes}`;
+                        }
+                        if (!arvore[mesAno]) arvore[mesAno] = { total: 0, dias: {} };
+                        if (!arvore[mesAno].dias[recVal]) arvore[mesAno].dias[recVal] = [];
                         
-                        divGrupo = document.createElement("div");
-                        divGrupo.className = "grupo-guias-inserir";
-                        divGrupo.id = idGrupo;
-                        divGrupo.style.flexWrap = "wrap"; divGrupo.style.gap = "10px";
+                        arvore[mesAno].dias[recVal].push(g);
+                        arvore[mesAno].total++;
+                    });
 
-                        btnData.onclick = () => {
-                            const target = document.getElementById(idGrupo);
-                            const icon = btnData.querySelector('.toggle-icon');
-                            const estaFechado = target.style.display === "none" || target.style.display === "";
-                            target.style.display = estaFechado ? "flex" : "none";
-                            icon.innerText = estaFechado ? "➖" : "➕";
-                        };
-                        lista.appendChild(btnData);
-                        lista.appendChild(divGrupo);
-                    }
-                    const numGuia = g.numero || g.numeroGuia || "S/N";
-                    const btnGuia = document.createElement("button");
-                    btnGuia.className = "btn-guia-item";
-                    btnGuia.innerHTML = `Guia: ${numGuia} <span class="badge-docs">${g.qtdDocs}</span>`;
+                    const mesesOrdenados = Object.keys(arvore).sort((a,b) => a.localeCompare(b));
                     
-                    btnGuia.onclick = () => window.iniciarInclusao(g.id, `Guia: ${numGuia}`, numGuia);
-                    divGrupo.appendChild(btnGuia);
-                });
+                    mesesOrdenados.forEach(mesAnoStr => {
+                        const mesObj = arvore[mesAnoStr];
+                        let nomeMesExibicao = mesAnoStr;
+                        if (mesAnoStr !== "Sem Data") {
+                            const [a, m] = mesAnoStr.split('-');
+                            nomeMesExibicao = `${nomeMeses[m] || m}/${a}`;
+                        }
+
+                        const btnMes = document.createElement("button");
+                        btnMes.className = "data-header-btn";
+                        btnMes.style.background = "#2c3e50"; // Cor distinta para o mês
+                        btnMes.innerHTML = `<div><span>📂 ${nomeMesExibicao}</span> <span class="contador-abas" style="background:#16a085;">${mesObj.total} guia(s)</span></div><span class="toggle-icon">➕</span>`;
+                        
+                        const divMes = document.createElement("div");
+                        divMes.className = "grupo-guias-inserir";
+                        divMes.style.display = "none";
+                        divMes.style.flexDirection = "column";
+
+                        btnMes.onclick = () => {
+                            const estaFechado = divMes.style.display === "none";
+                            divMes.style.display = estaFechado ? "flex" : "none";
+                            btnMes.querySelector('.toggle-icon').innerText = estaFechado ? "➖" : "➕";
+                        };
+                        
+                        lista.appendChild(btnMes);
+                        lista.appendChild(divMes);
+
+                        const diasOrdenados = Object.keys(mesObj.dias).sort((a,b) => a.localeCompare(b));
+                        diasOrdenados.forEach(diaStr => {
+                            const guiasDoDia = mesObj.dias[diaStr];
+                            const dataF = diaStr !== "Sem Data" ? diaStr.split('-').reverse().join('/') : "Sem Data";
+                            let alertaHtml = verificarAtraso(diaStr) ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
+
+                            const btnDia = document.createElement("button");
+                            btnDia.className = "data-header-btn";
+                            btnDia.style.background = "#7f8c8d"; // Cor do dia
+                            btnDia.style.width = "calc(100% - 20px)";
+                            btnDia.style.marginLeft = "20px";
+                            btnDia.innerHTML = `<div><span>📅 ${dataF}</span> <span class="contador-abas">${guiasDoDia.length} guia(s)</span> ${alertaHtml}</div><span class="toggle-icon">➕</span>`;
+
+                            const divDia = document.createElement("div");
+                            divDia.className = "grupo-guias-inserir";
+                            divDia.style.display = "none";
+                            divDia.style.flexWrap = "wrap";
+                            divDia.style.gap = "10px";
+                            divDia.style.width = "calc(100% - 20px)";
+                            divDia.style.marginLeft = "20px";
+
+                            btnDia.onclick = () => {
+                                const estaFechado = divDia.style.display === "none" || divDia.style.display === "";
+                                divDia.style.display = estaFechado ? "flex" : "none";
+                                btnDia.querySelector('.toggle-icon').innerText = estaFechado ? "➖" : "➕";
+                            };
+
+                            divMes.appendChild(btnDia);
+                            divMes.appendChild(divDia);
+
+                            guiasDoDia.forEach(g => {
+                                const numGuia = g.numero || g.numeroGuia || "S/N";
+                                const btnGuia = document.createElement("button");
+                                btnGuia.className = "btn-guia-item";
+                                btnGuia.innerHTML = `Guia: ${numGuia} <span class="badge-docs">${g.qtdDocs}</span>`;
+                                btnGuia.onclick = () => window.iniciarInclusao(g.id, `Guia: ${numGuia}`, numGuia);
+                                divDia.appendChild(btnGuia);
+                            });
+                        });
+                    });
+
+                } else {
+                    // --- LÓGICA ORIGINAL: SE ATÉ 5 DATAS, MOSTRA SÓ OS DIAS DIRETO ---
+                    let dataAtual = "";
+                    let divGrupo = null;
+
+                    guias.forEach(g => {
+                        const recVal = g.dataRecebimento || "Sem Data";
+                        let alertaHtml = verificarAtraso(recVal) ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
+
+                        if (recVal !== dataAtual) {
+                            dataAtual = recVal;
+                            const dataF = dataAtual !== "Sem Data" ? dataAtual.split('-').reverse().join('/') : "Sem Data";
+                            const idGrupo = `grupo-ins-${dataAtual.replace(/-/g, '_').replace(/ /g, '')}`;
+                            const totalGuias = contagemPorData[dataAtual];
+
+                            const btnData = document.createElement("button");
+                            btnData.className = "data-header-btn";
+                            btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span> <span class="contador-abas">${totalGuias} guia(s)</span> ${alertaHtml}</div><span class="toggle-icon">➕</span>`;
+                            
+                            divGrupo = document.createElement("div");
+                            divGrupo.className = "grupo-guias-inserir";
+                            divGrupo.id = idGrupo;
+                            divGrupo.style.flexWrap = "wrap"; 
+                            divGrupo.style.gap = "10px";
+
+                            btnData.onclick = () => {
+                                const target = document.getElementById(idGrupo);
+                                const icon = btnData.querySelector('.toggle-icon');
+                                const estaFechado = target.style.display === "none" || target.style.display === "";
+                                target.style.display = estaFechado ? "flex" : "none";
+                                icon.innerText = estaFechado ? "➖" : "➕";
+                            };
+                            lista.appendChild(btnData);
+                            lista.appendChild(divGrupo);
+                        }
+                        const numGuia = g.numero || g.numeroGuia || "S/N";
+                        const btnGuia = document.createElement("button");
+                        btnGuia.className = "btn-guia-item";
+                        btnGuia.innerHTML = `Guia: ${numGuia} <span class="badge-docs">${g.qtdDocs}</span>`;
+                        
+                        btnGuia.onclick = () => window.iniciarInclusao(g.id, `Guia: ${numGuia}`, numGuia);
+                        divGrupo.appendChild(btnGuia);
+                    });
+                }
             } catch (e) { console.error(e); }
         }
 
