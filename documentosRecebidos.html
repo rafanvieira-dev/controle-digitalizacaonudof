@@ -134,7 +134,19 @@
                 if(snap.empty) { container.innerHTML = "<p>Não há guias pendentes de digitalização.</p>"; return; }
                 
                 let guias = [];
-                snap.forEach(d => guias.push({ id: d.id, ...d.data() }));
+                
+                // NOVA LÓGICA: Só adiciona na lista se tiver mais de 0 documentos inseridos
+                for (const d of snap.docs) {
+                    const docsSnap = await getDocs(collection(db, "guias", d.id, "documentos"));
+                    if (docsSnap.size > 0) {
+                        guias.push({ id: d.id, ...d.data() });
+                    }
+                }
+
+                if (guias.length === 0) {
+                    container.innerHTML = "<p>Nenhuma guia aberta possui documentos inseridos no momento.</p>";
+                    return;
+                }
                 
                 guias.sort((a, b) => {
                     const dataA = a.dataRecebimento || ""; const dataB = b.dataRecebimento || "";
