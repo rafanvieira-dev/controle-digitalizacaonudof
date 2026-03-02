@@ -23,8 +23,17 @@
         <main id="content">
             <h2 class="page-title">Registrar Nova Guia de Remessa</h2>
             <div class="form-container">
-                <label>Número da Guia:</label>
-                <input type="text" id="numeroGuia" placeholder="ex: 001/2026">
+                
+                <div style="position: relative;">
+                    <label>Número da Guia:</label>
+                    
+                    <div id="balaoSugestao" style="display: none; position: absolute; top: -5px; left: 140px; background-color: #f39c12; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; box-shadow: 0 3px 6px rgba(0,0,0,0.3); cursor: pointer; z-index: 10;">
+                        💡 Sugestão: <span id="textoSugestao">...</span> (Clique para usar)
+                        <div style="position: absolute; bottom: -6px; left: 20px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #f39c12;"></div>
+                    </div>
+
+                    <input type="text" id="numeroGuia" placeholder="ex: 0000" autocomplete="off">
+                </div>
                 
                 <label>Unidade Solicitante:</label>
                 <input type="text" id="unidade" placeholder="Nome da Unidade">
@@ -47,11 +56,74 @@
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        // ATENÇÃO: Adicionado orderBy e limit para buscar a última guia
+        import { collection, addDoc, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; });
+        let proximoNumSugerido = "";
+
+        // Função para calcular a sugestão inteligente
+        async function buscarSugestaoNumero() {
+            try {
+                // Busca a guia mais recente criada no sistema
+                const q = query(collection(db, "guias"), orderBy("dataCriacao", "desc"), limit(1));
+                const snap = await getDocs(q);
+                
+                if (!snap.empty) {
+                    const ultimaGuia = snap.docs[0].data();
+                    const ultimoNumStr = ultimaGuia.numero || ultimaGuia.numeroGuia || "0";
+                    
+                    // Extrai apenas a parte numérica (Ex: de "8255/2026" ele pega "8255")
+                    const match = ultimoNumStr.match(/^\d+/);
+                    if (match) {
+                        const numeroAtual = parseInt(match[0], 10);
+                        // Soma +1 e garante o formato de 4 dígitos com zeros à esquerda (ex: 0002, 8256)
+                        proximoNumSugerido = String(numeroAtual + 1).padStart(4, '0');
+                    } else {
+                        proximoNumSugerido = "0001";
+                    }
+                } else {
+                    proximoNumSugerido = "0001"; // Se for a primeira guia do sistema
+                }
+                
+                document.getElementById("textoSugestao").innerText = proximoNumSugerido;
+            } catch (e) {
+                console.error("Erro ao buscar sugestão:", e);
+                proximoNumSugerido = "0001";
+                document.getElementById("textoSugestao").innerText = proximoNumSugerido;
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => { 
+            if (!user) {
+                window.location.href = "index.html"; 
+            } else {
+                // Carrega a sugestão assim que o usuário entra na página
+                buscarSugestaoNumero();
+            }
+        });
+
         document.getElementById("btnLogout").addEventListener("click", () => signOut(auth));
+
+        // --- LÓGICA DO BALÃO DE SUGESTÃO ---
+        const inputGuia = document.getElementById("numeroGuia");
+        const balaoSugestao = document.getElementById("balaoSugestao");
+
+        // Mostra o balão ao focar no campo
+        inputGuia.addEventListener("focus", () => {
+            balaoSugestao.style.display = "block";
+        });
+
+        // Esconde o balão ao tirar o mouse do campo (com pequeno atraso para permitir o clique no balão)
+        inputGuia.addEventListener("blur", () => {
+            setTimeout(() => balaoSugestao.style.display = "none", 200);
+        });
+
+        // Ao clicar no balão, preenche o campo automaticamente
+        balaoSugestao.addEventListener("click", () => {
+            inputGuia.value = proximoNumSugerido;
+        });
+        // -----------------------------------
 
         document.getElementById("btnSalvarGuia").addEventListener("click", async () => {
             const numero = document.getElementById("numeroGuia").value.trim();
