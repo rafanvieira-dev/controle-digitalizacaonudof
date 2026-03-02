@@ -6,76 +6,96 @@
     <title>Inserir Documentos - NUDOF</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Mantendo seus estilos de abas e botões */
         .data-header-btn {
             width: 100%; background: #003366; color: white; padding: 12px;
             border: none; border-radius: 5px; text-align: left; font-weight: bold;
             margin: 15px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between;
             align-items: center;
         }
+        .data-header-btn:hover { background: #004080; }
         .contador-abas {
             background: #4682B4; color: white; padding: 2px 10px; border-radius: 12px;
             font-size: 0.85em; margin-left: 10px; font-weight: normal;
         }
         .grupo-guias-inserir { display: none; margin-bottom: 20px; padding: 10px; background: #f9f9f9; border-radius: 0 0 8px 8px; }
         .btn-guia-item {
-            padding: 10px 20px; margin: 5px; border: none; border-radius: 4px;
-            background: #4682B4; color: white; cursor: pointer; font-weight: bold;
+            position: relative; padding: 10px 20px; margin: 5px; border: none;
+            border-radius: 5px; background: #4682B4; color: white; cursor: pointer;
+            font-weight: bold; display: flex; align-items: center; gap: 8px;
         }
-        /* Ajuste de rolagem que você pediu */
-        body { overflow-y: auto !important; height: auto !important; }
+        .badge-docs { background: #27ae60; color: white; padding: 1px 7px; border-radius: 10px; font-size: 0.75em; }
+        
+        /* Alerta de Atraso Visual */
+        .alerta-atraso {
+            background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px;
+            font-size: 0.7em; font-weight: bold; margin-left: 10px; animation: blink 1s infinite;
+        }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
+        .item-doc-lista {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px; background: #fff; margin-bottom: 8px; border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 4px solid #003366;
+        }
     </style>
 </head>
 <body>
-
-    <div id="appInterface" style="display: flex;">
+    <div id="appInterface">
         <aside id="sidebar">
-            <div class="logo">SISTEMA NUDOF</div>
+            <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO NUDOF</div>
             <nav>
                 <a href="index.html">🏠 Início / Histórico</a>
-                <a href="guia.html">➕ Inserir Nova Guia</a>
-                <a href="documentos.html" style="background-color: #d0d0d0; font-weight: bold;">📄 Documentos em Guia</a>
-                <a href="documentosRecebidos.html">📁 Arquivar Guia</a>
+                <a href="guia.html">➕ Nova Guia</a>
+                <a href="documentos.html" class="ativo">📄 Inserir Documentos</a>
+                <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
                 <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
-                <button id="btnLogout" style="color: #e74c3c; background:none; border:none; border-top: 1px solid #ccc; margin-top: auto; padding: 15px; cursor:pointer; width: 100%; text-align: left;">🚪 Sair</button>
+                <button id="btnLogout" class="btn-sair">🚪 Sair</button>
             </nav>
         </aside>
 
         <main id="content">
             <h2 class="page-title">Inserir Documentos na Guia</h2>
-
-            <div class="form-container">
-                <h3>Selecione a Guia de Destino</h3>
-                <div id="listaGuiasAgrupadas">
-                    <p>Carregando guias...</p>
-                </div>
+            
+            <div class="form-container" id="containerListaGuias">
+                <h3>1. Selecione a Guia de Destino</h3>
+                <div id="listaGuias"><p>Buscando guias...</p></div>
             </div>
 
-            <div id="areaDocumentos" style="display:none; margin-top: 20px; border-top: 2px solid #003366; padding-top: 20px;">
-                <h3 id="tituloGuia" style="color: #003366; margin-bottom: 15px;"></h3>
-                
-                <div class="form-container">
-                    <form id="formDocumento">
-                        <input type="hidden" id="docIdEdicao">
-                        <label>Nome do Documento:</label>
-                        <input type="text" id="nomeDocumento" required>
-
-                        <label>Nº do Processo SEI:</label>
-                        <input type="text" id="numeroProcesso" required>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                            <div><label>Data de Recebimento:</label><input type="date" id="dataRecebimento" required></div>
-                            <div><label>Guia de Remessa:</label><input type="text" id="guiaRemessa" required></div>
-                        </div>
-
-                        <button type="submit" class="btn-primary" id="btnSalvar" style="margin-top: 15px;">Gravar Documento</button>
-                        <button type="button" id="btnCancelarEdicao" style="display:none; background: #7f8c8d;" class="btn-primary">Cancelar Edição</button>
-                    </form>
-                    <p id="contadorDocs" style="margin-top: 15px; font-weight: bold; color: #d35400;">0 / 7 documentos</p>
+            <div id="areaDocumentos" style="display:none; margin-top: 30px; border-top: 2px solid #003366; padding-top: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 id="tituloGuia" style="color: #003366;"></h3>
+                    <button type="button" onclick="window.fecharAreaDocumentos()" style="background: #7f8c8d; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">❌ Fechar</button>
                 </div>
 
                 <div class="form-container">
-                    <h3>Documentos na Ordem de Digitalização:</h3>
+                    <form id="formDocumento">
+                        <label>Nome do Documento:</label>
+                        <input type="text" id="nomeDocumento" placeholder="Ex: Ofício de Encaminhamento" required>
+                        
+                        <label>Nº do Processo SEI:</label>
+                        <input type="text" id="numeroProcesso" placeholder="00000.000/2026-00">
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label>Data de Recebimento:</label>
+                                <input type="date" id="dataRecebimento" required>
+                            </div>
+                            <div>
+                                <label>Guia de Remessa:</label>
+                                <input type="text" id="guiaRemessa" readonly style="background: #eee;">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button type="submit" class="btn-primary" id="btnSalvar">Gravar Documento</button>
+                            <button type="button" id="btnCancelarEdicao" onclick="window.cancelarEdicao()" style="display: none; background: #7f8c8d; color: white; padding: 12px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                        </div>
+                    </form>
+                    <p id="contadorDocs" style="margin-top: 10px; font-weight: bold;"></p>
+                </div>
+
+                <div class="form-container">
+                    <h3>Ordem de Digitalização (Folha de Rosto):</h3>
                     <div id="listaDocumentos" style="margin-top: 10px;"></div>
                 </div>
             </div>
@@ -84,86 +104,100 @@
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        import { 
-            collection, getDocs, addDoc, query, where, doc, 
-            deleteDoc, updateDoc, orderBy, serverTimestamp 
-        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { collection, getDocs, addDoc, updateDoc, doc, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         let guiaAtivaId = "";
+        let numeroGuiaAtiva = "";
         let docEmEdicaoId = null;
 
-        onAuthStateChanged(auth, (user) => {
-            if (!user) window.location.href = "index.html";
-            else carregarMenuGuias();
-        });
-
+        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregarMenuGuias(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
-        async function carregarMenuGuias() {
-            const container = document.getElementById("listaGuiasAgrupadas");
-            try {
-                const q = query(collection(db, "guias"), where("status", "!=", "Arquivada"));
-                const snap = await getDocs(q);
-                container.innerHTML = "";
-                
-                // Agrupando por data (seu layout original)
-                const grupos = {};
-                snap.forEach(d => {
-                    const data = d.data().dataRecebimento || "Sem Data";
-                    if (!grupos[data]) grupos[data] = [];
-                    grupos[data].push({ id: d.id, ...d.data() });
-                });
+        // Função para formatar data (AAAA-MM-DD -> DD/MM/AAAA)
+        const formatarDataBR = (s) => s ? s.split('-').reverse().join('/') : "---";
 
-                Object.keys(grupos).sort().reverse().forEach(data => {
-                    const secao = document.createElement("div");
-                    secao.innerHTML = `<button class="data-header-btn" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">
-                        Data: ${data} <span class="contador-abas">${grupos[data].length} guias</span>
-                    </button>
-                    <div class="grupo-guias-inserir"></div>`;
-                    
-                    const divBotoes = secao.querySelector(".grupo-guias-inserir");
-                    grupos[data].forEach(g => {
-                        const btn = document.createElement("button");
-                        btn.className = "btn-guia-item";
-                        btn.innerText = "Guia " + (g.numero || g.numeroGuia);
-                        btn.onclick = () => iniciarInclusao(g.id, btn.innerText);
-                        divBotoes.appendChild(btn);
-                    });
-                    container.appendChild(secao);
-                });
-            } catch (e) { container.innerHTML = "Erro ao carregar."; }
+        // Verifica atraso de 1 dia ou mais (Útil para o badge 02/03/2026)
+        function temAtraso(dataStr) {
+            if (!dataStr) return false;
+            const hoje = new Date(); hoje.setHours(0,0,0,0);
+            const dataG = new Date(dataStr + "T00:00:00");
+            const diff = (hoje - dataG) / (1000 * 60 * 60 * 24);
+            return diff >= 1; 
         }
 
-        window.iniciarInclusao = (id, texto) => {
+        async function carregarMenuGuias() {
+            const lista = document.getElementById("listaGuias");
+            const q = query(collection(db, "guias"), where("status", "==", "Aberta"));
+            const snap = await getDocs(q);
+            lista.innerHTML = "";
+
+            const grupos = {};
+            snap.forEach(d => {
+                const data = d.data().dataRecebimento || "Sem Data";
+                if (!grupos[data]) grupos[data] = [];
+                grupos[data].push({ id: d.id, ...d.data() });
+            });
+
+            Object.keys(grupos).sort().reverse().forEach(dataKey => {
+                const secao = document.createElement("div");
+                const alerta = temAtraso(dataKey) ? '<span class="alerta-atraso">⚠️ ATENÇÃO</span>' : '';
+                
+                secao.innerHTML = `
+                    <button class="data-header-btn" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'flex' ? 'none' : 'flex'">
+                        <div>📅 ${formatarDataBR(dataKey)} ${alerta}</div>
+                        <span class="contador-abas">${grupos[dataKey].length} guias</span>
+                    </button>
+                    <div class="grupo-guias-inserir" style="flex-wrap: wrap; gap: 10px;"></div>`;
+                
+                const divBotoes = secao.querySelector(".grupo-guias-inserir");
+                grupos[dataKey].forEach(g => {
+                    const btn = document.createElement("button");
+                    btn.className = "btn-guia-item";
+                    btn.innerHTML = `Guia: ${g.numero || g.numeroGuia}`;
+                    btn.onclick = () => window.iniciarInclusao(g.id, g.numero || g.numeroGuia, dataKey);
+                    divBotoes.appendChild(btn);
+                });
+                lista.appendChild(secao);
+            });
+        }
+
+        window.iniciarInclusao = async (id, num, dataG) => {
             guiaAtivaId = id;
+            numeroGuiaAtiva = num;
             document.getElementById("areaDocumentos").style.display = "block";
-            document.getElementById("tituloGuia").innerText = texto;
-            atualizarListaDocumentos(id);
+            document.getElementById("tituloGuia").innerText = `Guia: ${num} (Recebida: ${formatarDataBR(dataG)})`;
+            document.getElementById("guiaRemessa").value = num;
+            document.getElementById("dataRecebimento").value = dataG;
+            window.atualizarListaDocumentos(id);
         };
 
         window.atualizarListaDocumentos = async (id) => {
             const container = document.getElementById("listaDocumentos");
-            try {
-                // AQUI ESTÁ A CORREÇÃO: Ordem de inserção correta
-                const qDocs = query(collection(db, "guias", id, "documentos"), orderBy("dataInsercao", "asc"));
-                const snap = await getDocs(qDocs);
-                container.innerHTML = "";
-                snap.forEach(docSnap => {
-                    const d = docSnap.data();
-                    const item = document.createElement("div");
-                    item.style = "padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;";
-                    item.innerHTML = `<div><strong>${d.nomeDocumento}</strong> - SEI: ${d.numeroProcesso}</div>
-                    <div><button onclick="prepararEdicao('${docSnap.id}','${d.nomeDocumento}','${d.numeroProcesso}','${d.dataRecebimento}','${d.guiaRemessa}')">✏️</button>
-                    <button onclick="excluirDoc('${docSnap.id}')">❌</button></div>`;
-                    container.appendChild(item);
-                });
-                document.getElementById("contadorDocs").innerText = `${snap.size} / 7 documentos`;
-            } catch (e) { console.error(e); }
+            // ORDEM: Inseridos primeiro aparecem primeiro (1, 2, 3...)
+            const q = query(collection(db, "guias", id, "documentos"), orderBy("dataInsercao", "asc"));
+            const snap = await getDocs(q);
+            container.innerHTML = "";
+            let i = 1;
+            snap.forEach(docSnap => {
+                const d = docSnap.data();
+                const item = document.createElement("div");
+                item.className = "item-doc-lista";
+                item.innerHTML = `
+                    <div><strong>${i}º. ${d.nomeDocumento}</strong><br><small>SEI: ${d.numeroProcesso || '---'}</small></div>
+                    <button class="btn-primary" onclick="window.prepararEdicao('${docSnap.id}', ${JSON.stringify(d).replace(/"/g, '&quot;')})" style="width:auto; background:#f39c12; padding: 5px 10px;">✏️ Editar</button>
+                `;
+                container.appendChild(item);
+                i++;
+            });
+            document.getElementById("contadorDocs").innerText = `${snap.size} / 7 documentos cadastrados`;
         };
 
         document.getElementById("formDocumento").onsubmit = async (e) => {
             e.preventDefault();
+            const btn = document.getElementById("btnSalvar");
+            btn.disabled = true;
+
             const dados = {
                 nomeDocumento: document.getElementById("nomeDocumento").value,
                 numeroProcesso: document.getElementById("numeroProcesso").value,
@@ -175,31 +209,34 @@
             if (docEmEdicaoId) {
                 await updateDoc(doc(db, "guias", guiaAtivaId, "documentos", docEmEdicaoId), dados);
             } else {
-                dados.dataInsercao = serverTimestamp();
+                dados.dataInsercao = serverTimestamp(); // Garante a ordem correta
                 await addDoc(collection(db, "guias", guiaAtivaId, "documentos"), dados);
             }
-            document.getElementById("formDocumento").reset();
-            docEmEdicaoId = null;
-            document.getElementById("btnCancelarEdicao").style.display = "none";
-            document.getElementById("btnSalvar").innerText = "Gravar Documento";
-            atualizarListaDocumentos(guiaAtivaId);
+            
+            window.cancelarEdicao();
+            window.atualizarListaDocumentos(guiaAtivaId);
+            btn.disabled = false;
         };
 
-        window.prepararEdicao = (id, nome, sei, data, guia) => {
+        window.prepararEdicao = (id, d) => {
             docEmEdicaoId = id;
-            document.getElementById("nomeDocumento").value = nome;
-            document.getElementById("numeroProcesso").value = sei;
-            document.getElementById("dataRecebimento").value = data;
-            document.getElementById("guiaRemessa").value = guia;
-            document.getElementById("btnSalvar").innerText = "Atualizar";
-            document.getElementById("btnCancelarEdicao").style.display = "inline-block";
+            document.getElementById("nomeDocumento").value = d.nomeDocumento;
+            document.getElementById("numeroProcesso").value = d.numeroProcesso;
+            document.getElementById("btnSalvar").innerText = "🔄 Atualizar";
+            document.getElementById("btnCancelarEdicao").style.display = "block";
         };
 
-        window.excluirDoc = async (id) => {
-            if (confirm("Excluir item?")) {
-                await deleteDoc(doc(db, "guias", guiaAtivaId, "documentos", id));
-                atualizarListaDocumentos(guiaAtivaId);
-            }
+        window.cancelarEdicao = () => {
+            docEmEdicaoId = null;
+            document.getElementById("nomeDocumento").value = "";
+            document.getElementById("numeroProcesso").value = "";
+            document.getElementById("btnSalvar").innerText = "Gravar Documento";
+            document.getElementById("btnCancelarEdicao").style.display = "none";
+        };
+
+        window.fecharAreaDocumentos = () => {
+            document.getElementById("areaDocumentos").style.display = "none";
+            guiaAtivaId = "";
         };
     </script>
 </body>
