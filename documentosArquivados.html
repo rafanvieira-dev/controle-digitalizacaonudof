@@ -23,11 +23,16 @@
             align-items: center; transition: background 0.2s;
         }
         
-        /* Estilos da disposição de Caixas */
+        /* 1º Nível: Caixa da Guia */
         .btn-caixa { background: #2980b9; font-size: 1.1em; margin-bottom: 5px; }
         .btn-caixa:hover { background: #1c5980; }
         .grupo-caixa { display: none; margin-bottom: 25px; padding-left: 15px; border-left: 3px dashed #bdc3c7; margin-left: 10px; padding-top: 10px; }
         
+        /* 2º Nível: Caixa dos Documentos (Novo) */
+        .btn-caixa-docs { background: #34495e; font-size: 1em; margin-bottom: 5px; margin-left: 10px; width: calc(100% - 10px); }
+        .btn-caixa-docs:hover { background: #2c3e50; }
+        .grupo-caixa-docs { display: none; margin-bottom: 15px; padding-left: 15px; border-left: 3px dotted #bdc3c7; margin-left: 20px; padding-top: 10px; }
+
         .contador-guias { background: #e67e22; color: white; padding: 3px 12px; border-radius: 12px; font-size: 0.85em; margin-left: 10px; font-weight: bold; }
         .info-box strong { color: #003366; font-size: 1.1em; }
         .badge-user { font-size: 0.75em; color: #666; display: block; margin-top: 5px; }
@@ -163,12 +168,10 @@
                 container.innerHTML = "<p>A ler o acervo e a organizar caixas. Aguarde por favor...</p>";
 
                 todasAsGuiasArquivadas = [];
-                // Para o Dashboard precisar de folhas, deixamos buscar os documentos também, se o volume permitir
                 for (const d of snap.docs) {
                     let guiaData = d.data();
                     let totalFolhasGuia = 0;
                     
-                    // Se preferir não buscar documentos aqui para carregar mais rápido, pode comentar este bloco
                     const docsSnap = await getDocs(collection(db, "guias", d.id, "documentos"));
                     docsSnap.forEach(docItem => {
                         const dd = docItem.data();
@@ -178,7 +181,7 @@
                     todasAsGuiasArquivadas.push({ id: d.id, ...guiaData, totalFolhas: totalFolhasGuia });
                 }
 
-                // Renderiza a visualização por CAIXAS
+                // Renderiza a visualização por CAIXAS (Guia e Documentos)
                 renderizarAcervoPorCaixa(todasAsGuiasArquivadas);
 
             } catch (err) { container.innerHTML = "Erro ao carregar acervo."; }
@@ -206,7 +209,7 @@
         };
 
         // ==========================================
-        // 🗃️ RENDERIZAÇÃO POR CAIXAS DE ARQUIVO
+        // 🗃️ RENDERIZAÇÃO DE HIERARQUIA DUPLA DE CAIXAS
         // ==========================================
         function renderizarAcervoPorCaixa(listaDeGuias, expandirAutomatico = false) {
             const container = document.getElementById("listaArquivadas");
@@ -217,36 +220,34 @@
                 return;
             }
 
-            // 1. Agrupar guias por locCaixaFinal
+            // 1. Agrupar guias por locCaixaFinal (Caixa da Guia) e, dentro dela, por locCaixaDocumentos
             const caixas = {};
             listaDeGuias.forEach(g => {
-                const nomeCaixa = g.locCaixaFinal ? g.locCaixaFinal.trim() : "Sem Caixa Definida";
-                if (!caixas[nomeCaixa]) caixas[nomeCaixa] = [];
-                caixas[nomeCaixa].push(g);
+                const nomeCaixaG = g.locCaixaFinal ? g.locCaixaFinal.trim() : "Sem Caixa Definida";
+                const nomeCaixaD = g.locCaixaDocumentos ? g.locCaixaDocumentos.trim() : "Sem Caixa Definida";
+                
+                if (!caixas[nomeCaixaG]) caixas[nomeCaixaG] = { total: 0, subcaixas: {} };
+                if (!caixas[nomeCaixaG].subcaixas[nomeCaixaD]) caixas[nomeCaixaG].subcaixas[nomeCaixaD] = [];
+                
+                caixas[nomeCaixaG].subcaixas[nomeCaixaD].push(g);
+                caixas[nomeCaixaG].total++;
             });
 
-            // 2. Ordenar o nome das caixas alfanumericamente
+            // 2. Ordenar o nome das caixas principais (Guias)
             const caixasOrdenadas = Object.keys(caixas).sort((a, b) => {
-                if (a === "Sem Caixa Definida") return 1; // Joga os "sem caixa" pro final
+                if (a === "Sem Caixa Definida") return 1; 
                 if (b === "Sem Caixa Definida") return -1;
                 return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
             });
 
             // 3. Montar a UI
-            caixasOrdenadas.forEach(nomeCaixa => {
-                const guiasDaCaixa = caixas[nomeCaixa];
+            caixasOrdenadas.forEach(nomeCaixaG => {
+                const objCaixaG = caixas[nomeCaixaG];
                 
-                // Ordenar guias da caixa de forma NUMÉRICA
-                guiasDaCaixa.sort((g1, g2) => {
-                    const numA = g1.numero || g1.numeroGuia || "";
-                    const numB = g2.numero || g2.numeroGuia || "";
-                    return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
-                });
-
-                // Botão principal da Caixa
+                // Botão do 1º Nível: Caixa da Guia
                 const btnCaixa = document.createElement("button"); 
                 btnCaixa.className = "data-header-btn btn-caixa";
-                btnCaixa.innerHTML = `<div><span style="font-size: 1.15em;">🗄️ Arquivo: Caixa <strong>${nomeCaixa}</strong></span> <span class="contador-guias">${guiasDaCaixa.length} guias guardadas</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
+                btnCaixa.innerHTML = `<div><span style="font-size: 1.15em;">📦 Caixa de Guia: <strong>${nomeCaixaG}</strong></span> <span class="contador-guias">${objCaixaG.total} guias atreladas</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
                 
                 const divCaixa = document.createElement("div"); 
                 divCaixa.className = "grupo-caixa";
@@ -261,34 +262,69 @@
                 container.appendChild(btnCaixa); 
                 container.appendChild(divCaixa);
 
-                // Cards das guias dentro da caixa
-                guiasDaCaixa.forEach(g => {
-                    const div = document.createElement("div"); 
-                    div.className = "guia-card-arquivada";
+                // Ordenar o 2º Nível: Caixa de Documentos
+                const subcaixasOrdenadas = Object.keys(objCaixaG.subcaixas).sort((a, b) => {
+                    if (a === "Sem Caixa Definida") return 1;
+                    if (b === "Sem Caixa Definida") return -1;
+                    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+                });
+
+                subcaixasOrdenadas.forEach(nomeCaixaD => {
+                    const guiasDaSubcaixa = objCaixaG.subcaixas[nomeCaixaD];
                     
-                    let nomeVisual = g.nomeOperador;
-                    if (!nomeVisual || nomeVisual.includes('@')) {
-                        nomeVisual = "Email: " + (g.arquivadoPor || '---');
+                    // Ordenar as Guias da subcaixa de forma NUMÉRICA
+                    guiasDaSubcaixa.sort((g1, g2) => {
+                        const numA = g1.numero || g1.numeroGuia || "";
+                        const numB = g2.numero || g2.numeroGuia || "";
+                        return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
+                    });
+
+                    // Botão do 2º Nível: Caixa de Documentos
+                    const btnSubcaixa = document.createElement("button");
+                    btnSubcaixa.className = "data-header-btn btn-caixa-docs";
+                    btnSubcaixa.innerHTML = `<div><span style="font-size: 1.05em;">🗃️ Caixa de Documentos: <strong>${nomeCaixaD}</strong></span> <span class="contador-guias" style="background:#8e44ad;">${guiasDaSubcaixa.length} guias</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
+
+                    const divSubcaixa = document.createElement("div");
+                    divSubcaixa.className = "grupo-caixa-docs";
+                    if(expandirAutomatico) divSubcaixa.style.display = "block";
+
+                    btnSubcaixa.onclick = () => {
+                        const aberto = divSubcaixa.style.display === "block"; 
+                        divSubcaixa.style.display = aberto ? "none" : "block"; 
+                        btnSubcaixa.querySelector('.toggle-icon').innerText = aberto ? "➕" : "➖"; 
                     }
 
-                    div.innerHTML = `
-                        <div class="info-box" style="flex: 1.5;">
-                            <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
-                            <small>Unidade: ${g.unidade}</small><br>
-                            <span class="badge-user">👤 Responsável: ${nomeVisual}</span>
-                        </div>
+                    divCaixa.appendChild(btnSubcaixa);
+                    divCaixa.appendChild(divSubcaixa);
+
+                    // 3º Nível: Cards das Guias
+                    guiasDaSubcaixa.forEach(g => {
+                        const div = document.createElement("div"); 
+                        div.className = "guia-card-arquivada";
                         
-                        <div style="flex: 1; text-align: center;">
-                            <span style="display:inline-block; background:#f1f2f6; border:1px solid #dcdde1; border-radius:5px; padding:6px 12px; font-weight:bold; color:#2c3e50; font-size:0.9em;">
-                                📅 Arquivada em: ${g.dataArquivamentoSistema || 'Sem data'}
-                            </span>
-                        </div>
-                        
-                        <div style="flex: 1; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 15px;">
-                            <div class="badge-local">🗃️ Caixa: ${g.locCaixaDocumentos || 'S/N'}</div>
-                            <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Detalhes</button>
-                        </div>`;
-                    divCaixa.appendChild(div);
+                        let nomeVisual = g.nomeOperador;
+                        if (!nomeVisual || nomeVisual.includes('@')) {
+                            nomeVisual = "Email: " + (g.arquivadoPor || '---');
+                        }
+
+                        div.innerHTML = `
+                            <div class="info-box" style="flex: 1.5;">
+                                <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
+                                <small>Unidade: ${g.unidade}</small><br>
+                                <span class="badge-user">👤 Responsável: ${nomeVisual}</span>
+                            </div>
+                            
+                            <div style="flex: 1; text-align: center;">
+                                <span style="display:inline-block; background:#f1f2f6; border:1px solid #dcdde1; border-radius:5px; padding:6px 12px; font-weight:bold; color:#2c3e50; font-size:0.9em;">
+                                    📅 Arquivada em: ${g.dataArquivamentoSistema || 'Sem data'}
+                                </span>
+                            </div>
+                            
+                            <div style="flex: 1; text-align: right;">
+                                <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Detalhes</button>
+                            </div>`;
+                        divSubcaixa.appendChild(div);
+                    });
                 });
             });
         }
@@ -315,7 +351,7 @@
                     <div style="margin-bottom:20px; padding:15px; background:#f8f9fa; border-radius:8px; border:1px solid #ddd; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                         <div><b>👤 Guia Criada por:</b> ${g.criadoPor || '--'}</div>
                         <div><b>👤 Digitalizada por:</b> ${nomeDigitalizadorModal}</div>
-                        <div><b>🗄️ Caixa da Guia:</b> ${g.locCaixaFinal || '--'}</div>
+                        <div><b>📦 Caixa da Guia:</b> ${g.locCaixaFinal || '--'}</div>
                         <div><b>🗃️ Caixa de Documentos:</b> ${g.locCaixaDocumentos || '--'}</div>
                         <div style="grid-column: span 2; margin-top: 10px;">
                             <button class="btn-reimprimir" onclick="window.reimprimirFolha('${id}')">🖨️ Reimprimir Folha de Rosto</button>
