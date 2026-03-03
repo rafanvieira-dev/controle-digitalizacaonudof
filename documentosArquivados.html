@@ -22,24 +22,17 @@
             margin: 10px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between;
             align-items: center; transition: background 0.2s;
         }
-        .btn-ano { background: #003366; font-size: 1.1em; }
-        .btn-ano:hover { background: #002244; }
-        .btn-mes { background: #2c3e50; margin-left: 20px; width: calc(100% - 20px); padding: 10px 15px; font-size: 1em; }
-        .btn-mes:hover { background: #1a252f; }
-        .btn-dia { background: #7f8c8d; margin-left: 40px; width: calc(100% - 40px); padding: 8px 15px; font-size: 0.9em; }
-        .btn-dia:hover { background: #626c6d; }
-
-        .grupo-ano { display: none; margin-bottom: 15px; }
-        .grupo-mes { display: none; margin-bottom: 10px; }
-        .grupo-dia { display: none; margin-bottom: 10px; }
-        .grupo-dia .guia-card-arquivada { margin-left: 40px; width: calc(100% - 40px); }
         
-        .contador-guias { background: #27ae60; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85em; margin-left: 10px; font-weight: normal; }
+        /* Estilos da disposição de Caixas */
+        .btn-caixa { background: #2980b9; font-size: 1.1em; margin-bottom: 5px; }
+        .btn-caixa:hover { background: #1c5980; }
+        .grupo-caixa { display: none; margin-bottom: 25px; padding-left: 15px; border-left: 3px dashed #bdc3c7; margin-left: 10px; padding-top: 10px; }
+        
+        .contador-guias { background: #e67e22; color: white; padding: 3px 12px; border-radius: 12px; font-size: 0.85em; margin-left: 10px; font-weight: bold; }
         .info-box strong { color: #003366; font-size: 1.1em; }
         .badge-user { font-size: 0.75em; color: #666; display: block; margin-top: 5px; }
         .badge-local { background: #e8f4fd; color: #003366; padding: 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; }
         
-        /* Ajuste do layout de filtros para incluir a barra de busca */
         .filtros-relatorio { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
         .linha-busca { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
         .linha-relatorios { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
@@ -86,7 +79,7 @@
         </aside>
 
         <main id="content">
-            <h2 class="page-title">Consulta de Acervo Hierárquico</h2>
+            <h2 class="page-title">Consulta de Acervo por Caixas Físicas</h2>
             
             <div class="filtros-relatorio">
                 <div class="linha-busca">
@@ -95,8 +88,8 @@
                 </div>
                 
                 <div class="linha-relatorios">
-                    <div><label>📅 Data Inicial:</label><input type="date" id="dataInicioRel" style="margin: 5px 0 0 0;"></div>
-                    <div><label>📅 Data Final:</label><input type="date" id="dataFimRel" style="margin: 5px 0 0 0;"></div>
+                    <div><label>📅 Data Inicial (Auditoria):</label><input type="date" id="dataInicioRel" style="margin: 5px 0 0 0;"></div>
+                    <div><label>📅 Data Final (Auditoria):</label><input type="date" id="dataFimRel" style="margin: 5px 0 0 0;"></div>
                     <button class="btn-primary" onclick="window.gerarPDF()" style="width: auto; padding: 10px 20px;">📄 Relatório de Auditoria</button>
                     <button class="btn-primary" onclick="window.abrirDashboard()" style="width: auto; padding: 10px 20px; background: #8e44ad; margin-left: auto;">📊 Dashboard de Produção</button>
                 </div>
@@ -157,8 +150,6 @@
         let estatisticasGlobais = [];
         let chartProducao = null;
         
-        const nomeMeses = { "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril", "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto", "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro" };
-
         onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregar(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
@@ -169,10 +160,26 @@
                 const snap = await getDocs(q);
                 if(snap.empty) { container.innerHTML = "<p>Nenhuma guia arquivada encontrada no acervo.</p>"; return; }
 
-                todasAsGuiasArquivadas = [];
-                snap.forEach(d => todasAsGuiasArquivadas.push({ id: d.id, ...d.data() }));
+                container.innerHTML = "<p>A ler o acervo e a organizar caixas. Aguarde por favor...</p>";
 
-                renderizarArvoreAcervo(todasAsGuiasArquivadas);
+                todasAsGuiasArquivadas = [];
+                // Para o Dashboard precisar de folhas, deixamos buscar os documentos também, se o volume permitir
+                for (const d of snap.docs) {
+                    let guiaData = d.data();
+                    let totalFolhasGuia = 0;
+                    
+                    // Se preferir não buscar documentos aqui para carregar mais rápido, pode comentar este bloco
+                    const docsSnap = await getDocs(collection(db, "guias", d.id, "documentos"));
+                    docsSnap.forEach(docItem => {
+                        const dd = docItem.data();
+                        if (dd.paginasPdf) totalFolhasGuia += parseInt(dd.paginasPdf) || 0;
+                    });
+                    
+                    todasAsGuiasArquivadas.push({ id: d.id, ...guiaData, totalFolhas: totalFolhasGuia });
+                }
+
+                // Renderiza a visualização por CAIXAS
+                renderizarAcervoPorCaixa(todasAsGuiasArquivadas);
 
             } catch (err) { container.innerHTML = "Erro ao carregar acervo."; }
         }
@@ -183,27 +190,25 @@
         window.filtrarAcervo = function() {
             const termo = document.getElementById("buscaGuiaInput").value.toLowerCase().trim();
             
-            // Se o campo estiver vazio, volta a mostrar tudo normal
             if (!termo) {
-                renderizarArvoreAcervo(todasAsGuiasArquivadas);
+                renderizarAcervoPorCaixa(todasAsGuiasArquivadas);
                 return;
             }
 
-            // Filtra as guias cujo número OU unidade contenham o texto digitado
             const guiasFiltradas = todasAsGuiasArquivadas.filter(g => {
                 const numero = (g.numero || g.numeroGuia || "").toLowerCase();
                 const unidade = (g.unidade || "").toLowerCase();
                 return numero.includes(termo) || unidade.includes(termo);
             });
 
-            // Manda renderizar a árvore apenas com os resultados (ela já vai abrir automaticamente)
-            renderizarArvoreAcervo(guiasFiltradas, true);
+            // Passamos 'true' para as caixas já abrirem expandidas ao pesquisar
+            renderizarAcervoPorCaixa(guiasFiltradas, true);
         };
 
         // ==========================================
-        // 🌳 RENDERIZAÇÃO DA ÁRVORE DE ACERVO
+        // 📦 RENDERIZAÇÃO POR CAIXAS DE ARQUIVO
         // ==========================================
-        function renderizarArvoreAcervo(listaDeGuias, expandirAutomatico = false) {
+        function renderizarAcervoPorCaixa(listaDeGuias, expandirAutomatico = false) {
             const container = document.getElementById("listaArquivadas");
             container.innerHTML = "";
 
@@ -212,73 +217,78 @@
                 return;
             }
 
-            const arvore = {};
+            // 1. Agrupar guias por locCaixaFinal
+            const caixas = {};
             listaDeGuias.forEach(g => {
-                const dataA = g.dataArquivamentoSistema; 
-                if(!dataA) return;
-                const partes = dataA.split('/');
-                if(partes.length !== 3) return;
-                const dia = partes[0], mes = partes[1], ano = partes[2];
-                
-                if(!arvore[ano]) arvore[ano] = { totalGuias: 0, meses: {} };
-                if(!arvore[ano].meses[mes]) arvore[ano].meses[mes] = { totalGuias: 0, dias: {} };
-                if(!arvore[ano].meses[mes].dias[dataA]) arvore[ano].meses[mes].dias[dataA] = [];
-                
-                arvore[ano].meses[mes].dias[dataA].push(g);
-                arvore[ano].totalGuias++; arvore[ano].meses[mes].totalGuias++;
+                const nomeCaixa = g.locCaixaFinal ? g.locCaixaFinal.trim() : "Sem Caixa Definida";
+                if (!caixas[nomeCaixa]) caixas[nomeCaixa] = [];
+                caixas[nomeCaixa].push(g);
             });
 
-            Object.keys(arvore).sort((a,b) => b.localeCompare(a)).forEach(anoStr => {
-                const anoObj = arvore[anoStr];
-                const btnAno = document.createElement("button"); btnAno.className = "data-header-btn btn-ano";
-                btnAno.innerHTML = `<div><span>📁 Acervo de ${anoStr}</span> <span class="contador-guias">${anoObj.totalGuias} guias</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
-                const divAno = document.createElement("div"); divAno.className = "grupo-ano";
-                if(expandirAutomatico) divAno.style.display = "block";
+            // 2. Ordenar o nome das caixas alfanumericamente
+            const caixasOrdenadas = Object.keys(caixas).sort((a, b) => {
+                if (a === "Sem Caixa Definida") return 1; // Joga os "sem caixa" pro final
+                if (b === "Sem Caixa Definida") return -1;
+                return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+            });
+
+            // 3. Montar a UI
+            caixasOrdenadas.forEach(nomeCaixa => {
+                const guiasDaCaixa = caixas[nomeCaixa];
                 
-                btnAno.onclick = () => { const aberto = divAno.style.display === "block"; divAno.style.display = aberto ? "none" : "block"; btnAno.querySelector('.toggle-icon').innerText = aberto ? "➕" : "➖"; };
-                container.appendChild(btnAno); container.appendChild(divAno);
+                // Ordenar guias da caixa de forma NUMÉRICA
+                guiasDaCaixa.sort((g1, g2) => {
+                    const numA = g1.numero || g1.numeroGuia || "";
+                    const numB = g2.numero || g2.numeroGuia || "";
+                    return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
+                });
 
-                Object.keys(anoObj.meses).sort((a,b) => b.localeCompare(a)).forEach(mesStr => {
-                    const mesObj = anoObj.meses[mesStr]; const nomeMes = nomeMeses[mesStr] || mesStr;
-                    const btnMes = document.createElement("button"); btnMes.className = "data-header-btn btn-mes";
-                    btnMes.innerHTML = `<div><span>📂 ${nomeMes}</span> <span class="contador-guias" style="background:#16a085;">${mesObj.totalGuias} guias</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
-                    const divMes = document.createElement("div"); divMes.className = "grupo-mes";
-                    if(expandirAutomatico) divMes.style.display = "block";
+                // Botão principal da Caixa
+                const btnCaixa = document.createElement("button"); 
+                btnCaixa.className = "data-header-btn btn-caixa";
+                btnCaixa.innerHTML = `<div><span style="font-size: 1.15em;">📦 Arquivo: Caixa <strong>${nomeCaixa}</strong></span> <span class="contador-guias">${guiasDaCaixa.length} guias guardadas</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
+                
+                const divCaixa = document.createElement("div"); 
+                divCaixa.className = "grupo-caixa";
+                if(expandirAutomatico) divCaixa.style.display = "block";
+                
+                btnCaixa.onclick = () => { 
+                    const aberto = divCaixa.style.display === "block"; 
+                    divCaixa.style.display = aberto ? "none" : "block"; 
+                    btnCaixa.querySelector('.toggle-icon').innerText = aberto ? "➕" : "➖"; 
+                };
+                
+                container.appendChild(btnCaixa); 
+                container.appendChild(divCaixa);
+
+                // Cards das guias dentro da caixa
+                guiasDaCaixa.forEach(g => {
+                    const div = document.createElement("div"); 
+                    div.className = "guia-card-arquivada";
                     
-                    btnMes.onclick = () => { const aberto = divMes.style.display === "block"; divMes.style.display = aberto ? "none" : "block"; btnMes.querySelector('.toggle-icon').innerText = aberto ? "➕" : "➖"; };
-                    divAno.appendChild(btnMes); divAno.appendChild(divMes);
+                    let nomeVisual = g.nomeOperador;
+                    if (!nomeVisual || nomeVisual.includes('@')) {
+                        nomeVisual = "Email: " + (g.arquivadoPor || '---');
+                    }
 
-                    Object.keys(mesObj.dias).sort((a,b) => { return parseInt(b.split('/')[0]) - parseInt(a.split('/')[0]); }).forEach(dataStr => {
-                        const guiasDoDia = mesObj.dias[dataStr];
-                        guiasDoDia.sort((g1, g2) => { const numA = g1.numero || g1.numeroGuia || ""; const numB = g2.numero || g2.numeroGuia || ""; return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' }); });
-
-                        const btnDia = document.createElement("button"); btnDia.className = "data-header-btn btn-dia";
-                        btnDia.innerHTML = `<div><span>📅 ${dataStr}</span> <span class="contador-guias" style="background:#555;">${guiasDoDia.length} guias</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
-                        const divDia = document.createElement("div"); divDia.className = "grupo-dia";
-                        if(expandirAutomatico) divDia.style.display = "block";
-
-                        btnDia.onclick = () => { const aberto = divDia.style.display === "block"; divDia.style.display = aberto ? "none" : "block"; btnDia.querySelector('.toggle-icon').innerText = aberto ? "➕" : "➖"; };
-                        divMes.appendChild(btnDia); divMes.appendChild(divDia);
-
-                        guiasDoDia.forEach(g => {
-                            const div = document.createElement("div"); div.className = "guia-card-arquivada";
-                            
-                            let nomeVisual = g.nomeOperador;
-                            if (!nomeVisual || nomeVisual.includes('@')) {
-                                nomeVisual = "Email: " + (g.arquivadoPor || '---');
-                            }
-
-                            div.innerHTML = `
-                                <div class="info-box">
-                                    <strong>Guia: ${g.numero || g.numeroGuia}</strong><br><small>Unidade: ${g.unidade}</small><br><span class="badge-user">👤 Responsável: ${nomeVisual}</span>
-                                </div>
-                                <div style="text-align: right; display: flex; align-items: center; gap: 15px;">
-                                    <div class="badge-local">📦 G: ${g.locCaixaFinal} / D: ${g.locCaixaDocumentos}</div>
-                                    <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Detalhes</button>
-                                </div>`;
-                            divDia.appendChild(div);
-                        });
-                    });
+                    div.innerHTML = `
+                        <div class="info-box" style="flex: 1.5;">
+                            <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
+                            <small>Unidade: ${g.unidade}</small><br>
+                            <span class="badge-user">👤 Responsável: ${nomeVisual}</span>
+                        </div>
+                        
+                        <div style="flex: 1; text-align: center;">
+                            <span style="display:inline-block; background:#f1f2f6; border:1px solid #dcdde1; border-radius:5px; padding:6px 12px; font-weight:bold; color:#2c3e50; font-size:0.9em;">
+                                📅 Arquivada em: ${g.dataArquivamentoSistema || 'Sem data'}
+                            </span>
+                        </div>
+                        
+                        <div style="flex: 1; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 15px;">
+                            <div class="badge-local">📄 Doc(s): ${g.locCaixaDocumentos || 'S/N'}</div>
+                            <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Detalhes</button>
+                        </div>`;
+                    divCaixa.appendChild(div);
                 });
             });
         }
@@ -457,28 +467,97 @@
 
         window.atualizarGrafico = () => { 
             if (estatisticasGlobais.length === 0) return;
-            const tipo = document.getElementById("tipoAgrupamento").value; const agrupado = {};
+            const tipo = document.getElementById("tipoAgrupamento").value; 
+            const agrupado = {};
             const totalFolhas = estatisticasGlobais.reduce((acc, curr) => acc + curr.paginas, 0);
             
-            // LÓGICA DA MÉDIA: Descobrir quantos dias únicos tiveram trabalho
-            const diasUnicos = new Set(estatisticasGlobais.map(item => item.dataOrig)).size;
-            const mediaDiaria = diasUnicos > 0 ? (totalFolhas / diasUnicos).toFixed(1) : 0;
+            // LÓGICA DA MÉDIA GERAL DOS CARDS SUPERIORES
+            const diasUnicosGeral = new Set(estatisticasGlobais.map(item => item.dataOrig)).size;
+            const mediaDiariaGeral = diasUnicosGeral > 0 ? (totalFolhas / diasUnicosGeral).toFixed(1) : 0;
             
             document.getElementById("dashTotalFolhas").innerText = totalFolhas.toLocaleString('pt-BR');
             document.getElementById("dashTotalDocs").innerText = estatisticasGlobais.length.toLocaleString('pt-BR');
-            document.getElementById("dashMediaDiaria").innerText = String(mediaDiaria).replace('.', ',');
+            document.getElementById("dashMediaDiaria").innerText = String(mediaDiariaGeral).replace('.', ',');
             
+            // AGRUPAMENTO PARA O GRÁFICO (Guardamos dias únicos e total de documentos por barra)
             estatisticasGlobais.forEach(item => {
-                let chave = ""; const [ano, mes, dia] = item.dataOrig.split('-');
-                if (tipo === "diaria") { chave = item.dataOrig; } else if (tipo === "mensal") { chave = `${ano}-${mes}`; } else if (tipo === "semestral") { const semestre = parseInt(mes) <= 6 ? "S1" : "S2"; chave = `${ano}-${semestre}`; } else if (tipo === "anual") { chave = `${ano}`; }
-                if (!agrupado[chave]) agrupado[chave] = 0; agrupado[chave] += item.paginas;
+                let chave = ""; 
+                const [ano, mes, dia] = item.dataOrig.split('-');
+                if (tipo === "diaria") { chave = item.dataOrig; } 
+                else if (tipo === "mensal") { chave = `${ano}-${mes}`; } 
+                else if (tipo === "semestral") { const semestre = parseInt(mes) <= 6 ? "S1" : "S2"; chave = `${ano}-${semestre}`; } 
+                else if (tipo === "anual") { chave = `${ano}`; }
+                
+                if (!agrupado[chave]) agrupado[chave] = { paginas: 0, dias: new Set(), docs: 0 };
+                agrupado[chave].paginas += item.paginas;
+                agrupado[chave].dias.add(item.dataOrig);
+                agrupado[chave].docs += 1;
             });
+            
             const chavesOrdenadas = Object.keys(agrupado).sort();
-            const labels = chavesOrdenadas.map(c => { if (tipo === "diaria") return c.split('-').reverse().join('/'); if (tipo === "mensal") return `${c.split('-')[1]}/${c.split('-')[0]}`; if (tipo === "semestral") return c.endsWith('S1') ? `1º Semestre ${c.split('-')[0]}` : `2º Semestre ${c.split('-')[0]}`; return c; });
-            const values = chavesOrdenadas.map(c => agrupado[c]);
+            const labels = chavesOrdenadas.map(c => { 
+                if (tipo === "diaria") return c.split('-').reverse().join('/'); 
+                if (tipo === "mensal") return `${c.split('-')[1]}/${c.split('-')[0]}`; 
+                if (tipo === "semestral") return c.endsWith('S1') ? `1º Semestre ${c.split('-')[0]}` : `2º Semestre ${c.split('-')[0]}`; 
+                return c; 
+            });
+            const values = chavesOrdenadas.map(c => agrupado[c].paginas);
+            
+            // Arrays extras para o Tooltip (balãozinho ao passar o mouse)
+            const diasPorBarra = chavesOrdenadas.map(c => agrupado[c].dias.size);
+            const docsPorBarra = chavesOrdenadas.map(c => agrupado[c].docs);
+            
             const ctx = document.getElementById('graficoProducao').getContext('2d');
             if (chartProducao) { chartProducao.destroy(); } 
-            chartProducao = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Qtd. de Folhas Digitalizadas', data: values, backgroundColor: '#4682B4', borderColor: '#003366', borderWidth: 1, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { size: 14, family: 'Segoe UI' } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Nº de Folhas' } } } } });
+            
+            chartProducao = new Chart(ctx, { 
+                type: 'bar', 
+                data: { 
+                    labels: labels, 
+                    datasets: [{ 
+                        label: 'Folhas Digitalizadas', 
+                        data: values, 
+                        backgroundColor: '#4682B4', 
+                        borderColor: '#003366', 
+                        borderWidth: 1, 
+                        borderRadius: 4 
+                    }] 
+                }, 
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { labels: { font: { size: 14, family: 'Segoe UI' } } },
+                        
+                        // --- AQUI É ONDE PERSONALIZAMOS O HOVER DO MOUSE ---
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const totalBarra = context.parsed.y;
+                                    const qtdDias = diasPorBarra[index];
+                                    const qtdDocs = docsPorBarra[index];
+                                    
+                                    const mediaPorDia = qtdDias > 0 ? (totalBarra / qtdDias).toFixed(1) : 0;
+                                    const mediaPorDoc = qtdDocs > 0 ? (totalBarra / qtdDocs).toFixed(1) : 0;
+                                    
+                                    let tooltipLines = [`Total: ${totalBarra} folhas`];
+                                    
+                                    if (tipo !== "diaria") {
+                                        tooltipLines.push(`📅 Dias de trabalho no período: ${qtdDias}`);
+                                        tooltipLines.push(`📊 Média Diária: ${String(mediaPorDia).replace('.', ',')} folhas/dia`);
+                                    } else {
+                                        tooltipLines.push(`📄 Documentos processados: ${qtdDocs}`);
+                                        tooltipLines.push(`📊 Média: ${String(mediaPorDoc).replace('.', ',')} folhas/documento`);
+                                    }
+                                    return tooltipLines;
+                                }
+                            }
+                        }
+                    }, 
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Nº de Folhas' } } } 
+                } 
+            });
         };
 
         window.gerarPDF = async function() { 
