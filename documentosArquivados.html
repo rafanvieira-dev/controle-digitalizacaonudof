@@ -72,7 +72,7 @@
                 <a href="guia.html">➕ Nova Guia</a>
                 <a href="documentos.html">📄 Inserir Documentos</a>
                 <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
-                <a href="arquivamentoFisico.html">📦 Arquivar Guia Físico</a>
+                <a href="arquivamentoFisico.html">🗄️ Arquivar Guia Físico</a>
                 <a href="documentosArquivados.html" class="ativo">📚 Guias Arquivadas</a>
                 <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
             </nav>
@@ -206,7 +206,7 @@
         };
 
         // ==========================================
-        // 📦 RENDERIZAÇÃO POR CAIXAS DE ARQUIVO
+        // 🗃️ RENDERIZAÇÃO POR CAIXAS DE ARQUIVO
         // ==========================================
         function renderizarAcervoPorCaixa(listaDeGuias, expandirAutomatico = false) {
             const container = document.getElementById("listaArquivadas");
@@ -246,7 +246,7 @@
                 // Botão principal da Caixa
                 const btnCaixa = document.createElement("button"); 
                 btnCaixa.className = "data-header-btn btn-caixa";
-                btnCaixa.innerHTML = `<div><span style="font-size: 1.15em;">📦 Arquivo: Caixa <strong>${nomeCaixa}</strong></span> <span class="contador-guias">${guiasDaCaixa.length} guias guardadas</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
+                btnCaixa.innerHTML = `<div><span style="font-size: 1.15em;">🗄️ Arquivo: Caixa <strong>${nomeCaixa}</strong></span> <span class="contador-guias">${guiasDaCaixa.length} guias guardadas</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
                 
                 const divCaixa = document.createElement("div"); 
                 divCaixa.className = "grupo-caixa";
@@ -315,8 +315,8 @@
                     <div style="margin-bottom:20px; padding:15px; background:#f8f9fa; border-radius:8px; border:1px solid #ddd; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                         <div><b>👤 Guia Criada por:</b> ${g.criadoPor || '--'}</div>
                         <div><b>👤 Digitalizada por:</b> ${nomeDigitalizadorModal}</div>
-                        <div><b>📦 Caixa da Guia:</b> ${g.locCaixaFinal || '--'}</div>
-                        <div><b>📦 Caixa de Documentos:</b> ${g.locCaixaDocumentos || '--'}</div>
+                        <div><b>🗄️ Caixa da Guia:</b> ${g.locCaixaFinal || '--'}</div>
+                        <div><b>🗃️ Caixa de Documentos:</b> ${g.locCaixaDocumentos || '--'}</div>
                         <div style="grid-column: span 2; margin-top: 10px;">
                             <button class="btn-reimprimir" onclick="window.reimprimirFolha('${id}')">🖨️ Reimprimir Folha de Rosto</button>
                         </div>
