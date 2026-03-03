@@ -53,6 +53,21 @@
         
         .input-busca { width: 100%; padding: 12px; border-radius: 6px; border: 2px solid #3498db; font-size: 1.1em; outline: none; }
         .input-busca:focus { border-color: #2980b9; box-shadow: 0 0 8px rgba(52, 152, 219, 0.3); }
+
+        /* --- ESTILOS PARA IMPRESSÃO DO DASHBOARD --- */
+        @media print {
+            body * { visibility: hidden; }
+            #modalDashboard, #modalDashboard * { visibility: visible; }
+            #modalDashboard {
+                position: absolute; left: 0; top: 0; 
+                width: 100% !important; max-width: 100% !important; 
+                margin: 0; padding: 20px; background: white; 
+                border-radius: 0; box-shadow: none; 
+            }
+            .close-btn, #tipoAgrupamento, label, button, .filtros-relatorio, #sidebar { display: none !important; }
+            .dash-card { border: 1px solid #ccc; background: transparent !important; }
+            canvas { max-width: 100% !important; height: auto !important; }
+        }
     </style>
 </head>
 <body>
@@ -87,7 +102,7 @@
                 </div>
             </div>
             
-            <div id="listaArquivadas"><p>Buscando acervo...</p></div>
+            <div id="listaArquivadas"><p>A ler o acervo e a calcular médias. Aguarde por favor...</p></div>
         </main>
     </div>
 
@@ -103,12 +118,13 @@
         <div class="modal-content" style="width: 95%; max-width: 1100px;">
             <span class="close-btn" id="closeDashboard" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
             <h3 style="color: #003366; margin-bottom: 20px; border-bottom: 2px solid #003366; padding-bottom: 10px;">📊 Dashboard de Digitalização</h3>
-            <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
+            <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                 <label style="font-weight: bold; color: #333;">Agrupamento de Tempo:</label>
                 <select id="tipoAgrupamento" onchange="window.atualizarGrafico()" style="width: auto; padding: 8px; margin: 0;">
                     <option value="diaria">Diário</option><option value="mensal">Mensal</option><option value="semestral">Semestral</option><option value="anual">Anual</option>
                 </select>
                 <span id="loadingDashboard" style="color: #8e44ad; font-weight: bold; display: none; margin-left: 15px;">🔄 Carregando dados...</span>
+                <button class="btn-primary" onclick="window.print()" style="margin-left: auto; width: auto; padding: 8px 15px; background: #2c3e50;">🖨️ Imprimir Dashboard</button>
             </div>
             <div style="display: flex; gap: 20px; margin-bottom: 25px;">
                 <div class="dash-card"><h4>Total de Folhas</h4><h2 id="dashTotalFolhas" style="color: #27ae60;">0</h2></div>
@@ -149,10 +165,22 @@
                 const snap = await getDocs(q);
                 if(snap.empty) { container.innerHTML = "<p>Nenhuma guia arquivada encontrada no acervo.</p>"; return; }
 
-                todasAsGuiasArquivadas = [];
-                snap.forEach(d => todasAsGuiasArquivadas.push({ id: d.id, ...d.data() }));
+                container.innerHTML = "<p>A ler o acervo e a calcular médias. Aguarde por favor...</p>";
 
-                // Em vez de montar a árvore direto, chamamos a função renderizar que faz isso
+                todasAsGuiasArquivadas = [];
+                // Lemos também as folhas de cada guia para calcular as médias diárias
+                for (const d of snap.docs) {
+                    let guiaData = d.data();
+                    let totalFolhasGuia = 0;
+                    const docsSnap = await getDocs(collection(db, "guias", d.id, "documentos"));
+                    docsSnap.forEach(docItem => {
+                        const dd = docItem.data();
+                        if (dd.paginasPdf) totalFolhasGuia += parseInt(dd.paginasPdf) || 0;
+                    });
+                    todasAsGuiasArquivadas.push({ id: d.id, ...guiaData, totalFolhas: totalFolhasGuia });
+                }
+
+                // Renderiza a árvore com a nova informação
                 renderizarArvoreAcervo(todasAsGuiasArquivadas);
 
             } catch (err) { container.innerHTML = "Erro ao carregar acervo."; }
@@ -164,20 +192,17 @@
         window.filtrarAcervo = function() {
             const termo = document.getElementById("buscaGuiaInput").value.toLowerCase().trim();
             
-            // Se o campo estiver vazio, volta a mostrar tudo normal
             if (!termo) {
                 renderizarArvoreAcervo(todasAsGuiasArquivadas);
                 return;
             }
 
-            // Filtra as guias cujo número OU unidade contenham o texto digitado
             const guiasFiltradas = todasAsGuiasArquivadas.filter(g => {
                 const numero = (g.numero || g.numeroGuia || "").toLowerCase();
                 const unidade = (g.unidade || "").toLowerCase();
                 return numero.includes(termo) || unidade.includes(termo);
             });
 
-            // Manda renderizar a árvore apenas com os resultados (ela já vai abrir automaticamente)
             renderizarArvoreAcervo(guiasFiltradas, true);
         };
 
@@ -233,8 +258,14 @@
                         const guiasDoDia = mesObj.dias[dataStr];
                         guiasDoDia.sort((g1, g2) => { const numA = g1.numero || g1.numeroGuia || ""; const numB = g2.numero || g2.numeroGuia || ""; return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' }); });
 
+                        // CALCULO DA MÉDIA DO DIA PARA A LISTAGEM
+                        let totalFolhasDia = 0;
+                        guiasDoDia.forEach(g => totalFolhasDia += (g.totalFolhas || 0));
+                        let mediaDia = guiasDoDia.length > 0 ? (totalFolhasDia / guiasDoDia.length).toFixed(1) : 0;
+                        let textoMedia = mediaDia > 0 ? `<span style="font-size:0.85em; margin-left:15px; color:#f1c40f; font-weight:normal;">📊 Média: ${String(mediaDia).replace('.', ',')} folhas/guia</span>` : '';
+
                         const btnDia = document.createElement("button"); btnDia.className = "data-header-btn btn-dia";
-                        btnDia.innerHTML = `<div><span>📅 ${dataStr}</span> <span class="contador-guias" style="background:#555;">${guiasDoDia.length} guias</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
+                        btnDia.innerHTML = `<div><span>📅 ${dataStr}</span> <span class="contador-guias" style="background:#555;">${guiasDoDia.length} guias</span> ${textoMedia}</div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
                         const divDia = document.createElement("div"); divDia.className = "grupo-dia";
                         if(expandirAutomatico) divDia.style.display = "block";
 
@@ -361,7 +392,6 @@
                 
                 alert("Metadados atualizados com sucesso!"); 
                 document.getElementById("modalDetalhes").style.display = "none"; 
-                // Limpa o campo de pesquisa e recarrega tudo
                 document.getElementById("buscaGuiaInput").value = "";
                 carregar(); 
             } catch(e) { 
@@ -442,13 +472,9 @@
             const tipo = document.getElementById("tipoAgrupamento").value; const agrupado = {};
             const totalFolhas = estatisticasGlobais.reduce((acc, curr) => acc + curr.paginas, 0);
             
-            // NOVO CÓDIGO: Descobrir quantos dias únicos tiveram trabalho
             const diasUnicos = new Set(estatisticasGlobais.map(item => item.dataOrig)).size;
-            
-            // NOVO CÓDIGO: Calcular a média diária (Total de folhas / Dias trabalhados)
             const mediaDiaria = diasUnicos > 0 ? (totalFolhas / diasUnicos).toFixed(1) : 0;
             
-            // Atualizar os valores na tela
             document.getElementById("dashTotalFolhas").innerText = totalFolhas.toLocaleString('pt-BR');
             document.getElementById("dashTotalDocs").innerText = estatisticasGlobais.length.toLocaleString('pt-BR');
             document.getElementById("dashMediaDiaria").innerText = String(mediaDiaria).replace('.', ',');
