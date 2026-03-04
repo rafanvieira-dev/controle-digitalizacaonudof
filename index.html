@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SISTEMA DE DOCUMENTOS NUDOF</title>
+    <title>CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</title>
     <link rel="stylesheet" href="style.css">
     <style>
         .aba-header-btn { width: 100%; padding: 12px; border: none; border-radius: 5px; text-align: left; font-weight: bold; margin: 10px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
-        .aba-aberta { background: #003366; color: white; } /* Azul Institucional Documentos */
+        .aba-aberta { background: #003366; color: white; }
         .aba-arquivada { background: #7f8c8d; color: white; }
         .btn-ano { background: #1c3e60; color: white; margin-left: 15px; width: calc(100% - 15px); font-size: 0.95em; }
         .btn-mes { background: #2c3e50; color: white; margin-left: 30px; width: calc(100% - 30px); font-size: 0.9em; padding: 10px; }
@@ -25,7 +25,7 @@
 <body>
     <div id="loginSection" style="display: none;">
         <div class="login-box">
-            <div style="background-color: #003366; color: white; padding: 15px; margin: -40px -40px 30px -40px; border-radius: 8px 8px 0 0; font-weight: bold;">SISTEMA DE DOCUMENTOS NUDOF</div>
+            <div style="background-color: #003366; color: white; padding: 15px; margin: -40px -40px 30px -40px; border-radius: 8px 8px 0 0; font-weight: bold;">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
             <h2 style="margin-bottom: 20px;">Acesso Restrito</h2>
             <button id="btnGoogle" class="btn-primary" style="background-color: #4285F4; width: 100%;">🌐 Entrar com Google</button>
             <p id="erroMsg" style="color: #e74c3c; margin-top: 15px; font-weight: bold;"></p>
@@ -61,5 +61,117 @@
             <div id="mainDisplay"></div>
         </main>
     </div>
+
+    <script type="module">
+        import { auth, db } from "./firebase.js";
+        import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+        import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+        const nomeMeses = { "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril", "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto", "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro" };
+
+        onAuthStateChanged(auth, (user) => {
+            document.getElementById("loading").style.display = "none";
+            if (user && user.email.endsWith("@defensoria.rj.def.br")) {
+                document.getElementById("loginSection").style.display = "none";
+                document.getElementById("appInterface").style.display = "flex";
+                carregarHistorico();
+            } else {
+                if (user) signOut(auth);
+                document.getElementById("loginSection").style.display = "block";
+                document.getElementById("appInterface").style.display = "none";
+            }
+        });
+
+        document.getElementById("btnGoogle").onclick = () => {
+            signInWithPopup(auth, new GoogleAuthProvider()).catch(() => {
+                document.getElementById("erroMsg").innerText = "Erro ao autenticar.";
+            });
+        };
+        document.getElementById("btnLogout").onclick = () => signOut(auth);
+
+        async function carregarHistorico() {
+            const display = document.getElementById("mainDisplay");
+            try {
+                const q = query(collection(db, "guias"), orderBy("dataRecebimento", "asc"));
+                const snap = await getDocs(q);
+                if (snap.empty) { display.innerHTML = "<p>Nenhuma guia cadastrada.</p>"; return; }
+                
+                const grupos = { "Ativas": {}, "Arquivadas": {} };
+                const contagem = { "Ativas": 0, "Arquivadas": 0 };
+
+                snap.forEach(d => {
+                    const g = d.data();
+                    const statusMacro = g.status === "Arquivada" ? "Arquivadas" : "Ativas";
+                    const data = g.dataRecebimento || "Sem Data";
+                    let [ano, mes, dia] = data.includes('-') ? data.split('-') : ["Sem Ano", "Sem Mês", "Sem Dia"];
+
+                    if (!grupos[statusMacro][ano]) grupos[statusMacro][ano] = { total: 0, meses: {} };
+                    if (!grupos[statusMacro][ano].meses[mes]) grupos[statusMacro][ano].meses[mes] = { total: 0, dias: {} };
+                    if (!grupos[statusMacro][ano].meses[mes].dias[dia]) grupos[statusMacro][ano].meses[mes].dias[dia] = [];
+
+                    grupos[statusMacro][ano].meses[mes].dias[dia].push({ id: d.id, ...g });
+                    grupos[statusMacro][ano].total++; grupos[statusMacro][ano].meses[mes].total++; contagem[statusMacro]++;
+                });
+
+                display.innerHTML = "";
+                ["Ativas", "Arquivadas"].forEach(statusMacro => {
+                    if (contagem[statusMacro] === 0) return;
+                    const btnStatus = document.createElement("button");
+                    btnStatus.className = `aba-header-btn ${statusMacro === 'Ativas' ? 'aba-aberta' : 'aba-arquivada'}`;
+                    btnStatus.innerHTML = `<div><span>📂 Guias ${statusMacro}</span> <span class="contador-index">${contagem[statusMacro]} guias</span></div><span>➕</span>`;
+                    const containerStatus = document.createElement("div"); containerStatus.className = "grupo-conteudo";
+                    btnStatus.onclick = () => {
+                        const aberto = containerStatus.style.display === "block";
+                        containerStatus.style.display = aberto ? "none" : "block";
+                        btnStatus.querySelector('span:last-child').innerText = aberto ? "➕" : "➖";
+                    };
+                    display.appendChild(btnStatus); display.appendChild(containerStatus);
+
+                    Object.keys(grupos[statusMacro]).sort().forEach(anoStr => {
+                        const anoObj = grupos[statusMacro][anoStr];
+                        const btnAno = document.createElement("button"); btnAno.className = "aba-header-btn btn-ano";
+                        btnAno.innerHTML = `<div><span>📁 Ano: ${anoStr}</span> <span class="contador-index">${anoObj.total} guias</span></div><span>➕</span>`;
+                        const divAno = document.createElement("div"); divAno.className = "grupo-ano";
+                        btnAno.onclick = () => {
+                            const aberto = divAno.style.display === "block"; divAno.style.display = aberto ? "none" : "block";
+                            btnAno.querySelector('span:last-child').innerText = aberto ? "➕" : "➖";
+                        };
+                        containerStatus.appendChild(btnAno); containerStatus.appendChild(divAno);
+
+                        Object.keys(anoObj.meses).sort().forEach(mesStr => {
+                            const mesObj = anoObj.meses[mesStr];
+                            const btnMes = document.createElement("button"); btnMes.className = "aba-header-btn btn-mes";
+                            btnMes.innerHTML = `<div><span>📂 ${nomeMeses[mesStr] || mesStr}</span> <span class="contador-index">${mesObj.total} guias</span></div><span>➕</span>`;
+                            const divMes = document.createElement("div"); divMes.className = "grupo-mes";
+                            btnMes.onclick = () => {
+                                const aberto = divMes.style.display === "block"; divMes.style.display = aberto ? "none" : "block";
+                                btnMes.querySelector('span:last-child').innerText = aberto ? "➕" : "➖";
+                            };
+                            divAno.appendChild(btnMes); divAno.appendChild(divMes);
+
+                            Object.keys(mesObj.dias).sort().forEach(diaStr => {
+                                const guiasDoDia = mesObj.dias[diaStr];
+                                const btnDia = document.createElement("button"); btnDia.className = "aba-header-btn btn-dia";
+                                btnDia.innerHTML = `<div><span>📅 ${diaStr}/${mesStr}/${anoStr}</span> <span class="contador-index">${guiasDoDia.length} guias</span></div><span>➕</span>`;
+                                const divDia = document.createElement("div"); divDia.className = "grupo-dia";
+                                btnDia.onclick = () => {
+                                    const aberto = divDia.style.display === "block"; divDia.style.display = aberto ? "none" : "block";
+                                    btnDia.querySelector('span:last-child').innerText = aberto ? "➕" : "➖";
+                                };
+                                divMes.appendChild(btnDia); divMes.appendChild(divDia);
+
+                                guiasDoDia.forEach(g => {
+                                    const card = document.createElement("div"); card.className = "card-historico";
+                                    card.style.borderLeft = `4px solid ${g.status === "Arquivada" ? "#27ae60" : (g.status === "Digitalizada" ? "#f39c12" : "#3498db")}`;
+                                    card.innerHTML = `<div><strong>Guia: ${g.numero || g.numeroGuia}</strong><br><small>${g.unidade}</small></div><div style="text-align:right"><span class="status-badge badge-${g.status.toLowerCase()}">${g.status}</span></div>`;
+                                    divDia.appendChild(card);
+                                });
+                            });
+                        });
+                    });
+                });
+            } catch (e) { display.innerHTML = "Erro ao carregar histórico."; }
+        }
+    </script>
 </body>
 </html>
