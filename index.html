@@ -49,7 +49,7 @@
 </head>
 <body>
 
-    <div id="loginSection">
+    <div id="loginSection" style="display: none;">
         <div class="login-box" style="background: white; padding: 40px; border-radius: 8px; margin: 50px auto; width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center;">
             <div style="background-color: #003366; color: white; padding: 15px; margin: -40px -40px 30px -40px; border-radius: 8px 8px 0 0; font-weight: bold;">
                 CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF
@@ -91,7 +91,7 @@
         </div>
     </div>
 
-    <div id="loading" class="loading-overlay">Verificando acesso...</div>
+    <div id="loading" class="loading-overlay" style="display: flex; height: 100vh; justify-content: center; align-items: center; font-size: 1.5em; font-weight: bold; color: var(--primary);">Verificando acesso... Aguarde.</div>
 
     <script type="module">
         import { db, auth } from "./firebase.js";
