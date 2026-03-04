@@ -3,64 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</title>
+    <title>SISTEMA DE DOCUMENTOS NUDOF</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .aba-header-btn {
-            width: 100%; padding: 12px; border: none; border-radius: 5px;
-            text-align: left; font-weight: bold; margin: 10px 0 5px 0;
-            cursor: pointer; display: flex; justify-content: space-between; align-items: center;
-            transition: background 0.2s;
-        }
-        .aba-aberta { background: #003366; color: white; }
+        .aba-header-btn { width: 100%; padding: 12px; border: none; border-radius: 5px; text-align: left; font-weight: bold; margin: 10px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
+        .aba-aberta { background: #003366; color: white; } /* Azul Institucional Documentos */
         .aba-arquivada { background: #7f8c8d; color: white; }
-        
-        /* Estilos de hierarquia de datas */
         .btn-ano { background: #1c3e60; color: white; margin-left: 15px; width: calc(100% - 15px); font-size: 0.95em; }
-        .btn-ano:hover { background: #15304a; }
         .btn-mes { background: #2c3e50; color: white; margin-left: 30px; width: calc(100% - 30px); font-size: 0.9em; padding: 10px; }
-        .btn-mes:hover { background: #1a252f; }
         .btn-dia { background: #95a5a6; color: white; margin-left: 45px; width: calc(100% - 45px); font-size: 0.85em; padding: 8px 12px; }
-        .btn-dia:hover { background: #7f8c8d; }
-
-        .contador-index {
-            background: rgba(255,255,255,0.2); color: white; padding: 2px 10px;
-            border-radius: 12px; font-size: 0.85em; font-weight: normal; margin-left: 10px;
-        }
-
-        .grupo-conteudo { display: none; margin-bottom: 15px; }
-        .grupo-ano { display: none; margin-bottom: 10px; }
-        .grupo-mes { display: none; margin-bottom: 10px; }
-        .grupo-dia { display: none; margin-bottom: 10px; }
-
-        .card-historico {
-            background: white; border-radius: 8px; padding: 15px; margin-bottom: 8px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #3498db;
-            margin-left: 60px; width: calc(100% - 60px);
-        }
-        .status-badge {
-            padding: 4px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold;
-        }
+        .contador-index { background: rgba(255,255,255,0.2); color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85em; font-weight: normal; margin-left: 10px; }
+        .grupo-conteudo, .grupo-ano, .grupo-mes, .grupo-dia { display: none; margin-bottom: 15px; }
+        .card-historico { background: white; border-radius: 8px; padding: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #3498db; margin-left: 60px; width: calc(100% - 60px); }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; }
         .badge-aberta { background: #e8f4fd; color: #003366; }
         .badge-arquivada { background: #dcfce7; color: #166534; }
         .badge-digitalizada { background: #fdf2e9; color: #d35400; }
+        .login-box { background: white; padding: 40px; border-radius: 8px; margin: 50px auto; width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
     </style>
 </head>
 <body>
-
     <div id="loginSection" style="display: none;">
-        <div class="login-box" style="background: white; padding: 40px; border-radius: 8px; margin: 50px auto; width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center;">
-            <div style="background-color: #003366; color: white; padding: 15px; margin: -40px -40px 30px -40px; border-radius: 8px 8px 0 0; font-weight: bold;">
-                CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF
-            </div>
+        <div class="login-box">
+            <div style="background-color: #003366; color: white; padding: 15px; margin: -40px -40px 30px -40px; border-radius: 8px 8px 0 0; font-weight: bold;">SISTEMA DE DOCUMENTOS NUDOF</div>
             <h2 style="margin-bottom: 20px;">Acesso Restrito</h2>
-            <p style="margin-bottom: 20px; color: #666;">Utilize o seu e-mail institucional da Defensoria Pública para entrar.</p>
-            <button id="btnGoogle" class="btn-primary" style="background-color: #4285F4; margin-bottom: 10px; font-size: 1.1em; width: 100%;">🌐 Entrar com Google</button>
-            <p id="erroMsg" style="color: #e74c3c; font-weight: bold; min-height: 20px; margin-top: 10px;"></p>
+            <button id="btnGoogle" class="btn-primary" style="background-color: #4285F4; width: 100%;">🌐 Entrar com Google</button>
+            <p id="erroMsg" style="color: #e74c3c; margin-top: 15px; font-weight: bold;"></p>
         </div>
     </div>
 
+    <div id="loading" class="loading-overlay" style="display: flex; height: 100vh; justify-content: center; align-items: center; font-size: 1.5em; font-weight: bold; color: white; background: #003366; position: fixed; width: 100%; z-index: 9999;">Verificando acesso...</div>
+    
     <div id="appInterface" style="display: none;">
         <aside id="sidebar">
             <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
@@ -74,257 +47,19 @@
                 <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
             </nav>
         </aside>
-
         <main id="content">
-            <h2 id="pageTitle" class="page-title">Painel de Monitoramento</h2>
-            
+            <h2 class="page-title">Painel de Monitoramento</h2>
             <div style="margin-bottom: 25px; background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between;">
                 <div>
                     <h3 style="color: #003366; margin-bottom: 5px;">Acesso Rápido</h3>
-                    <p style="color: #666; font-size: 0.9em; margin: 0;">Voltar para o Sistema de Controle de Processos.</p>
+                    <p style="color: #666; font-size: 0.9em; margin: 0;">Voltar para o sistema de Controle de Processos.</p>
                 </div>
-                <a href="https://rafanvieira-dev.github.io/cotroledigitalizacaoprocessosnudof/index.html" target="_self" class="btn-primary" style="text-decoration: none; width: auto; padding: 12px 20px; background-color: #3498db; color: white; display: inline-block; font-weight: bold; border-radius: 4px;">
+                <a href="https://rafanvieira-dev.github.io/cotroledigitalizacaoprocessosnudof/index.html" target="_self" class="btn-primary" style="text-decoration: none; width: auto; padding: 12px 20px; background-color: #27ae60; display: inline-block;">
                     🔗 Controle de Processos
                 </a>
             </div>
-            <div id="mainDisplay">
-                <p>A carregar histórico...</p>
-            </div>
+            <div id="mainDisplay"></div>
         </main>
     </div>
-
-    <div id="modalDetalhes" class="modal">
-        <div class="modal-content" style="width: 80%; max-width: 900px;">
-            <span class="close-btn" id="closeModal" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
-            <h3 id="modalTitulo" style="color: #003366; margin-bottom: 15px;"></h3>
-            <div id="modalCorpo"></div>
-        </div>
-    </div>
-
-    <div id="loading" class="loading-overlay" style="display: flex; height: 100vh; justify-content: center; align-items: center; font-size: 1.5em; font-weight: bold; color: var(--primary);">Verificando acesso... Aguarde.</div>
-
-    <script type="module">
-        import { db, auth } from "./firebase.js";
-        import { collection, getDocs, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-        import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-
-        const loginSection = document.getElementById("loginSection");
-        const appInterface = document.getElementById("appInterface");
-        const loading = document.getElementById("loading");
-
-        const nomeMeses = { "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril", "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto", "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro" };
-
-        onAuthStateChanged(auth, (user) => {
-            loading.style.display = "none";
-            if (user) {
-                if (user.email.endsWith("@defensoria.rj.def.br")) {
-                    loginSection.style.display = "none";
-                    appInterface.style.display = "flex";
-                    carregarHistorico();
-                } else {
-                    signOut(auth);
-                    document.getElementById("erroMsg").innerText = "Acesso negado. Use seu e-mail @defensoria.rj.def.br";
-                }
-            } else {
-                loginSection.style.display = "block";
-                appInterface.style.display = "none";
-            }
-        });
-
-        document.getElementById("btnGoogle").onclick = () => {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider).catch(err => {
-                document.getElementById("erroMsg").innerText = "Erro ao autenticar.";
-            });
-        };
-
-        document.getElementById("btnLogout").onclick = () => signOut(auth);
-
-        function obterClasseBadge(status) {
-            if (status === "Arquivada") return "badge-arquivada";
-            if (status === "Digitalizada") return "badge-digitalizada";
-            return "badge-aberta";
-        }
-
-        async function carregarHistorico() {
-            const display = document.getElementById("mainDisplay");
-            try {
-                // Ordenar de forma crescente (do mais antigo para o mais novo)
-                const q = query(collection(db, "guias"), orderBy("dataRecebimento", "asc"));
-                const snap = await getDocs(q);
-                
-                if (snap.empty) {
-                    display.innerHTML = "<p>Nenhuma guia cadastrada no sistema.</p>";
-                    return;
-                }
-
-                // Agrupamentos base
-                const grupos = { "Ativas": {}, "Arquivadas": {} };
-                const contagem = { "Ativas": 0, "Arquivadas": 0 };
-
-                snap.forEach(d => {
-                    const g = d.data();
-                    const statusMacro = g.status === "Arquivada" ? "Arquivadas" : "Ativas";
-                    const data = g.dataRecebimento || "Sem Data";
-                    
-                    let ano = "Sem Ano", mes = "Sem Mês", dia = "Sem Dia";
-                    if (data !== "Sem Data" && data.includes('-')) {
-                        [ano, mes, dia] = data.split('-');
-                    }
-
-                    if (!grupos[statusMacro][ano]) grupos[statusMacro][ano] = { total: 0, meses: {} };
-                    if (!grupos[statusMacro][ano].meses[mes]) grupos[statusMacro][ano].meses[mes] = { total: 0, dias: {} };
-                    if (!grupos[statusMacro][ano].meses[mes].dias[dia]) grupos[statusMacro][ano].meses[mes].dias[dia] = [];
-
-                    grupos[statusMacro][ano].meses[mes].dias[dia].push({ id: d.id, ...g });
-                    
-                    grupos[statusMacro][ano].total++;
-                    grupos[statusMacro][ano].meses[mes].total++;
-                    contagem[statusMacro]++;
-                });
-
-                display.innerHTML = "";
-
-                // Renderizar abas Ativas e Arquivadas
-                ["Ativas", "Arquivadas"].forEach(statusMacro => {
-                    if (contagem[statusMacro] === 0) return;
-
-                    const btnStatus = document.createElement("button");
-                    btnStatus.className = `aba-header-btn ${statusMacro === 'Ativas' ? 'aba-aberta' : 'aba-arquivada'}`;
-                    btnStatus.innerHTML = `<div><span>📂 Guias ${statusMacro}</span> <span class="contador-index">${contagem[statusMacro]} guias</span></div><span>➕</span>`;
-                    
-                    const containerStatus = document.createElement("div");
-                    containerStatus.className = "grupo-conteudo";
-                    
-                    btnStatus.onclick = () => {
-                        const aberto = containerStatus.style.display === "block";
-                        containerStatus.style.display = aberto ? "none" : "block";
-                        btnStatus.querySelector('span:last-child').innerText = aberto ? "➕" : "➖";
-                    };
-
-                    display.appendChild(btnStatus);
-                    display.appendChild(containerStatus);
-
-                    // Organizar e exibir ANOS (do mais antigo para o mais novo)
-                    const anos = Object.keys(grupos[statusMacro]).sort((a,b) => a.localeCompare(b));
-                    
-                    anos.forEach(anoStr => {
-                        const anoObj = grupos[statusMacro][anoStr];
-                        const btnAno = document.createElement("button");
-                        btnAno.className = "aba-header-btn btn-ano";
-                        btnAno.innerHTML = `<div><span>📁 Ano: ${anoStr}</span> <span class="contador-index">${anoObj.total} guias</span></div><span>➕</span>`;
-                        
-                        const divAno = document.createElement("div");
-                        divAno.className = "grupo-ano";
-
-                        btnAno.onclick = () => {
-                            const aberto = divAno.style.display === "block";
-                            divAno.style.display = aberto ? "none" : "block";
-                            btnAno.querySelector('span:last-child').innerText = aberto ? "➕" : "➖";
-                        };
-
-                        containerStatus.appendChild(btnAno);
-                        containerStatus.appendChild(divAno);
-
-                        // Organizar e exibir MESES
-                        const meses = Object.keys(anoObj.meses).sort((a,b) => a.localeCompare(b));
-                        
-                        meses.forEach(mesStr => {
-                            const mesObj = anoObj.meses[mesStr];
-                            const nomeMes = nomeMeses[mesStr] || mesStr;
-                            
-                            const btnMes = document.createElement("button");
-                            btnMes.className = "aba-header-btn btn-mes";
-                            btnMes.innerHTML = `<div><span>📂 ${nomeMes}</span> <span class="contador-index">${mesObj.total} guias</span></div><span>➕</span>`;
-                            
-                            const divMes = document.createElement("div");
-                            divMes.className = "grupo-mes";
-
-                            btnMes.onclick = () => {
-                                const aberto = divMes.style.display === "block";
-                                divMes.style.display = aberto ? "none" : "block";
-                                btnMes.querySelector('span:last-child').innerText = aberto ? "➕" : "➖";
-                            };
-
-                            divAno.appendChild(btnMes);
-                            divAno.appendChild(divMes);
-
-                            // Organizar e exibir DIAS
-                            const dias = Object.keys(mesObj.dias).sort((a,b) => a.localeCompare(b));
-                            
-                            dias.forEach(diaStr => {
-                                const guiasDoDia = mesObj.dias[diaStr];
-                                const dataFormatada = diaStr !== "Sem Dia" ? `${diaStr}/${mesStr}/${anoStr}` : "Sem Data";
-                                
-                                const btnDia = document.createElement("button");
-                                btnDia.className = "aba-header-btn btn-dia";
-                                btnDia.innerHTML = `<div><span>📅 ${dataFormatada}</span> <span class="contador-index">${guiasDoDia.length} guias</span></div><span>➕</span>`;
-                                
-                                const divDia = document.createElement("div");
-                                divDia.className = "grupo-dia";
-
-                                btnDia.onclick = () => {
-                                    const aberto = divDia.style.display === "block";
-                                    divDia.style.display = aberto ? "none" : "block";
-                                    btnDia.querySelector('span:last-child').innerText = aberto ? "➕" : "➖";
-                                };
-
-                                divMes.appendChild(btnDia);
-                                divMes.appendChild(divDia);
-
-                                guiasDoDia.forEach(g => {
-                                    const card = document.createElement("div");
-                                    card.className = "card-historico";
-                                    let borderCor = "#3498db";
-                                    if(g.status === "Arquivada") borderCor = "#27ae60";
-                                    else if(g.status === "Digitalizada") borderCor = "#f39c12";
-                                    card.style.borderLeft = `4px solid ${borderCor}`;
-
-                                    card.innerHTML = `
-                                        <div>
-                                            <strong>Guia: ${g.numero || g.numeroGuia}</strong><br>
-                                            <small>${g.unidade}</small>
-                                        </div>
-                                        <div style="text-align:right">
-                                            <span class="status-badge ${obterClasseBadge(g.status)}">${g.status}</span><br>
-                                            <button class="btn-ver" onclick="window.verResumo('${g.id}')" style="margin-top:5px; padding:5px 10px; font-size:0.8em; cursor:pointer; background:#003366; color:white; border:none; border-radius:4px;">Ver Itens</button>
-                                        </div>
-                                    `;
-                                    divDia.appendChild(card);
-                                });
-                            });
-                        });
-                    });
-                });
-            } catch (e) { console.error(e); display.innerHTML = "Erro ao carregar histórico."; }
-        }
-
-        window.verResumo = async (id) => {
-            const corpo = document.getElementById("modalCorpo");
-            document.getElementById("modalTitulo").innerText = "Itens da Guia";
-            document.getElementById("modalDetalhes").style.display = "block";
-            corpo.innerHTML = "Carregando...";
-
-            const docsSnap = await getDocs(collection(db, "guias", id, "documentos"));
-            if (docsSnap.empty) { corpo.innerHTML = "Nenhum documento inserido."; return; }
-
-            let table = `<table style="width:100%; border-collapse: collapse; font-size:0.9em;">
-                <tr style="background:#f0f2f5;">
-                    <th style="padding:8px; border:1px solid #ddd; text-align:left;">Documento</th>
-                    <th style="padding:8px; border:1px solid #ddd; text-align:left;">Processo SEI</th>
-                </tr>`;
-            
-            docsSnap.forEach(d => {
-                const data = d.data();
-                table += `<tr>
-                    <td style="padding:8px; border:1px solid #ddd;">${data.nomeDocumento}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${data.numeroProcesso || '---'}</td>
-                </tr>`;
-            });
-            corpo.innerHTML = table + "</table>";
-        }
-
-        document.getElementById("closeModal").onclick = () => document.getElementById("modalDetalhes").style.display = "none";
-    </script>
 </body>
 </html>
