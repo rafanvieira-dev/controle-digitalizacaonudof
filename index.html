@@ -20,12 +20,6 @@
         .badge-arquivada { background: #dcfce7; color: #166534; }
         .badge-digitalizada { background: #fdf2e9; color: #d35400; }
         .login-box { background: white; padding: 40px; border-radius: 8px; margin: 50px auto; width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
-        
-        /* Estilos adicionais para o novo login */
-        .login-input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .divisor { margin: 20px 0; position: relative; text-align: center; }
-        .divisor::before { content: ""; position: absolute; top: 50%; left: 0; right: 0; border-top: 1px solid #ddd; z-index: 1; }
-        .divisor span { background: white; padding: 0 10px; color: #777; position: relative; z-index: 2; font-size: 0.9em; }
     </style>
 </head>
 <body>
@@ -33,17 +27,7 @@
         <div class="login-box">
             <div style="background-color: #003366; color: white; padding: 15px; margin: -40px -40px 30px -40px; border-radius: 8px 8px 0 0; font-weight: bold;">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
             <h2 style="margin-bottom: 20px;">Acesso Restrito</h2>
-            
-            <form id="formLoginEmail">
-                <input type="email" id="emailLogin" class="login-input" placeholder="Seu E-mail" required>
-                <input type="password" id="senhaLogin" class="login-input" placeholder="Sua Senha" required>
-                <button type="submit" class="btn-primary" style="background-color: #27ae60; width: 100%; margin-top: 10px;">Entrar com E-mail</button>
-            </form>
-
-            <div class="divisor"><span>OU</span></div>
-
             <button id="btnGoogle" class="btn-primary" style="background-color: #4285F4; width: 100%;">🌐 Entrar com Google</button>
-            
             <p id="erroMsg" style="color: #e74c3c; margin-top: 15px; font-weight: bold;"></p>
         </div>
     </div>
@@ -80,16 +64,14 @@
 
     <script type="module">
         import { auth, db } from "./firebase.js";
-        // IMPORTANTE: Adicionado o signInWithEmailAndPassword
-        import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+        import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
         import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
         const nomeMeses = { "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril", "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto", "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro" };
 
         onAuthStateChanged(auth, (user) => {
             document.getElementById("loading").style.display = "none";
-            // A verificação de e-mail da defensoria foi removida para permitir as contas criadas por si
-            if (user) {
+            if (user && user.email.endsWith("@defensoria.rj.def.br")) {
                 document.getElementById("loginSection").style.display = "none";
                 document.getElementById("appInterface").style.display = "flex";
                 carregarHistorico();
@@ -100,36 +82,11 @@
             }
         });
 
-        // Evento para o login do Google (já existia)
         document.getElementById("btnGoogle").onclick = () => {
-            document.getElementById("erroMsg").innerText = ""; 
             signInWithPopup(auth, new GoogleAuthProvider()).catch(() => {
-                document.getElementById("erroMsg").innerText = "Erro ao autenticar com Google.";
+                document.getElementById("erroMsg").innerText = "Erro ao autenticar.";
             });
         };
-
-        // Evento NOVO para o login com Email e Senha
-        document.getElementById("formLoginEmail").onsubmit = (e) => {
-            e.preventDefault(); 
-            document.getElementById("erroMsg").innerText = "Autenticando...";
-            
-            const email = document.getElementById("emailLogin").value;
-            const senha = document.getElementById("senhaLogin").value;
-
-            signInWithEmailAndPassword(auth, email, senha)
-                .then((userCredential) => {
-                    document.getElementById("erroMsg").innerText = "";
-                })
-                .catch((error) => {
-                    console.error(error.code);
-                    if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-                        document.getElementById("erroMsg").innerText = "E-mail ou senha incorretos.";
-                    } else {
-                        document.getElementById("erroMsg").innerText = "Erro ao fazer login. Verifique seus dados.";
-                    }
-                });
-        };
-
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
         async function carregarHistorico() {
