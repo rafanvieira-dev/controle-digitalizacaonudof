@@ -71,7 +71,7 @@
 
         onAuthStateChanged(auth, (user) => {
             document.getElementById("loading").style.display = "none";
-            if (user && user.email.endsWith("@defensoria.rj.def.br")) {
+            if (user && user.email.endsWith("@gmail.com")) {
                 document.getElementById("loginSection").style.display = "none";
                 document.getElementById("appInterface").style.display = "flex";
                 carregarHistorico();
