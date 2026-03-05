@@ -56,35 +56,40 @@
 
     <script type="module">
         import { db, auth } from "./firebase.js";
-        // ATENÇÃO: Adicionado orderBy e limit para buscar a última guia
-        import { collection, addDoc, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         let proximoNumSugerido = "";
 
-        // Função para calcular a sugestão inteligente
+        // Função para calcular a sugestão inteligente preenchendo lacunas (guias excluídas)
         async function buscarSugestaoNumero() {
             try {
-                // Busca a guia mais recente criada no sistema
-                const q = query(collection(db, "guias"), orderBy("dataCriacao", "desc"), limit(1));
+                // Busca todas as guias existentes no banco
+                const q = query(collection(db, "guias"));
                 const snap = await getDocs(q);
                 
-                if (!snap.empty) {
-                    const ultimaGuia = snap.docs[0].data();
-                    const ultimoNumStr = ultimaGuia.numero || ultimaGuia.numeroGuia || "0";
+                let numerosUsados = new Set();
+                
+                // Percorre todas as guias para guardar os números que já existem
+                snap.forEach(doc => {
+                    const guia = doc.data();
+                    const numStr = guia.numero || guia.numeroGuia || "";
                     
                     // Extrai apenas a parte numérica (Ex: de "8255/2026" ele pega "8255")
-                    const match = ultimoNumStr.match(/^\d+/);
+                    const match = numStr.match(/^\d+/);
                     if (match) {
-                        const numeroAtual = parseInt(match[0], 10);
-                        // Soma +1 e garante o formato de 4 dígitos com zeros à esquerda (ex: 0002, 8256)
-                        proximoNumSugerido = String(numeroAtual + 1).padStart(4, '0');
-                    } else {
-                        proximoNumSugerido = "0001";
+                        numerosUsados.add(parseInt(match[0], 10));
                     }
-                } else {
-                    proximoNumSugerido = "0001"; // Se for a primeira guia do sistema
+                });
+                
+                // Começa do número 1 e vai subindo até encontrar um que não esteja no Set (a primeira lacuna)
+                let proximoNumero = 1;
+                while (numerosUsados.has(proximoNumero)) {
+                    proximoNumero++;
                 }
+                
+                // Formata com 4 dígitos (ex: 0002, 8256)
+                proximoNumSugerido = String(proximoNumero).padStart(4, '0');
                 
                 document.getElementById("textoSugestao").innerText = proximoNumSugerido;
             } catch (e) {
