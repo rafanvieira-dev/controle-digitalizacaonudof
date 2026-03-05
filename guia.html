@@ -82,19 +82,19 @@
                     }
                 });
                 
-                // Começa do número 1 e vai subindo até encontrar um que não esteja no Set (a primeira lacuna)
-                let proximoNumero = 1;
+                // Começa do número 8188 e vai subindo até encontrar um que não esteja no Set (a primeira lacuna)
+                let proximoNumero = 8188;
                 while (numerosUsados.has(proximoNumero)) {
                     proximoNumero++;
                 }
                 
-                // Formata com 4 dígitos (ex: 0002, 8256)
+                // Formata com 4 dígitos (ex: 8188)
                 proximoNumSugerido = String(proximoNumero).padStart(4, '0');
                 
                 document.getElementById("textoSugestao").innerText = proximoNumSugerido;
             } catch (e) {
                 console.error("Erro ao buscar sugestão:", e);
-                proximoNumSugerido = "0001";
+                proximoNumSugerido = "8188"; // Fallback para 8188 em caso de erro
                 document.getElementById("textoSugestao").innerText = proximoNumSugerido;
             }
         }
