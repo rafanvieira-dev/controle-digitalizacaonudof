@@ -75,6 +75,11 @@
                     </div>
                 </div>
 
+                <div id="avisoProcessoSei" style="display: none; background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; border: 1px solid #f5c6cb; margin-top: 5px; font-weight: bold; text-align: center;">
+                    ⚠️ ATENÇÃO: Há documentos nesta guia sem o "Nº do Processo SEI" preenchido.<br>
+                    Não é possível digitalizar. Volte à aba "Inserir Documentos", edite os documentos desta guia e preencha o número do processo.
+                </div>
+
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
                     <h4 style="margin-bottom: 10px; color: #003366;">2. Detalhamento dos Itens Digitalizados</h4>
                     <div id="areaDocumentosArquivar" style="overflow-x: auto;"></div>
@@ -202,8 +207,10 @@
             document.getElementById("btnGerarFolhaRosto").style.display = "none";
             document.getElementById("btnConfirmarArq").disabled = false;
             document.getElementById("btnConfirmarArq").innerText = "✅ CONCLUIR DIGITALIZAÇÃO";
+            document.getElementById("btnConfirmarArq").style.background = "#f39c12"; // Reseta a cor
             document.getElementById("tituloModalArquivar").innerText = "Digitalização e SEI - Guia: " + num;
             document.getElementById("nomeOperador").value = auth.currentUser.displayName || "";
+            document.getElementById("avisoProcessoSei").style.display = "none"; // Reseta o aviso
             
             const areaDocs = document.getElementById("areaDocumentosArquivar");
             document.getElementById("modalArquivar").style.display = "block";
@@ -218,14 +225,22 @@
                 </tr></thead><tbody>`;
                 
                 let i = 1;
+                let faltaProcessoSEI = false; // Variável de controle
+                
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
+                    
+                    // Verifica se o documento está sem o Processo SEI
+                    if (!d.numeroProcesso || d.numeroProcesso.trim() === "") {
+                        faltaProcessoSEI = true;
+                    }
+
                     documentosDaGuia.push(docSnap.id);
                     listaDocumentosCache.push({ id: docSnap.id, processoOriginal: d.numeroProcesso });
                     
                     html += `<tr>
                         <td style="text-align:center"><b>${i++}</b></td>
-                        <td><small><b>${d.nomeDocumento}</b><br>Processo: ${d.numeroProcesso}</small></td>
+                        <td><small><b>${d.nomeDocumento}</b><br>Processo: <span style="color:${d.numeroProcesso ? '#333' : 'red'}">${d.numeroProcesso || 'FALTANTE ⚠️'}</span></small></td>
                         <td><input type="number" id="pags_${docSnap.id}" class="campo-obrigatorio" required></td>
                         <td><input type="text" id="sei_${docSnap.id}" class="campo-obrigatorio" placeholder="Número Protocolo" required></td>
                         <td><input type="date" id="data_${docSnap.id}" class="campo-obrigatorio" onchange="window.sincronizarDatas(this.value)" required></td>
@@ -235,11 +250,28 @@
                     </tr>`;
                 });
                 areaDocs.innerHTML = html + "</tbody></table>";
+
+                // Se faltar algum Processo SEI, bloqueia a tela e avisa
+                if (faltaProcessoSEI) {
+                    document.getElementById("avisoProcessoSei").style.display = "block";
+                    document.getElementById("btnConfirmarArq").disabled = true;
+                    document.getElementById("btnConfirmarArq").style.background = "#95a5a6"; // Deixa o botão cinza
+                    document.getElementById("btnConfirmarArq").innerText = "⛔ PREENCHA O SEI NA ETAPA ANTERIOR";
+                }
+
             } catch (e) { areaDocs.innerHTML = "<p>Erro ao carregar documentos.</p>"; }
         };
 
         document.getElementById("formDadosArquivamento").onsubmit = async (e) => {
             e.preventDefault();
+
+            // Validação dupla de segurança: Impede o envio se houver processo faltante via código
+            const possuiFaltante = listaDocumentosCache.some(item => !item.processoOriginal || item.processoOriginal.trim() === "");
+            if (possuiFaltante) {
+                alert("Operação bloqueada: Retorne à aba 'Inserir Documentos' e informe o Número de Processo SEI para todos os documentos desta guia.");
+                return;
+            }
+
             const btn = document.getElementById("btnConfirmarArq");
             btn.disabled = true; btn.innerText = "Gravando...";
             
