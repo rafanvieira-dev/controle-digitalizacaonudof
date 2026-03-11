@@ -28,7 +28,7 @@
         .btn-caixa:hover { background: #1c5980; }
         .grupo-caixa { display: none; margin-bottom: 25px; padding-left: 15px; border-left: 3px dashed #bdc3c7; margin-left: 10px; padding-top: 10px; }
         
-        /* 2º Nível: Caixa dos Documentos (Novo) */
+        /* 2º Nível: Caixa dos Documentos */
         .btn-caixa-docs { background: #34495e; font-size: 1em; margin-bottom: 5px; margin-left: 10px; width: calc(100% - 10px); }
         .btn-caixa-docs:hover { background: #2c3e50; }
         .grupo-caixa-docs { display: none; margin-bottom: 15px; padding-left: 15px; border-left: 3px dotted #bdc3c7; margin-left: 20px; padding-top: 10px; }
@@ -73,13 +73,21 @@
         <aside id="sidebar">
             <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
             <nav>
+                <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase;">Fluxo Operacional</div>
                 <a href="index.html">🏠 Início / Histórico</a>
                 <a href="guia.html">➕ Nova Guia</a>
                 <a href="documentos.html">📄 Inserir Documentos</a>
                 <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
                 <a href="arquivamentoFisico.html">🗄️ Arquivar Guia Físico</a>
                 <a href="documentosArquivados.html" class="ativo">📚 Guias Arquivadas</a>
-                <button id="btnLogout" class="btn-sair">🚪 Sair do Sistema</button>
+
+                <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase; margin-top: 15px; border-top: 1px solid var(--border);">Gestão Arquivística (e-ARQ)</div>
+                <a href="arq_dashboard.html">📊 Painel Temporalidade</a>
+                <a href="arq_temporalidade.html">📋 Regras e Tabela</a>
+                <a href="arq_eliminacao.html">🔥 Lista de Eliminação</a>
+                <a href="arq_guarda_permanente.html">🏛️ Guarda Permanente</a>
+
+                <button id="btnLogout" class="btn-sair" style="margin-top: 20px;">🚪 Sair do Sistema</button>
             </nav>
         </aside>
 
@@ -100,8 +108,14 @@
                 </div>
             </div>
             
-            <div id="listaArquivadas"><p>Buscando acervo...</p></div>
-        </main>
+            <div id="listaArquivadas"><p>A ler o acervo e a organizar caixas...</p></div>
+
+            <footer class="site-footer">
+                <p><strong>Defensoria Pública do Estado do Rio de Janeiro</strong><br>
+                Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
+                <p class="desenvolvedor">Desenvolvido por Rafael do N. Vieira e Gemini</p>
+            </footer>
+            </main>
     </div>
 
     <div id="modalDetalhes" class="modal">
@@ -109,6 +123,26 @@
             <span class="close-btn" id="closeModal" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
             <h3 id="modalTitulo" style="color: #003366; margin-bottom: 15px;"></h3>
             <div id="detalhesGuiaGrid"></div>
+        </div>
+    </div>
+
+    <div id="modalClassificacao" class="modal">
+        <div class="modal-content" style="width: 95%; max-width: 700px;">
+            <span class="close-btn" onclick="document.getElementById('modalClassificacao').style.display='none'" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
+            <h3 style="color: #003366; margin-bottom: 15px;">⚖️ Classificar Documento</h3>
+            <p><strong>Documento:</strong> <span id="classifNomeDoc" style="color:#4682B4; font-weight:bold;"></span></p>
+            
+            <form id="formClassificacao">
+                <input type="hidden" id="classifGuiaId">
+                <input type="hidden" id="classifDocId">
+                <input type="hidden" id="classifDataDigitalizacao">
+                
+                <label style="font-weight:bold; margin-top:10px; display:block;">Código de Classificação (Digite para buscar):</label>
+                <input type="text" id="classifCodigoBusca" list="listaRegrasArq" placeholder="Ex: 0-0-1 ou Relatório" required style="font-size: 1.1em; border: 2px solid #4682B4;">
+                <datalist id="listaRegrasArq"></datalist>
+                
+                <button type="submit" class="btn-primary" style="margin-top: 25px; padding: 15px; font-size:1.1em; background: #003366;">Confirmar Tabela de Temporalidade</button>
+            </form>
         </div>
     </div>
 
@@ -144,18 +178,66 @@
         import { collection, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-        // ==========================================
-        // 🔒 CONFIGURAÇÃO DOS ADMINISTRADORES
-        // ==========================================
-        const ADMIN_USERS = [
-            "rafael.nascimento-vieira@defensoria.rj.def.br", 
-        ];
+        const ADMIN_USERS = [ "rafael.nascimento-vieira@defensoria.rj.def.br" ];
 
         let todasAsGuiasArquivadas = [];
         let estatisticasGlobais = [];
         let chartProducao = null;
+
+        // --- TABELA DE TEMPORALIDADE OFICIAL (Defensoria Pública RJ) ---
+        const tabelaOficialDPRJ = [
+            { cod: "0-0-1", ass: "Modernização e Reestruturação Administrativa", anos: 2, dest: "Guarda Permanente" },
+            { cod: "0-0-2-1", ass: "Planos, Programas e Projetos de Trabalho", anos: 5, dest: "Guarda Permanente" },
+            { cod: "0-0-3-1", ass: "Relatório de Atividades Institucional (Final)", anos: 5, dest: "Guarda Permanente" },
+            { cod: "0-0-3-2", ass: "Relatório de Atividades Setorial", anos: 5, dest: "Eliminação" },
+            { cod: "0-0-3-3", ass: "Estatística p/ Elaboração de Relatórios", anos: 2, dest: "Eliminação" },
+            { cod: "0-0-4", ass: "Acordo, Ajuste, Contrato e/ou Convênio", anos: 10, dest: "Guarda Permanente" },
+            { cod: "0-0-5-1", ass: "Fiscalização de Acordo/Contrato", anos: 25, dest: "Eliminação" },
+            { cod: "0-0-6-1-1", ass: "Correição Ordinária e Extraordinária", anos: 25, dest: "Eliminação" },
+            { cod: "0-0-6-2-1", ass: "Auditoria de Controle Interno", anos: 25, dest: "Eliminação" },
+            { cod: "0-0-6-3-2", ass: "Comunicação de Ouvidoria", anos: 25, dest: "Eliminação" },
+            { cod: "0-0-7", ass: "Sanção Administrativa", anos: 25, dest: "Guarda Permanente" },
+            { cod: "0-0-8-1", ass: "Acompanhamento e Instrução de Ação Judicial", anos: 5, dest: "Guarda Permanente" },
+            { cod: "0-1-0", ass: "Organização e Funcionamento (Geral)", anos: 2, dest: "Guarda Permanente" },
+            { cod: "0-1-0-2", ass: "Regimento, Regulamento, Estatuto, Organograma", anos: 5, dest: "Guarda Permanente" },
+            { cod: "0-1-1-1-1", ass: "Ato de Criação / Ata de Comissão", anos: 10, dest: "Guarda Permanente" },
+            { cod: "0-1-2-1-4", ass: "Diário Oficial Eletrônico da DPRJ", anos: 1, dest: "Guarda Permanente" },
+            { cod: "0-1-2-2-1", ass: "Informativo Interno e Boletins", anos: 2, dest: "Guarda Permanente" },
+            { cod: "0-1-3-1-1", ass: "Solenidade, Comemoração, Homenagem", anos: 10, dest: "Guarda Permanente" },
+            { cod: "0-2-0-6", ass: "Assentamento Funcional / Cadastro / Ficha", anos: 95, dest: "Eliminação" },
+            { cod: "0-2-0-7-1", ass: "Controle de Frequência / Ponto Eletrônico", anos: 70, dest: "Eliminação" },
+            { cod: "0-2-4-1", ass: "Folha de Pagamento / Ficha Financeira", anos: 100, dest: "Eliminação" },
+            { cod: "0-2-4-2", ass: "Férias (Assuntos Gerais / Escala / Adiantamento)", anos: 7, dest: "Eliminação" },
+            { cod: "0-2-4-3", ass: "Licenças (Geral - Saúde, Maternidade, Prêmio, etc.)", anos: 52, dest: "Eliminação" },
+            { cod: "0-2-5-1-1", ass: "Processo Administrativo Disciplinar / Sindicância", anos: 100, dest: "Guarda Permanente" },
+            { cod: "0-3-1-1-1", ass: "Compra / Aluguel de Material Permanente", anos: 10, dest: "Eliminação" },
+            { cod: "0-3-1-2-1", ass: "Compra de Material de Consumo", anos: 10, dest: "Eliminação" },
+            { cod: "0-4-1-1-1", ass: "Compra de Imóvel", anos: 10, dest: "Guarda Permanente" },
+            { cod: "0-5-0-1", ass: "Auditoria Financeira", anos: 10, dest: "Guarda Permanente" },
+            { cod: "0-5-1-1-2", ass: "Proposta Orçamentária", anos: 10, dest: "Guarda Permanente" },
+            { cod: "0-5-7-1", ass: "Tomada de Contas", anos: 10, dest: "Guarda Permanente" },
+            { cod: "0-5-7-2", ass: "Prestação de Contas", anos: 10, dest: "Guarda Permanente" },
+            { cod: "0-6-2-2-2", ass: "Registro e Autuação de Processos (Protocolo)", anos: 5, dest: "Guarda Permanente" },
+            { cod: "0-6-2-5-2", ass: "Eliminação de Documentos (Termo e Edital)", anos: 5, dest: "Guarda Permanente" },
+            { cod: "0-6-2-5-3", ass: "Transferência e Recolhimento de Documentos", anos: 5, dest: "Guarda Permanente" },
+            { cod: "0-7-2-3", ass: "Aquisição de Soluções de TI (Softwares)", anos: 10, dest: "Guarda Permanente" }
+        ];
+
+        function preencherTabelaArquivistica() {
+            const datalist = document.getElementById("listaRegrasArq");
+            datalist.innerHTML = "";
+            tabelaOficialDPRJ.forEach(regra => {
+                const option = document.createElement("option");
+                option.value = regra.cod;
+                option.innerText = `${regra.ass} (${regra.anos} anos -> ${regra.dest})`;
+                datalist.appendChild(option);
+            });
+        }
         
-        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregar(); });
+        onAuthStateChanged(auth, (user) => { 
+            if (!user) window.location.href = "index.html"; 
+            else { preencherTabelaArquivistica(); carregar(); }
+        });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
         async function carregar() {
@@ -181,36 +263,22 @@
                     todasAsGuiasArquivadas.push({ id: d.id, ...guiaData, totalFolhas: totalFolhasGuia });
                 }
 
-                // Renderiza a visualização por CAIXAS (Guia e Documentos)
                 renderizarAcervoPorCaixa(todasAsGuiasArquivadas);
-
             } catch (err) { container.innerHTML = "Erro ao carregar acervo."; }
         }
 
-        // ==========================================
-        // 🔍 LÓGICA DA BARRA DE PESQUISA
-        // ==========================================
         window.filtrarAcervo = function() {
             const termo = document.getElementById("buscaGuiaInput").value.toLowerCase().trim();
-            
-            if (!termo) {
-                renderizarAcervoPorCaixa(todasAsGuiasArquivadas);
-                return;
-            }
+            if (!termo) { renderizarAcervoPorCaixa(todasAsGuiasArquivadas); return; }
 
             const guiasFiltradas = todasAsGuiasArquivadas.filter(g => {
                 const numero = (g.numero || g.numeroGuia || "").toLowerCase();
                 const unidade = (g.unidade || "").toLowerCase();
                 return numero.includes(termo) || unidade.includes(termo);
             });
-
-            // Passamos 'true' para as caixas já abrirem expandidas ao pesquisar
             renderizarAcervoPorCaixa(guiasFiltradas, true);
         };
 
-        // ==========================================
-        // 🗃️ RENDERIZAÇÃO DE HIERARQUIA DUPLA DE CAIXAS
-        // ==========================================
         function renderizarAcervoPorCaixa(listaDeGuias, expandirAutomatico = false) {
             const container = document.getElementById("listaArquivadas");
             container.innerHTML = "";
@@ -220,7 +288,6 @@
                 return;
             }
 
-            // 1. Agrupar guias por locCaixaFinal (Caixa da Guia) e, dentro dela, por locCaixaDocumentos
             const caixas = {};
             listaDeGuias.forEach(g => {
                 const nomeCaixaG = g.locCaixaFinal ? g.locCaixaFinal.trim() : "Sem Caixa Definida";
@@ -233,79 +300,50 @@
                 caixas[nomeCaixaG].total++;
             });
 
-            // 2. Ordenar o nome das caixas principais (Guias)
             const caixasOrdenadas = Object.keys(caixas).sort((a, b) => {
                 if (a === "Sem Caixa Definida") return 1; 
                 if (b === "Sem Caixa Definida") return -1;
                 return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
             });
 
-            // 3. Montar a UI
             caixasOrdenadas.forEach(nomeCaixaG => {
                 const objCaixaG = caixas[nomeCaixaG];
-                
-                // Botão do 1º Nível: Caixa da Guia
                 const btnCaixa = document.createElement("button"); 
                 btnCaixa.className = "data-header-btn btn-caixa";
                 btnCaixa.innerHTML = `<div><span style="font-size: 1.15em;">📦 Caixa de Guia: <strong>${nomeCaixaG}</strong></span> <span class="contador-guias">${objCaixaG.total} guias arquivadas</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
                 
-                const divCaixa = document.createElement("div"); 
-                divCaixa.className = "grupo-caixa";
+                const divCaixa = document.createElement("div"); divCaixa.className = "grupo-caixa";
                 if(expandirAutomatico) divCaixa.style.display = "block";
                 
-                btnCaixa.onclick = () => { 
-                    const aberto = divCaixa.style.display === "block"; 
-                    divCaixa.style.display = aberto ? "none" : "block"; 
-                    btnCaixa.querySelector('.toggle-icon').innerText = aberto ? "➕" : "➖"; 
-                };
-                
-                container.appendChild(btnCaixa); 
-                container.appendChild(divCaixa);
+                btnCaixa.onclick = () => { const aberto = divCaixa.style.display === "block"; divCaixa.style.display = aberto ? "none" : "block"; btnCaixa.querySelector('.toggle-icon').innerText = aberto ? "➕" : "➖"; };
+                container.appendChild(btnCaixa); container.appendChild(divCaixa);
 
-                // Ordenar o 2º Nível: Caixa de Documentos
                 const subcaixasOrdenadas = Object.keys(objCaixaG.subcaixas).sort((a, b) => {
-                    if (a === "Sem Caixa Definida") return 1;
-                    if (b === "Sem Caixa Definida") return -1;
+                    if (a === "Sem Caixa Definida") return 1; if (b === "Sem Caixa Definida") return -1;
                     return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
                 });
 
                 subcaixasOrdenadas.forEach(nomeCaixaD => {
                     const guiasDaSubcaixa = objCaixaG.subcaixas[nomeCaixaD];
-                    
-                    // Ordenar as Guias da subcaixa de forma NUMÉRICA
                     guiasDaSubcaixa.sort((g1, g2) => {
-                        const numA = g1.numero || g1.numeroGuia || "";
-                        const numB = g2.numero || g2.numeroGuia || "";
+                        const numA = g1.numero || g1.numeroGuia || ""; const numB = g2.numero || g2.numeroGuia || "";
                         return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
                     });
 
-                    // Botão do 2º Nível: Caixa de Documentos
                     const btnSubcaixa = document.createElement("button");
                     btnSubcaixa.className = "data-header-btn btn-caixa-docs";
                     btnSubcaixa.innerHTML = `<div><span style="font-size: 1.05em;">🗃️ Caixa de Documentos: <strong>${nomeCaixaD}</strong></span> <span class="contador-guias" style="background:#8e44ad;">${guiasDaSubcaixa.length} guias</span></div><span class="toggle-icon">${expandirAutomatico ? "➖" : "➕"}</span>`;
 
-                    const divSubcaixa = document.createElement("div");
-                    divSubcaixa.className = "grupo-caixa-docs";
+                    const divSubcaixa = document.createElement("div"); divSubcaixa.className = "grupo-caixa-docs";
                     if(expandirAutomatico) divSubcaixa.style.display = "block";
 
-                    btnSubcaixa.onclick = () => {
-                        const aberto = divSubcaixa.style.display === "block"; 
-                        divSubcaixa.style.display = aberto ? "none" : "block"; 
-                        btnSubcaixa.querySelector('.toggle-icon').innerText = aberto ? "➕" : "➖"; 
-                    }
+                    btnSubcaixa.onclick = () => { const aberto = divSubcaixa.style.display === "block"; divSubcaixa.style.display = aberto ? "none" : "block"; btnSubcaixa.querySelector('.toggle-icon').innerText = aberto ? "➕" : "➖"; }
+                    divCaixa.appendChild(btnSubcaixa); divCaixa.appendChild(divSubcaixa);
 
-                    divCaixa.appendChild(btnSubcaixa);
-                    divCaixa.appendChild(divSubcaixa);
-
-                    // 3º Nível: Cards das Guias
                     guiasDaSubcaixa.forEach(g => {
-                        const div = document.createElement("div"); 
-                        div.className = "guia-card-arquivada";
-                        
+                        const div = document.createElement("div"); div.className = "guia-card-arquivada";
                         let nomeVisual = g.nomeOperador;
-                        if (!nomeVisual || nomeVisual.includes('@')) {
-                            nomeVisual = "Email: " + (g.arquivadoPor || '---');
-                        }
+                        if (!nomeVisual || nomeVisual.includes('@')) { nomeVisual = "Email: " + (g.arquivadoPor || '---'); }
 
                         div.innerHTML = `
                             <div class="info-box" style="flex: 1.5;">
@@ -313,13 +351,11 @@
                                 <small>Unidade: ${g.unidade}</small><br>
                                 <span class="badge-user">👤 Responsável: ${nomeVisual}</span>
                             </div>
-                            
                             <div style="flex: 1; text-align: center;">
                                 <span style="display:inline-block; background:#f1f2f6; border:1px solid #dcdde1; border-radius:5px; padding:6px 12px; font-weight:bold; color:#2c3e50; font-size:0.9em;">
                                     📅 Arquivada em: ${g.dataArquivamentoSistema || 'Sem data'}
                                 </span>
                             </div>
-                            
                             <div style="flex: 1; text-align: right;">
                                 <button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${g.numero || g.numeroGuia}')" style="background:#34495e; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer;">👁 Ver Detalhes</button>
                             </div>`;
@@ -371,67 +407,100 @@
                     `;
                 }
 
-                html += `<table style="width:100%; border-collapse: collapse; font-size:12px;">
+                html += `<table style="width:100%; border-collapse: collapse; font-size:12px; text-align:left;">
                     <thead><tr style="background:#003366; color:white;">
-                        <th style="padding:10px; border:1px solid #ddd;">Documento</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Inserido por</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Protocolo SEI</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Anexo</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Obs.</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Documento (Prot. SEI)</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Data Digit. / Anexo</th>
+                        <th style="padding:10px; border:1px solid #ddd; text-align:center;">Classificação e-ARQ</th>
                     </tr></thead><tbody>`;
 
                 docsSnap.forEach(docItem => {
                     const d = docItem.data();
-                    const anexoStr = d.tipoAnexo && d.tipoAnexo !== "Nenhum" ? `<b>${d.tipoAnexo}</b> (${d.protocoloAnexo || 'S/P'})` : "Nenhum";
+                    const docId = docItem.id;
+                    const anexoStr = d.tipoAnexo && d.tipoAnexo !== "Nenhum" ? `<b>${d.tipoAnexo}</b> (${d.protocoloAnexo || 'S/P'})` : "Sem Anexo";
+                    const dataDig = d.dataDigitalizacao ? d.dataDigitalizacao.split('-').reverse().join('/') : "--";
+                    
+                    let btnAcao = "";
+                    if (d.metadadosArquivisticos) {
+                        btnAcao = `<span style="color: #27ae60; font-weight: bold;">✅ Classificado (${d.metadadosArquivisticos.codigoClassificacaoRef})</span><br><small style="color:#555;">${d.metadadosArquivisticos.destinacaoFinal}</small>`;
+                    } else {
+                        btnAcao = `<button onclick="window.abrirModalClassificacao('${id}', '${docId}', '${d.nomeDocumento}', '${d.dataDigitalizacao}')" style="background: #3498db; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight:bold;">⚖️ Classificar (e-ARQ)</button>`;
+                    }
+
                     html += `<tr>
-                        <td style="padding:10px; border:1px solid #ddd;"><b>${d.nomeDocumento}</b><br><small>${d.numeroProcesso}</small></td>
-                        <td style="padding:10px; border:1px solid #ddd;">${d.inseridoPor || '--'}</td>
-                        <td style="padding:10px; border:1px solid #ddd; color:#27ae60; font-weight:bold;">${d.protocoloSeiDigitalizado || '--'}</td>
-                        <td style="padding:10px; border:1px solid #ddd;">${anexoStr}</td>
-                        <td style="padding:10px; border:1px solid #ddd;">${d.observacaoDigitalizacao || '--'}</td>
+                        <td style="padding:10px; border:1px solid #ddd;"><b>${d.nomeDocumento}</b><br><small>SEI: ${d.protocoloSeiDigitalizado || '--'}</small></td>
+                        <td style="padding:10px; border:1px solid #ddd;">${dataDig}<br><small>${anexoStr}</small></td>
+                        <td style="padding:10px; border:1px solid #ddd; text-align:center;">${btnAcao}</td>
                     </tr>`;
                 });
                 grid.innerHTML = html + "</tbody></table>";
             } catch (e) { grid.innerHTML = "Erro ao carregar detalhes."; }
         };
 
+        // LÓGICA PARA CLASSIFICAÇÃO ARQUIVÍSTICA DOS DOCUMENTOS
+        window.abrirModalClassificacao = (guiaId, docId, nomeDoc, dataDig) => {
+            document.getElementById("classifGuiaId").value = guiaId;
+            document.getElementById("classifDocId").value = docId;
+            document.getElementById("classifNomeDoc").innerText = nomeDoc;
+            document.getElementById("classifDataDigitalizacao").value = dataDig || new Date().toISOString().split('T')[0];
+            document.getElementById("classifCodigoBusca").value = ""; 
+            
+            document.getElementById("modalClassificacao").style.display = "block";
+        };
+
+        document.getElementById("formClassificacao").onsubmit = async (e) => {
+            e.preventDefault();
+            const guiaId = document.getElementById("classifGuiaId").value;
+            const docId = document.getElementById("classifDocId").value;
+            const dataDig = document.getElementById("classifDataDigitalizacao").value;
+            const codigoDigitado = document.getElementById("classifCodigoBusca").value.trim();
+            
+            const regraEncontrada = tabelaOficialDPRJ.find(r => r.cod === codigoDigitado);
+            
+            if (!regraEncontrada) {
+                alert("⚠️ Código inválido! Por favor, selecione um código oficial da lista.");
+                return;
+            }
+
+            const dataBase = new Date(dataDig);
+            dataBase.setFullYear(dataBase.getFullYear() + regraEncontrada.anos);
+            const dataPrevistaStr = dataBase.toISOString().split('T')[0];
+
+            try {
+                await updateDoc(doc(db, "guias", guiaId, "documentos", docId), {
+                    metadadosArquivisticos: {
+                        codigoClassificacaoRef: regraEncontrada.cod,
+                        assuntoTemporalidade: regraEncontrada.ass,
+                        destinacaoFinal: regraEncontrada.dest,
+                        dataPrevistaDestinacaoFinal: dataPrevistaStr
+                    }
+                });
+                
+                alert("Documento classificado com sucesso!");
+                document.getElementById("modalClassificacao").style.display = "none";
+                
+                const numGuiaVisor = document.getElementById("modalTitulo").innerText.replace("Auditoria Detalhada - Guia ", "");
+                window.verDetalhes(guiaId, numGuiaVisor); 
+                
+            } catch(err) {
+                alert("Erro ao gravar classificação no banco de dados.");
+            }
+        };
+
         window.reabrirGuia = async (id) => {
             if(!confirm("Tem certeza que deseja DESARQUIVAR esta guia? Ela voltará para o menu de 'Digitalização e SEI'.")) return;
-            try {
-                await updateDoc(doc(db, "guias", id), { status: "Aberta", dataArquivamentoSistema: "", locCaixaFinal: "", locCaixaDocumentos: "" });
-                alert("Guia reaberta com sucesso!"); location.reload();
-            } catch(e) { alert("Erro ao reabrir guia."); }
+            try { await updateDoc(doc(db, "guias", id), { status: "Aberta", dataArquivamentoSistema: "", locCaixaFinal: "", locCaixaDocumentos: "" }); alert("Guia reaberta com sucesso!"); location.reload(); } catch(e) { alert("Erro ao reabrir guia."); }
         }
 
         window.editarMetadadosGuia = async (id, numeroAtual, unidadeAtual) => {
             try {
-                const gSnap = await getDoc(doc(db, "guias", id));
-                const g = gSnap.data();
-
-                const novoNum = prompt("Digite o NOVO número da Guia:", numeroAtual);
-                if(!novoNum) return;
-                
-                const novaUnidade = prompt("Digite o NOVO nome da Unidade:", unidadeAtual);
-                if(!novaUnidade) return;
-
-                const novaData = prompt("Digite a NOVA data de recebimento (Formato AAAA-MM-DD):", g.dataRecebimento);
-                if(!novaData) return;
-
-                await updateDoc(doc(db, "guias", id), { 
-                    numero: novoNum, 
-                    numeroGuia: novoNum, 
-                    unidade: novaUnidade,
-                    dataRecebimento: novaData 
-                });
-                
-                alert("Metadados atualizados com sucesso!"); 
-                document.getElementById("modalDetalhes").style.display = "none"; 
-                document.getElementById("buscaGuiaInput").value = "";
-                carregar(); 
-            } catch(e) { 
-                alert("Erro ao atualizar metadados."); 
-                console.error(e);
-            }
+                const gSnap = await getDoc(doc(db, "guias", id)); const g = gSnap.data();
+                const novoNum = prompt("Digite o NOVO número da Guia:", numeroAtual); if(!novoNum) return;
+                const novaUnidade = prompt("Digite o NOVO nome da Unidade:", unidadeAtual); if(!novaUnidade) return;
+                const novaData = prompt("Digite a NOVA data de recebimento (Formato AAAA-MM-DD):", g.dataRecebimento); if(!novaData) return;
+                await updateDoc(doc(db, "guias", id), { numero: novoNum, numeroGuia: novoNum, unidade: novaUnidade, dataRecebimento: novaData });
+                alert("Metadados atualizados com sucesso!"); document.getElementById("modalDetalhes").style.display = "none"; document.getElementById("buscaGuiaInput").value = ""; carregar(); 
+            } catch(e) { alert("Erro ao atualizar metadados."); }
         }
 
         window.excluirGuiaCompleta = async (id) => {
@@ -439,11 +508,8 @@
             if (adminConfirm !== auth.currentUser.email) { alert("Exclusão cancelada."); return; }
             try {
                 const docsSnap = await getDocs(collection(db, "guias", id, "documentos"));
-                const promessas = [];
-                docsSnap.forEach(d => { promessas.push( deleteDoc(doc(db, "guias", id, "documentos", d.id)) ); });
-                await Promise.all(promessas);
-                await deleteDoc(doc(db, "guias", id));
-                alert("Guia excluída permanentemente."); location.reload();
+                const promessas = []; docsSnap.forEach(d => { promessas.push( deleteDoc(doc(db, "guias", id, "documentos", d.id)) ); });
+                await Promise.all(promessas); await deleteDoc(doc(db, "guias", id)); alert("Guia excluída permanentemente."); location.reload();
             } catch(e) { alert("Erro fatal ao excluir guia."); }
         }
 
@@ -452,38 +518,20 @@
             try {
                 const gSnap = await getDoc(doc(db, "guias", id)); const g = gSnap.data();
                 const docsSnap = await getDocs(collection(db, "guias", id, "documentos"));
-                
-                docPdf.setFontSize(14); docPdf.setFont("helvetica", "bold");
-                docPdf.text("FOLHA DE ROSTO DE DIGITALIZAÇÃO PARA GUIA DE REMESSA DE DOCUMENTOS", 148.5, 15, { align: "center" });
-                
+                docPdf.setFontSize(14); docPdf.setFont("helvetica", "bold"); docPdf.text("FOLHA DE ROSTO DE DIGITALIZAÇÃO PARA GUIA DE REMESSA DE DOCUMENTOS", 148.5, 15, { align: "center" });
                 let rows = []; let idx = 1;
                 docsSnap.forEach(docSnap => {
-                    const d = docSnap.data(); const contemMidia = d.tipoAnexo !== "Nenhum" ? "S" : "N";
+                    const d = docSnap.data(); const contemMidia = d.tipoAnexo && d.tipoAnexo !== "Nenhum" ? "S" : "N";
                     rows.push([ idx++, d.paginasPdf || "", d.dataDigitalizacao ? d.dataDigitalizacao.split('-').reverse().join('/') : "", d.numeroProcesso || "", d.protocoloSeiDigitalizado || "", contemMidia, d.tipoAnexo === "Nenhum" ? "" : d.tipoAnexo, d.protocoloAnexo || "" ]);
                 });
                 while(rows.length < 7) { rows.push([rows.length + 1, "", "", "", "", "N", "", ""]); }
-                
                 docPdf.autoTable({ startY: 25, head: [['Nº ORDEM', 'QTD FOLHAS', 'DATA DIGIT.', 'Nº PROCESSO SEI', 'Nº PROTOCOLO DO DOCUMENTO', 'MÍDIA', 'TIPO MÍDIA', 'PROT. MÍDIA']], body: rows, theme: 'grid', styles: { fontSize: 10, halign: 'center', textColor: 0, cellPadding: 4, lineColor: [0, 0, 0], lineWidth: 0.5 }, headStyles: { fillColor: [60, 60, 60], textColor: 255, fontStyle: 'bold', fontSize: 11 }, alternateRowStyles: { fillColor: [220, 220, 220] } });
-                
                 const finalY = docPdf.lastAutoTable.finalY + 20; docPdf.setFontSize(12);
-                docPdf.text(`GUIA Nº: ${g.numero || g.numeroGuia}`, 20, finalY); 
-                docPdf.text(`RECEBIDO EM: ${g.dataRecebimento.split('-').reverse().join('/')}`, 20, finalY + 10);
-                
-                let nomeOperadorPrint = g.nomeOperador;
-                let matriculaPrint = g.matriculaOperador;
-
-                if (!nomeOperadorPrint || nomeOperadorPrint.includes('@')) {
-                    nomeOperadorPrint = prompt("⚠️ Digite o NOME COMPLETO do Operador para sair na Folha de Rosto:", "");
-                    if (!nomeOperadorPrint) return; 
-                }
-                if (!matriculaPrint) {
-                    matriculaPrint = prompt("Digite a MATRÍCULA do Operador para sair na Folha de Rosto:", "");
-                    if (!matriculaPrint) return; 
-                }
-
-                docPdf.text(`OPERADOR: ${nomeOperadorPrint.toUpperCase()}`, 20, finalY + 20); 
-                docPdf.text(`MATRÍCULA: ${matriculaPrint}`, 20, finalY + 30);
-                
+                docPdf.text(`GUIA Nº: ${g.numero || g.numeroGuia}`, 20, finalY); docPdf.text(`RECEBIDO EM: ${g.dataRecebimento.split('-').reverse().join('/')}`, 20, finalY + 10);
+                let nomeOperadorPrint = g.nomeOperador; let matriculaPrint = g.matriculaOperador;
+                if (!nomeOperadorPrint || nomeOperadorPrint.includes('@')) { nomeOperadorPrint = prompt("⚠️ Digite o NOME COMPLETO do Operador para sair na Folha de Rosto:", ""); if (!nomeOperadorPrint) return; }
+                if (!matriculaPrint) { matriculaPrint = prompt("Digite a MATRÍCULA do Operador para sair na Folha de Rosto:", ""); if (!matriculaPrint) return; }
+                docPdf.text(`OPERADOR: ${nomeOperadorPrint.toUpperCase()}`, 20, finalY + 20); docPdf.text(`MATRÍCULA: ${matriculaPrint}`, 20, finalY + 30);
                 window.open(docPdf.output('bloburl'), '_blank');
             } catch (e) { alert("Erro ao gerar PDF."); }
         };
@@ -506,8 +554,6 @@
             const tipo = document.getElementById("tipoAgrupamento").value; 
             const agrupado = {};
             const totalFolhas = estatisticasGlobais.reduce((acc, curr) => acc + curr.paginas, 0);
-            
-            // LÓGICA DA MÉDIA GERAL DOS CARDS SUPERIORES
             const diasUnicosGeral = new Set(estatisticasGlobais.map(item => item.dataOrig)).size;
             const mediaDiariaGeral = diasUnicosGeral > 0 ? (totalFolhas / diasUnicosGeral).toFixed(1) : 0;
             
@@ -515,31 +561,16 @@
             document.getElementById("dashTotalDocs").innerText = estatisticasGlobais.length.toLocaleString('pt-BR');
             document.getElementById("dashMediaDiaria").innerText = String(mediaDiariaGeral).replace('.', ',');
             
-            // AGRUPAMENTO PARA O GRÁFICO (Guardamos dias únicos e total de documentos por barra)
             estatisticasGlobais.forEach(item => {
-                let chave = ""; 
-                const [ano, mes, dia] = item.dataOrig.split('-');
-                if (tipo === "diaria") { chave = item.dataOrig; } 
-                else if (tipo === "mensal") { chave = `${ano}-${mes}`; } 
-                else if (tipo === "semestral") { const semestre = parseInt(mes) <= 6 ? "S1" : "S2"; chave = `${ano}-${semestre}`; } 
-                else if (tipo === "anual") { chave = `${ano}`; }
-                
+                let chave = ""; const [ano, mes, dia] = item.dataOrig.split('-');
+                if (tipo === "diaria") { chave = item.dataOrig; } else if (tipo === "mensal") { chave = `${ano}-${mes}`; } else if (tipo === "semestral") { const semestre = parseInt(mes) <= 6 ? "S1" : "S2"; chave = `${ano}-${semestre}`; } else if (tipo === "anual") { chave = `${ano}`; }
                 if (!agrupado[chave]) agrupado[chave] = { paginas: 0, dias: new Set(), docs: 0 };
-                agrupado[chave].paginas += item.paginas;
-                agrupado[chave].dias.add(item.dataOrig);
-                agrupado[chave].docs += 1;
+                agrupado[chave].paginas += item.paginas; agrupado[chave].dias.add(item.dataOrig); agrupado[chave].docs += 1;
             });
             
             const chavesOrdenadas = Object.keys(agrupado).sort();
-            const labels = chavesOrdenadas.map(c => { 
-                if (tipo === "diaria") return c.split('-').reverse().join('/'); 
-                if (tipo === "mensal") return `${c.split('-')[1]}/${c.split('-')[0]}`; 
-                if (tipo === "semestral") return c.endsWith('S1') ? `1º Semestre ${c.split('-')[0]}` : `2º Semestre ${c.split('-')[0]}`; 
-                return c; 
-            });
+            const labels = chavesOrdenadas.map(c => { if (tipo === "diaria") return c.split('-').reverse().join('/'); if (tipo === "mensal") return `${c.split('-')[1]}/${c.split('-')[0]}`; if (tipo === "semestral") return c.endsWith('S1') ? `1º Semestre ${c.split('-')[0]}` : `2º Semestre ${c.split('-')[0]}`; return c; });
             const values = chavesOrdenadas.map(c => agrupado[c].paginas);
-            
-            // Arrays extras para o Tooltip (balãozinho ao passar o mouse)
             const diasPorBarra = chavesOrdenadas.map(c => agrupado[c].dias.size);
             const docsPorBarra = chavesOrdenadas.map(c => agrupado[c].docs);
             
@@ -547,52 +578,13 @@
             if (chartProducao) { chartProducao.destroy(); } 
             
             chartProducao = new Chart(ctx, { 
-                type: 'bar', 
-                data: { 
-                    labels: labels, 
-                    datasets: [{ 
-                        label: 'Folhas Digitalizadas', 
-                        data: values, 
-                        backgroundColor: '#4682B4', 
-                        borderColor: '#003366', 
-                        borderWidth: 1, 
-                        borderRadius: 4 
-                    }] 
-                }, 
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { labels: { font: { size: 14, family: 'Segoe UI' } } },
-                        
-                        // --- AQUI É ONDE PERSONALIZAMOS O HOVER DO MOUSE ---
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const index = context.dataIndex;
-                                    const totalBarra = context.parsed.y;
-                                    const qtdDias = diasPorBarra[index];
-                                    const qtdDocs = docsPorBarra[index];
-                                    
-                                    const mediaPorDia = qtdDias > 0 ? (totalBarra / qtdDias).toFixed(1) : 0;
-                                    const mediaPorDoc = qtdDocs > 0 ? (totalBarra / qtdDocs).toFixed(1) : 0;
-                                    
-                                    let tooltipLines = [`Total: ${totalBarra} folhas`];
-                                    
-                                    if (tipo !== "diaria") {
-                                        tooltipLines.push(`📅 Dias de trabalho no período: ${qtdDias}`);
-                                        tooltipLines.push(`📊 Média Diária: ${String(mediaPorDia).replace('.', ',')} folhas/dia`);
-                                    } else {
-                                        tooltipLines.push(`📄 Documentos processados: ${qtdDocs}`);
-                                        tooltipLines.push(`📊 Média: ${String(mediaPorDoc).replace('.', ',')} folhas/documento`);
-                                    }
-                                    return tooltipLines;
-                                }
-                            }
-                        }
-                    }, 
-                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Nº de Folhas' } } } 
-                } 
+                type: 'bar', data: { labels: labels, datasets: [{ label: 'Folhas Digitalizadas', data: values, backgroundColor: '#4682B4', borderColor: '#003366', borderWidth: 1, borderRadius: 4 }] }, 
+                options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: { callbacks: { label: function(context) {
+                    const index = context.dataIndex; const totalBarra = context.parsed.y; const qtdDias = diasPorBarra[index]; const qtdDocs = docsPorBarra[index];
+                    const mediaPorDia = qtdDias > 0 ? (totalBarra / qtdDias).toFixed(1) : 0; const mediaPorDoc = qtdDocs > 0 ? (totalBarra / qtdDocs).toFixed(1) : 0;
+                    let tooltipLines = [`Total: ${totalBarra} folhas`];
+                    if (tipo !== "diaria") { tooltipLines.push(`📅 Dias de trabalho: ${qtdDias}`, `📊 Média Diária: ${String(mediaPorDia).replace('.', ',')} folhas/dia`); } else { tooltipLines.push(`📄 Documentos processados: ${qtdDocs}`, `📊 Média: ${String(mediaPorDoc).replace('.', ',')} folhas/documento`); } return tooltipLines;
+                }}}}, scales: { y: { beginAtZero: true, title: { display: true, text: 'Nº de Folhas' } } } } 
             });
         };
 
@@ -600,8 +592,7 @@
             const dataInicio = document.getElementById("dataInicioRel").value; const dataFim = document.getElementById("dataFimRel").value;
             if (!dataInicio || !dataFim) return alert("Selecione o período.");
             const { jsPDF } = window.jspdf; const docPdf = new jsPDF('landscape');
-            const dIni = new Date(dataInicio); const dFim = new Date(dataFim); dFim.setHours(23, 59, 59);
-            let dadosTabela = [];
+            const dIni = new Date(dataInicio); const dFim = new Date(dataFim); dFim.setHours(23, 59, 59); let dadosTabela = [];
             for (let g of todasAsGuiasArquivadas) {
                 const partes = g.dataArquivamentoSistema.split('/'); const dataG = new Date(partes[2], partes[1] - 1, partes[0]);
                 if (dataG >= dIni && dataG <= dFim) {
