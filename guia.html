@@ -12,11 +12,11 @@
             <nav>
                 <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase;">Fluxo Operacional</div>
                 <a href="index.html">🏠 Início / Histórico</a>
-                <a href="guia.html">➕ Nova Guia</a>
+                <a href="guia.html" class="ativo">➕ Nova Guia</a>
                 <a href="documentos.html">📄 Inserir Documentos</a>
                 <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
-                <a href="arquivamentoFisico.html">🗄️ Arquivar Guia Físico</a>
-                <a href="documentosArquivados.html" class="ativo">📚 Guias Arquivadas</a>
+                <a href="arquivamentoFisico.html">📦 Arquivar Guia Físico</a>
+                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
 
                 <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase; margin-top: 15px; border-top: 1px solid var(--border);">Gestão Arquivística (e-ARQ)</div>
                 <a href="arq_dashboard.html">📊 Painel Temporalidade</a>
@@ -59,7 +59,13 @@
 
                 <button class="btn-primary" id="btnSalvarGuia">Salvar Guia</button>
             </div>
-        </main>
+            
+            <footer class="site-footer">
+                <p><strong>Defensoria Pública do Estado do Rio de Janeiro</strong><br>
+                Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
+                <p class="desenvolvedor">Desenvolvido por Rafael do N. Vieira e Gemini</p>
+            </footer>
+            </main>
     </div>
 
     <script type="module">
@@ -69,40 +75,32 @@
 
         let proximoNumSugerido = "";
 
-        // Função para calcular a sugestão inteligente preenchendo lacunas (guias excluídas)
         async function buscarSugestaoNumero() {
             try {
-                // Busca todas as guias existentes no banco
                 const q = query(collection(db, "guias"));
                 const snap = await getDocs(q);
                 
                 let numerosUsados = new Set();
                 
-                // Percorre todas as guias para guardar os números que já existem
                 snap.forEach(doc => {
                     const guia = doc.data();
                     const numStr = guia.numero || guia.numeroGuia || "";
-                    
-                    // Extrai apenas a parte numérica (Ex: de "8255/2026" ele pega "8255")
                     const match = numStr.match(/^\d+/);
                     if (match) {
                         numerosUsados.add(parseInt(match[0], 10));
                     }
                 });
                 
-                // Começa do número 8188 e vai subindo até encontrar um que não esteja no Set (a primeira lacuna)
                 let proximoNumero = 8188;
                 while (numerosUsados.has(proximoNumero)) {
                     proximoNumero++;
                 }
                 
-                // Formata com 4 dígitos (ex: 8188)
                 proximoNumSugerido = String(proximoNumero).padStart(4, '0');
-                
                 document.getElementById("textoSugestao").innerText = proximoNumSugerido;
             } catch (e) {
                 console.error("Erro ao buscar sugestão:", e);
-                proximoNumSugerido = "8188"; // Fallback para 8188 em caso de erro
+                proximoNumSugerido = "8188"; 
                 document.getElementById("textoSugestao").innerText = proximoNumSugerido;
             }
         }
@@ -111,32 +109,18 @@
             if (!user) {
                 window.location.href = "index.html"; 
             } else {
-                // Carrega a sugestão assim que o usuário entra na página
                 buscarSugestaoNumero();
             }
         });
 
         document.getElementById("btnLogout").addEventListener("click", () => signOut(auth));
 
-        // --- LÓGICA DO BALÃO DE SUGESTÃO ---
         const inputGuia = document.getElementById("numeroGuia");
         const balaoSugestao = document.getElementById("balaoSugestao");
 
-        // Mostra o balão ao focar no campo
-        inputGuia.addEventListener("focus", () => {
-            balaoSugestao.style.display = "block";
-        });
-
-        // Esconde o balão ao tirar o mouse do campo (com pequeno atraso para permitir o clique no balão)
-        inputGuia.addEventListener("blur", () => {
-            setTimeout(() => balaoSugestao.style.display = "none", 200);
-        });
-
-        // Ao clicar no balão, preenche o campo automaticamente
-        balaoSugestao.addEventListener("click", () => {
-            inputGuia.value = proximoNumSugerido;
-        });
-        // -----------------------------------
+        inputGuia.addEventListener("focus", () => { balaoSugestao.style.display = "block"; });
+        inputGuia.addEventListener("blur", () => { setTimeout(() => balaoSugestao.style.display = "none", 200); });
+        balaoSugestao.addEventListener("click", () => { inputGuia.value = proximoNumSugerido; });
 
         document.getElementById("btnSalvarGuia").addEventListener("click", async () => {
             const numero = document.getElementById("numeroGuia").value.trim();
