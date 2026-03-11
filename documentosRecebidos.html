@@ -38,23 +38,23 @@
 </head>
 <body>
     <div id="appInterface">
-      <aside id="sidebar">
+        <aside id="sidebar">
             <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
             <nav>
                 <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase;">Fluxo Operacional</div>
                 <a href="index.html">🏠 Início / Histórico</a>
                 <a href="guia.html">➕ Nova Guia</a>
                 <a href="documentos.html">📄 Inserir Documentos</a>
-                <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
-                <a href="arquivamentoFisico.html">🗄️ Arquivar Guia Físico</a>
-                <a href="documentosArquivados.html" class="ativo">📚 Guias Arquivadas</a>
+                <a href="documentosRecebidos.html" class="ativo">🖨️ Digitalização e SEI</a>
+                <a href="arquivamentoFisico.html">📦 Arquivar Guia Físico</a>
+                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
 
                 <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase; margin-top: 15px; border-top: 1px solid var(--border);">Gestão Arquivística (e-ARQ)</div>
                 <a href="arq_dashboard.html">📊 Painel Temporalidade</a>
                 <a href="arq_temporalidade.html">📋 Regras e Tabela</a>
                 <a href="arq_eliminacao.html">🔥 Lista de Eliminação</a>
                 <a href="arq_guarda_permanente.html">🏛️ Guarda Permanente</a>
-
+                
                 <button id="btnLogout" class="btn-sair" style="margin-top: 20px;">🚪 Sair do Sistema</button>
             </nav>
         </aside>
@@ -62,7 +62,13 @@
         <main id="content">
             <h2 class="page-title">Digitalização e Inserção no SEI</h2>
             <div id="listaParaArquivar"><p>Buscando guias pendentes de digitalização...</p></div>
-        </main>
+            
+            <footer class="site-footer">
+                <p><strong>Defensoria Pública do Estado do Rio de Janeiro</strong><br>
+                Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
+                <p class="desenvolvedor">Desenvolvido por Rafael do N. Vieira e Gemini</p>
+            </footer>
+            </main>
     </div>
 
     <div id="modalArquivar" class="modal">
@@ -114,28 +120,18 @@
         onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregar(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
-        // FUNÇÃO INTELIGENTE DE CÁLCULO DE ATRASO IGNORANDO FINAIS DE SEMANA
         function verificarAtraso(dataStr) {
             if (!dataStr || dataStr === "Sem Data") return false;
-            
             const hoje = new Date(); hoje.setHours(0,0,0,0);
             const [ano, mes, dia] = dataStr.split('-');
             const dataGuia = new Date(ano, mes - 1, dia); dataGuia.setHours(0,0,0,0);
-            
             if (dataGuia >= hoje) return false;
-            
-            let diasUteis = 0;
-            let d = new Date(dataGuia);
-            d.setDate(d.getDate() + 1);
-            
+            let diasUteis = 0; let d = new Date(dataGuia); d.setDate(d.getDate() + 1);
             while (d <= hoje) {
                 const diaSemana = d.getDay();
-                if (diaSemana !== 0 && diaSemana !== 6) {
-                    diasUteis++;
-                }
+                if (diaSemana !== 0 && diaSemana !== 6) diasUteis++;
                 d.setDate(d.getDate() + 1);
             }
-            
             return diasUteis > 0;
         }
 
@@ -147,8 +143,6 @@
                 if(snap.empty) { container.innerHTML = "<p>Não há guias pendentes de digitalização.</p>"; return; }
                 
                 let guias = [];
-                
-                // NOVA LÓGICA: Só adiciona na lista se tiver mais de 0 documentos inseridos
                 for (const d of snap.docs) {
                     const docsSnap = await getDocs(collection(db, "guias", d.id, "documentos"));
                     if (docsSnap.size > 0) {
@@ -215,10 +209,10 @@
             document.getElementById("btnGerarFolhaRosto").style.display = "none";
             document.getElementById("btnConfirmarArq").disabled = false;
             document.getElementById("btnConfirmarArq").innerText = "✅ CONCLUIR DIGITALIZAÇÃO";
-            document.getElementById("btnConfirmarArq").style.background = "#f39c12"; // Reseta a cor
+            document.getElementById("btnConfirmarArq").style.background = "#f39c12"; 
             document.getElementById("tituloModalArquivar").innerText = "Digitalização e SEI - Guia: " + num;
             document.getElementById("nomeOperador").value = auth.currentUser.displayName || "";
-            document.getElementById("avisoProcessoSei").style.display = "none"; // Reseta o aviso
+            document.getElementById("avisoProcessoSei").style.display = "none"; 
             
             const areaDocs = document.getElementById("areaDocumentosArquivar");
             document.getElementById("modalArquivar").style.display = "block";
@@ -228,17 +222,25 @@
                 dadosGuiaOriginal = gSnap.data();
                 const snap = await getDocs(collection(db, "guias", id, "documentos"));
                 
+                // NOVA ESTRUTURA DA TABELA COM A COLUNA DE REFERÊNCIA DO SEI
                 let html = `<table class="tabela-docs-arquivamento"><thead><tr>
-                    <th>Nº Ordem</th><th>Documento / Processo Orig.</th><th style="width:90px">Qtd Folhas*</th><th style="width:170px">Protocolo SEI*</th><th style="width:130px">Data Digitaliz.*</th><th style="width:100px">Mídia</th><th style="width:160px">Prot. Mídia</th><th>Obs.</th>
+                    <th>Nº Ordem</th>
+                    <th>Documento / Processo Orig.</th>
+                    <th style="width:70px">Folhas*</th>
+                    <th style="width:130px">Protocolo SEI*</th>
+                    <th style="width:130px">Ref. Hiperlink SEI</th>
+                    <th style="width:120px">Data Digitaliz.*</th>
+                    <th style="width:90px">Mídia</th>
+                    <th style="width:120px">Prot. Mídia</th>
+                    <th>Obs.</th>
                 </tr></thead><tbody>`;
                 
                 let i = 1;
-                let faltaProcessoSEI = false; // Variável de controle
+                let faltaProcessoSEI = false; 
                 
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
                     
-                    // Verifica se o documento está sem o Processo SEI
                     if (!d.numeroProcesso || d.numeroProcesso.trim() === "") {
                         faltaProcessoSEI = true;
                     }
@@ -250,7 +252,10 @@
                         <td style="text-align:center"><b>${i++}</b></td>
                         <td><small><b>${d.nomeDocumento}</b><br>Processo: <span style="color:${d.numeroProcesso ? '#333' : 'red'}">${d.numeroProcesso || 'FALTANTE ⚠️'}</span></small></td>
                         <td><input type="number" id="pags_${docSnap.id}" class="campo-obrigatorio" required></td>
-                        <td><input type="text" id="sei_${docSnap.id}" class="campo-obrigatorio" placeholder="Número Protocolo" required></td>
+                        <td><input type="text" id="sei_${docSnap.id}" class="campo-obrigatorio" placeholder="Nº Protocolo" required></td>
+                        
+                        <td><input type="text" id="linkSei_${docSnap.id}" placeholder="#{...|...}#" title="Cole aqui a referência #{...}# do SEI"></td>
+                        
                         <td><input type="date" id="data_${docSnap.id}" class="campo-obrigatorio" onchange="window.sincronizarDatas(this.value)" required></td>
                         <td><select id="tAnexo_${docSnap.id}"><option value="Nenhum">Não</option><option value="CD">CD</option><option value="DVD">DVD</option><option value="Pen Drive">Pen Drive</option></select></td>
                         <td><input type="text" id="protAnexo_${docSnap.id}" placeholder="Se houver"></td>
@@ -259,11 +264,10 @@
                 });
                 areaDocs.innerHTML = html + "</tbody></table>";
 
-                // Se faltar algum Processo SEI, bloqueia a tela e avisa
                 if (faltaProcessoSEI) {
                     document.getElementById("avisoProcessoSei").style.display = "block";
                     document.getElementById("btnConfirmarArq").disabled = true;
-                    document.getElementById("btnConfirmarArq").style.background = "#95a5a6"; // Deixa o botão cinza
+                    document.getElementById("btnConfirmarArq").style.background = "#95a5a6"; 
                     document.getElementById("btnConfirmarArq").innerText = "⛔ PREENCHA O SEI NA ETAPA ANTERIOR";
                 }
 
@@ -273,7 +277,6 @@
         document.getElementById("formDadosArquivamento").onsubmit = async (e) => {
             e.preventDefault();
 
-            // Validação dupla de segurança: Impede o envio se houver processo faltante via código
             const possuiFaltante = listaDocumentosCache.some(item => !item.processoOriginal || item.processoOriginal.trim() === "");
             if (possuiFaltante) {
                 alert("Operação bloqueada: Retorne à aba 'Inserir Documentos' e informe o Número de Processo SEI para todos os documentos desta guia.");
@@ -296,6 +299,10 @@
                 const promessas = documentosDaGuia.map(docId => {
                     return updateDoc(doc(db, "guias", guiaAtualId, "documentos", docId), {
                         protocoloSeiDigitalizado: document.getElementById(`sei_${docId}`).value,
+                        
+                        // NOVO CAMPO SENDO SALVO NO FIREBASE:
+                        linkSei: document.getElementById(`linkSei_${docId}`).value || "", 
+                        
                         paginasPdf: document.getElementById(`pags_${docId}`).value,
                         dataDigitalizacao: document.getElementById(`data_${docId}`).value,
                         tipoAnexo: document.getElementById(`tAnexo_${docId}`).value,
