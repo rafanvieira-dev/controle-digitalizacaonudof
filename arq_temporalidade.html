@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regras e Tabela - Documentos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="appInterface">
+        <aside id="sidebar">
+            <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
+            <nav>
+                <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase;">Fluxo Operacional</div>
+                <a href="index.html">🏠 Início / Histórico</a>
+                <a href="guia.html">➕ Nova Guia</a>
+                <a href="documentos.html">📄 Inserir Documentos</a>
+                <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
+                <a href="arquivamentoFisico.html">🗄️ Arquivar Guia Físico</a>
+                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
+
+                <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase; margin-top: 15px; border-top: 1px solid var(--border);">Gestão Arquivística (e-ARQ)</div>
+                <a href="arq_dashboard.html">📊 Painel Temporalidade</a>
+                <a href="arq_temporalidade.html" class="ativo">📋 Regras e Tabela</a>
+                <a href="arq_eliminacao.html">🔥 Lista de Eliminação</a>
+                <a href="arq_guarda_permanente.html">🏛️ Guarda Permanente</a>
+                <button id="btnLogout" class="btn-sair" style="margin-top: 20px;">🚪 Sair do Sistema</button>
+            </nav>
+        </aside>
+
+        <main id="content">
+            <h2 class="page-title">📋 Tabela de Temporalidade (Referência Administrativa/Documentos)</h2>
+            <p style="margin-bottom: 20px; color:#555;">Consulte abaixo a tabela padrão utilizada para classificar os documentos. Os prazos são calculados a partir da data de receção/digitalização.</p>
+            
+            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #ddd;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background: #003366; color: white;">
+                            <th style="padding: 15px;">Código</th>
+                            <th style="padding: 15px;">Assunto / Tipo de Documento</th>
+                            <th style="padding: 15px;">Prazo de Guarda</th>
+                            <th style="padding: 15px;">Destinação Final</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaRegras"></tbody>
+                </table>
+            </div>
+
+            <footer class="site-footer">
+                <p><strong>Defensoria Pública do Estado do Rio de Janeiro</strong><br>
+                Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
+                <p class="desenvolvedor">Desenvolvido por Rafael do N. Vieira e Gemini</p>
+            </footer>
+            </main>
+    </div>
+
+    <script>
+        const tabelaOficialDPRJ = [
+            { cod: "021.1", ass: "Comunicação Externa e Interna (Ofícios, Memorandos, Circulares)", anos: 5, dest: "Eliminação" },
+            { cod: "022.1", ass: "Relatórios de Atividades Setoriais e Estatísticas Mensais", anos: 3, dest: "Eliminação" },
+            { cod: "022.2", ass: "Relatórios de Atividades Institucionais e de Gestão (Anuais)", anos: 5, dest: "Guarda Permanente" },
+            { cod: "031.1", ass: "Atendimento ao Público (Registos de Triagem e Agendamentos)", anos: 5, dest: "Eliminação" },
+            { cod: "031.2", ass: "Fichas, Cadastros e Prontuários de Assistidos (Núcleos)", anos: 20, dest: "Eliminação" },
+            { cod: "031.3", ass: "Ouvidoria (Reclamações, Sugestões, Elogios)", anos: 5, dest: "Eliminação" },
+            { cod: "051.1", ass: "Controle de Frequência, Ponto, Férias e Licenças Comuns", anos: 5, dest: "Eliminação" },
+            { cod: "051.2", ass: "Assentamento Funcional e Fichas Financeiras (Histórico do Servidor)", anos: 100, dest: "Guarda Permanente" },
+            { cod: "051.3", ass: "Sindicâncias e Processos Administrativos Disciplinares (PAD)", anos: 50, dest: "Guarda Permanente" },
+            { cod: "041.1", ass: "Contratos, Convénios, Acordos e Parcerias (Pós-Vigência)", anos: 10, dest: "Guarda Permanente" },
+            { cod: "061.1", ass: "Compras, Licitações e Notas Fiscais (Processos)", anos: 10, dest: "Eliminação" },
+            { cod: "071.1", ass: "Património (Inventários, Termos de Responsabilidade e Baixa)", anos: 5, dest: "Eliminação" },
+            { cod: "091.1", ass: "Gestão de Documentos (Termos de Eliminação e Transferência)", anos: 5, dest: "Guarda Permanente" },
+            { cod: "092.1", ass: "Chamados de Suporte TI e Manutenção Predial", anos: 2, dest: "Eliminação" }
+        ];
+
+        const tbody = document.getElementById("tabelaRegras");
+        tabelaOficialDPRJ.forEach(r => {
+            const destCor = r.dest === "Eliminação" ? "#e74c3c" : "#3498db";
+            tbody.innerHTML += `
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px; font-weight: bold; color: #003366;">${r.cod}</td>
+                    <td style="padding: 12px;">${r.ass}</td>
+                    <td style="padding: 12px;">${r.anos} anos</td>
+                    <td style="padding: 12px; font-weight: bold; color: ${destCor};">${r.dest}</td>
+                </tr>`;
+        });
+    </script>
+</body>
+</html>
