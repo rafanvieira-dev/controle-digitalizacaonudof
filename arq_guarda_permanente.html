@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guarda Permanente - Documentos</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .tr-ready { background-color: #e8f4fd !important; }
-        .badge-ready { background: #3498db; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; }
-        .badge-wait { background: #95a5a6; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; }
-    </style>
 </head>
 <body>
     <div id="appInterface">
@@ -34,26 +29,13 @@
         </aside>
 
         <main id="content">
-            <h2 class="page-title">🏛️ Relatório de Recolhimento - Guarda Permanente</h2>
-            <p style="margin-bottom: 20px; color:#555;">Lista de documentos que possuem valor histórico/probatório e <b>NÃO PODEM SER ELIMINADOS</b>. Verifique quando devem ser transferidos definitivamente para o Arquivo Central.</p>
-            
-            <button class="btn-primary" onclick="window.print()" style="margin-bottom: 20px; width: auto; background: #3498db;">🖨️ Imprimir Termo de Transferência</button>
-
+            <h2 class="page-title">🏛️ Relatório de Guarda Permanente</h2>
             <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #ddd;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead>
-                        <tr style="background: #003366; color: white;">
-                            <th style="padding: 12px;">Documento</th>
-                            <th style="padding: 12px;">Guia Origem</th>
-                            <th style="padding: 12px;">Código (e-ARQ)</th>
-                            <th style="padding: 12px;">Transferência Prevista</th>
-                            <th style="padding: 12px;">Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody id="listaGuarda"><tr><td colspan="5" style="padding:20px; text-align:center;">A carregar dados...</td></tr></tbody>
+                    <thead><tr style="background: #003366; color: white;"><th style="padding: 12px;">Documento</th><th style="padding: 12px;">Guia</th><th style="padding: 12px;">Transferência Prevista</th></tr></thead>
+                    <tbody id="listaGuarda"><tr><td colspan="3" style="padding:20px; text-align:center;">A carregar dados...</td></tr></tbody>
                 </table>
             </div>
-
             <footer class="site-footer">
                 <p><strong>Defensoria Pública do Estado do Rio de Janeiro</strong><br>
                 Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
@@ -74,54 +56,19 @@
             const tbody = document.getElementById("listaGuarda");
             try {
                 const guiasQ = query(collection(db, "guias"), where("status", "==", "Arquivada"));
-                const guiasSnap = await getDocs(guiasQ);
-                
-                let html = ""; const hoje = new Date();
-                const promessas = [];
-                guiasSnap.forEach(g => { 
-                    promessas.push( getDocs(collection(db, "guias", g.id, "documentos")).then(docs => ({ guiaData: g.data(), docs })) ); 
-                });
-                
+                const guiasSnap = await getDocs(guiasQ); let html = "";
+                const promessas = []; guiasSnap.forEach(g => { promessas.push( getDocs(collection(db, "guias", g.id, "documentos")).then(docs => ({ guiaData: g.data(), docs })) ); });
                 const resultados = await Promise.all(promessas);
                 
-                let docsParaGuarda = [];
-                resultados.forEach(res => {
-                    res.docs.forEach(dItem => {
-                        const d = dItem.data();
-                        if (d.metadadosArquivisticos && d.metadadosArquivisticos.destinacaoFinal === "Guarda Permanente") {
-                            docsParaGuarda.push({ 
-                                guiaNum: res.guiaData.numero || res.guiaData.numeroGuia,
-                                docNome: d.nomeDocumento, 
-                                cod: d.metadadosArquivisticos.codigoClassificacaoRef, 
-                                dataPrev: d.metadadosArquivisticos.dataPrevistaDestinacaoFinal
-                            });
-                        }
-                    });
-                });
-
-                docsParaGuarda.sort((a, b) => new Date(a.dataPrev) - new Date(b.dataPrev));
-
-                if(docsParaGuarda.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="padding:20px; text-align:center;">Nenhum documento listado para Guarda Permanente.</td></tr>`; return;
-                }
-
-                docsParaGuarda.forEach(d => {
-                    const dataObj = new Date(d.dataPrev);
-                    const isReady = hoje >= dataObj;
-                    const classTr = isReady ? "tr-ready" : "";
-                    const badge = isReady ? `<span class="badge-ready">Pronto para Transferência</span>` : `<span class="badge-wait">Aguardando Prazo</span>`;
-                    
-                    html += `
-                        <tr class="${classTr}" style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 12px; font-weight:bold;">${d.docNome}</td>
-                            <td style="padding: 12px;">Guia ${d.guiaNum}</td>
-                            <td style="padding: 12px;">${d.cod}</td>
-                            <td style="padding: 12px;">${d.dataPrev.split('-').reverse().join('/')}</td>
-                            <td style="padding: 12px;">${badge}</td>
-                        </tr>`;
-                });
+                let docs = [];
+                resultados.forEach(res => { res.docs.forEach(dItem => { const d = dItem.data(); if (d.metadadosArquivisticos && d.metadadosArquivisticos.destinacaoFinal === "Guarda Permanente") {
+                            docs.push({ guia: res.guiaData.numero || res.guiaData.numeroGuia, nome: d.nomeDocumento, prev: d.metadadosArquivisticos.dataPrevistaDestinacaoFinal });
+                } }); });
+                
+                if(docs.length === 0) { tbody.innerHTML = `<tr><td colspan="3" style="padding:20px; text-align:center;">Nenhum documento para Guarda Permanente.</td></tr>`; return; }
+                docs.forEach(d => { html += `<tr style="border-bottom: 1px solid #eee;"><td style="padding: 12px;">${d.nome}</td><td style="padding: 12px;">Guia ${d.guia}</td><td style="padding: 12px; color:#3498db; font-weight:bold;">${d.prev.split('-').reverse().join('/')}</td></tr>`; });
                 tbody.innerHTML = html;
-            } catch(e) { tbody.innerHTML = `<tr><td colspan="5">Erro ao carregar dados.</td></tr>`; }
+            } catch(e) { tbody.innerHTML = `<tr><td colspan="3">Erro.</td></tr>`; }
         }
     </script>
 </body>
