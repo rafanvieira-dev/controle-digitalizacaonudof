@@ -182,3 +182,26 @@ input, select, textarea {
     display: flex; justify-content: center; align-items: center;
     color: white; font-family: sans-serif; z-index: 9999;
 }
+
+/* --- Rodapé (Footer) Institucional --- */
+.site-footer {
+    text-align: center;
+    padding-top: 20px;
+    margin-top: 50px;
+    border-top: 1px solid var(--border);
+    color: #666;
+    font-size: 0.85em;
+    line-height: 1.6;
+}
+
+.site-footer strong {
+    color: var(--primary);
+    font-size: 1.1em;
+}
+
+.site-footer .desenvolvedor {
+    margin-top: 8px;
+    font-weight: bold;
+    color: var(--secondary);
+    font-size: 0.95em;
+}
