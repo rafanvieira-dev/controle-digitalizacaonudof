@@ -6,34 +6,15 @@
     <title>Arquivamento Físico - NUDOF</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .guia-card-arquivar {
-            background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 6px solid #27ae60;
-        }
-        .data-header-btn {
-            width: 100%; background: #003366; color: white; padding: 12px;
-            border: none; border-radius: 5px; text-align: left; font-weight: bold;
-            margin: 15px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between;
-            align-items: center;
-        }
+        .guia-card-arquivar { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 6px solid #27ae60; }
+        .data-header-btn { width: 100%; background: #003366; color: white; padding: 12px; border: none; border-radius: 5px; text-align: left; font-weight: bold; margin: 15px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .data-header-btn:hover { background: #004080; }
         .contador-pendentes { background: #e74c3c; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85em; margin-left: 10px; font-weight: normal; }
         .grupo-pendentes { display: none; margin-bottom: 20px; }
         .form-grid-arquivar { display: flex; flex-direction: column; gap: 15px; text-align: left; }
         .input-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #34495e; }
         .input-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
-        
-        /* Ajuste específico para a linha da data lado a lado */
-        .linha-data {
-            display: flex; 
-            align-items: center; 
-            gap: 15px; 
-            background: #fff; 
-            padding: 10px 15px; 
-            border-radius: 6px; 
-            border: 1px solid #ccc;
-        }
+        .linha-data { display: flex; align-items: center; gap: 15px; background: #fff; padding: 10px 15px; border-radius: 6px; border: 1px solid #ccc; }
         .linha-data label { margin-bottom: 0; font-size: 14px; white-space: nowrap; }
     </style>
 </head>
@@ -47,8 +28,8 @@
                 <a href="guia.html">➕ Nova Guia</a>
                 <a href="documentos.html">📄 Inserir Documentos</a>
                 <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
-                <a href="arquivamentoFisico.html">🗄️ Arquivar Guia Físico</a>
-                <a href="documentosArquivados.html" class="ativo">📚 Guias Arquivadas</a>
+                <a href="arquivamentoFisico.html" class="ativo">📦 Arquivar Guia Físico</a>
+                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
 
                 <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase; margin-top: 15px; border-top: 1px solid var(--border);">Gestão Arquivística (e-ARQ)</div>
                 <a href="arq_dashboard.html">📊 Painel Temporalidade</a>
@@ -59,11 +40,18 @@
                 <button id="btnLogout" class="btn-sair" style="margin-top: 20px;">🚪 Sair do Sistema</button>
             </nav>
         </aside>
+        
         <main id="content">
             <h2 class="page-title">Arquivamento Físico de Guias</h2>
             <p style="margin-bottom: 20px; color: #666;">Aqui constam as guias que já foram digitalizadas e inseridas no SEI, aguardando organização nas caixas físicas.</p>
             <div id="listaParaArquivar"><p>Buscando guias pendentes de arquivamento...</p></div>
-        </main>
+            
+            <footer class="site-footer">
+                <p><strong>Defensoria Pública do Estado do Rio de Janeiro</strong><br>
+                Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
+                <p class="desenvolvedor">Desenvolvido por Rafael do N. Vieira e Gemini</p>
+            </footer>
+            </main>
     </div>
 
     <div id="modalArquivar" class="modal">
@@ -157,40 +145,22 @@
         }
 
         window.abrirArq = (id, num) => {
-            guiaAtualId = id;
-            document.getElementById("btnConfirmarArq").disabled = false;
-            document.getElementById("btnConfirmarArq").innerText = "✅ CONCLUIR ARQUIVAMENTO";
-            document.getElementById("tituloModalArquivar").innerText = "Arquivar Guia: " + num;
-            
-            // Define a data atual no input
+            guiaAtualId = id; document.getElementById("btnConfirmarArq").disabled = false; document.getElementById("btnConfirmarArq").innerText = "✅ CONCLUIR ARQUIVAMENTO"; document.getElementById("tituloModalArquivar").innerText = "Arquivar Guia: " + num;
             document.getElementById("dataArquivamentoManual").value = new Date().toISOString().split('T')[0];
-            
-            // Limpa as caixas da tela anterior
-            document.getElementById("locCaixa").value = "";
-            document.getElementById("locCaixaDocs").value = "";
-
+            document.getElementById("locCaixa").value = ""; document.getElementById("locCaixaDocs").value = "";
             document.getElementById("modalArquivar").style.display = "block";
         };
 
         document.getElementById("formDadosArquivamento").onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById("btnConfirmarArq");
-            btn.disabled = true; btn.innerText = "Gravando...";
-            
+            e.preventDefault(); const btn = document.getElementById("btnConfirmarArq"); btn.disabled = true; btn.innerText = "Gravando...";
             try {
                 const dataF = document.getElementById("dataArquivamentoManual").value.split("-").reverse().join("/");
-                
                 await updateDoc(doc(db, "guias", guiaAtualId), {
-                    status: "Arquivada",
-                    locCaixaFinal: document.getElementById("locCaixa").value,
-                    locCaixaDocumentos: document.getElementById("locCaixaDocs").value,
-                    dataArquivamentoSistema: dataF,
-                    arquivadoPor: auth.currentUser.email
+                    status: "Arquivada", locCaixaFinal: document.getElementById("locCaixa").value, locCaixaDocumentos: document.getElementById("locCaixaDocs").value,
+                    dataArquivamentoSistema: dataF, arquivadoPor: auth.currentUser.email
                 });
-
                 alert("Arquivamento Físico Concluído com Sucesso! A guia agora consta no Acervo.");
-                document.getElementById("modalArquivar").style.display = "none";
-                carregar();
+                document.getElementById("modalArquivar").style.display = "none"; carregar();
             } catch (err) { alert("Erro ao salvar."); btn.disabled = false; btn.innerText = "CONCLUIR ARQUIVAMENTO"; }
         };
 
