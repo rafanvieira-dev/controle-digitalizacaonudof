@@ -29,23 +29,15 @@
         </aside>
 
         <main id="content">
-            <h2 class="page-title">📋 Tabela de Temporalidade (Referência Administrativa/Documentos)</h2>
-            <p style="margin-bottom: 20px; color:#555;">Consulte abaixo a tabela padrão utilizada para classificar os documentos. Os prazos são calculados a partir da data de receção/digitalização.</p>
-            
+            <h2 class="page-title">📋 Tabela de Temporalidade (Referência)</h2>
             <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #ddd;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead>
-                        <tr style="background: #003366; color: white;">
-                            <th style="padding: 15px;">Código</th>
-                            <th style="padding: 15px;">Assunto / Tipo de Documento</th>
-                            <th style="padding: 15px;">Prazo de Guarda</th>
-                            <th style="padding: 15px;">Destinação Final</th>
-                        </tr>
-                    </thead>
+                    <thead><tr style="background: #003366; color: white;">
+                        <th style="padding: 15px;">Código</th><th style="padding: 15px;">Assunto</th><th style="padding: 15px;">Prazo</th><th style="padding: 15px;">Destinação</th>
+                    </tr></thead>
                     <tbody id="tabelaRegras"></tbody>
                 </table>
             </div>
-
             <footer class="site-footer">
                 <p><strong>Defensoria Pública do Estado do Rio de Janeiro</strong><br>
                 Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
@@ -53,35 +45,17 @@
             </footer>
             </main>
     </div>
-
     <script>
         const tabelaOficialDPRJ = [
-            { cod: "021.1", ass: "Comunicação Externa e Interna (Ofícios, Memorandos, Circulares)", anos: 5, dest: "Eliminação" },
-            { cod: "022.1", ass: "Relatórios de Atividades Setoriais e Estatísticas Mensais", anos: 3, dest: "Eliminação" },
-            { cod: "022.2", ass: "Relatórios de Atividades Institucionais e de Gestão (Anuais)", anos: 5, dest: "Guarda Permanente" },
-            { cod: "031.1", ass: "Atendimento ao Público (Registos de Triagem e Agendamentos)", anos: 5, dest: "Eliminação" },
-            { cod: "031.2", ass: "Fichas, Cadastros e Prontuários de Assistidos (Núcleos)", anos: 20, dest: "Eliminação" },
-            { cod: "031.3", ass: "Ouvidoria (Reclamações, Sugestões, Elogios)", anos: 5, dest: "Eliminação" },
-            { cod: "051.1", ass: "Controle de Frequência, Ponto, Férias e Licenças Comuns", anos: 5, dest: "Eliminação" },
-            { cod: "051.2", ass: "Assentamento Funcional e Fichas Financeiras (Histórico do Servidor)", anos: 100, dest: "Guarda Permanente" },
-            { cod: "051.3", ass: "Sindicâncias e Processos Administrativos Disciplinares (PAD)", anos: 50, dest: "Guarda Permanente" },
-            { cod: "041.1", ass: "Contratos, Convénios, Acordos e Parcerias (Pós-Vigência)", anos: 10, dest: "Guarda Permanente" },
-            { cod: "061.1", ass: "Compras, Licitações e Notas Fiscais (Processos)", anos: 10, dest: "Eliminação" },
-            { cod: "071.1", ass: "Património (Inventários, Termos de Responsabilidade e Baixa)", anos: 5, dest: "Eliminação" },
-            { cod: "091.1", ass: "Gestão de Documentos (Termos de Eliminação e Transferência)", anos: 5, dest: "Guarda Permanente" },
-            { cod: "092.1", ass: "Chamados de Suporte TI e Manutenção Predial", anos: 2, dest: "Eliminação" }
+            { cod: "021.1", ass: "Comunicação Externa e Interna", anos: 5, dest: "Eliminação" }, { cod: "022.1", ass: "Relatórios de Atividades Setoriais", anos: 3, dest: "Eliminação" },
+            { cod: "022.2", ass: "Relatórios Institucionais e Gestão", anos: 5, dest: "Guarda Permanente" }, { cod: "031.1", ass: "Atendimento ao Público (Triagem)", anos: 5, dest: "Eliminação" },
+            { cod: "031.2", ass: "Fichas de Assistidos", anos: 20, dest: "Eliminação" }, { cod: "051.1", ass: "Frequência e Ponto", anos: 5, dest: "Eliminação" },
+            { cod: "051.2", ass: "Assentamento Funcional", anos: 100, dest: "Guarda Permanente" }, { cod: "041.1", ass: "Contratos e Convénios", anos: 10, dest: "Guarda Permanente" },
+            { cod: "061.1", ass: "Compras e Licitações", anos: 10, dest: "Eliminação" }, { cod: "091.1", ass: "Termos de Eliminação/Transferência", anos: 5, dest: "Guarda Permanente" }
         ];
-
         const tbody = document.getElementById("tabelaRegras");
-        tabelaOficialDPRJ.forEach(r => {
-            const destCor = r.dest === "Eliminação" ? "#e74c3c" : "#3498db";
-            tbody.innerHTML += `
-                <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 12px; font-weight: bold; color: #003366;">${r.cod}</td>
-                    <td style="padding: 12px;">${r.ass}</td>
-                    <td style="padding: 12px;">${r.anos} anos</td>
-                    <td style="padding: 12px; font-weight: bold; color: ${destCor};">${r.dest}</td>
-                </tr>`;
+        tabelaOficialDPRJ.forEach(r => { const destCor = r.dest === "Eliminação" ? "#e74c3c" : "#3498db";
+            tbody.innerHTML += `<tr style="border-bottom: 1px solid #eee;"><td style="padding: 12px; font-weight: bold; color: #003366;">${r.cod}</td><td style="padding: 12px;">${r.ass}</td><td style="padding: 12px;">${r.anos} anos</td><td style="padding: 12px; font-weight: bold; color: ${destCor};">${r.dest}</td></tr>`;
         });
     </script>
 </body>
