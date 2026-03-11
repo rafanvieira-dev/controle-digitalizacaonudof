@@ -64,7 +64,6 @@
                     </div>
                 </div>
             </div>
-
             <footer class="site-footer">
                 <p><strong>Defensoria Pública do Estado do Rio de Janeiro</strong><br>
                 Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
@@ -78,52 +77,23 @@
         import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-        onAuthStateChanged(auth, (user) => {
-            if (!user) window.location.href = "index.html";
-            else carregarDashboard();
-        });
+        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregarDashboard(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
         async function carregarDashboard() {
             let totalDocs = 0; let classificados = 0; let eliminacao = 0; let guardaPerm = 0;
-            
             try {
                 const guiasQ = query(collection(db, "guias"), where("status", "==", "Arquivada"));
                 const guiasSnap = await getDocs(guiasQ);
-                
-                const promessas = [];
-                guiasSnap.forEach(g => { promessas.push(getDocs(collection(db, "guias", g.id, "documentos"))); });
-                
+                const promessas = []; guiasSnap.forEach(g => { promessas.push(getDocs(collection(db, "guias", g.id, "documentos"))); });
                 const resultados = await Promise.all(promessas);
-                resultados.forEach(docsSnap => {
-                    docsSnap.forEach(docItem => {
-                        totalDocs++;
-                        const d = docItem.data();
-                        if (d.metadadosArquivisticos) {
-                            classificados++;
-                            if (d.metadadosArquivisticos.destinacaoFinal === "Eliminação") eliminacao++;
-                            else guardaPerm++;
-                        }
-                    });
-                });
+                resultados.forEach(docsSnap => { docsSnap.forEach(docItem => { totalDocs++; const d = docItem.data(); if (d.metadadosArquivisticos) { classificados++; if (d.metadadosArquivisticos.destinacaoFinal === "Eliminação") eliminacao++; else guardaPerm++; } }); });
 
-                document.getElementById("kpiTotal").innerText = totalDocs;
-                document.getElementById("kpiClassificados").innerText = classificados;
-                document.getElementById("kpiPendentes").innerText = totalDocs - classificados;
-
-                document.getElementById("loadingMsg").style.display = "none";
-                document.getElementById("dashContent").style.display = "block";
+                document.getElementById("kpiTotal").innerText = totalDocs; document.getElementById("kpiClassificados").innerText = classificados; document.getElementById("kpiPendentes").innerText = totalDocs - classificados;
+                document.getElementById("loadingMsg").style.display = "none"; document.getElementById("dashContent").style.display = "block";
 
                 const ctx = document.getElementById('graficoDestinacao').getContext('2d');
-                new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['🔥 Eliminação', '🏛️ Guarda Permanente'],
-                        datasets: [{ data: [eliminacao, guardaPerm], backgroundColor: ['#e74c3c', '#3498db'] }]
-                    },
-                    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-                });
-
+                new Chart(ctx, { type: 'doughnut', data: { labels: ['🔥 Eliminação', '🏛️ Guarda Permanente'], datasets: [{ data: [eliminacao, guardaPerm], backgroundColor: ['#e74c3c', '#3498db'] }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } } } });
             } catch(e) { document.getElementById("loadingMsg").innerText = "Erro ao carregar dados."; }
         }
     </script>
