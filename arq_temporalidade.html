@@ -3,8 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Regras e Tabela - Documentos</title>
+    <title>Regras e Tabela - Documentos NUDOF</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .tabela-regras { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; }
+        .tabela-regras th, .tabela-regras td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        .tabela-regras th { background: var(--primary); color: white; font-weight: bold; position: sticky; top: 0; }
+        .tabela-regras tr:hover { background: #f9f9f9; }
+        .input-busca { width: 100%; padding: 15px; border-radius: 8px; border: 2px solid var(--secondary); font-size: 1.1em; outline: none; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .badge-dest { padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
+        .badge-elim { background: #fdeaea; color: #c0392b; border: 1px solid #e74c3c; }
+        .badge-guarda { background: #e8f4fd; color: #2980b9; border: 1px solid #3498db; }
+        .painel-informativo { background: #fff3e0; border-left: 5px solid #e67e22; padding: 15px; border-radius: 4px; margin-bottom: 20px; color: #d35400; font-size: 0.95em; }
+        .msg-placeholder { text-align: center; padding: 40px; color: #7f8c8d; font-size: 1.1em; font-weight: bold; background: white; border-radius: 8px; border: 1px dashed var(--border); }
+    </style>
 </head>
 <body>
     <div id="appInterface">
@@ -29,35 +41,62 @@
         </aside>
 
         <main id="content">
-            <h2 class="page-title">📋 Tabela de Temporalidade (Referência)</h2>
-            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #ddd;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead><tr style="background: #003366; color: white;">
-                        <th style="padding: 15px;">Código</th><th style="padding: 15px;">Assunto</th><th style="padding: 15px;">Prazo</th><th style="padding: 15px;">Destinação</th>
-                    </tr></thead>
-                    <tbody id="tabelaRegras"></tbody>
+            <h2 class="page-title">Dicionário da Tabela de Temporalidade Oficial</h2>
+            <div class="painel-informativo">
+                <strong>ℹ️ Modo de Consulta Rápida:</strong> Pesquise pelo Código ou Assunto para encontrar o prazo legal de guarda e a destinação final.
+            </div>
+
+            <input type="text" id="buscaRegra" class="input-busca" placeholder="🔍 Pesquisar por Código (ex: 0-2-4) ou Assunto (ex: Férias)..." oninput="window.filtrarTabela()">
+            
+            <div id="msgVazio" class="msg-placeholder">☝️ Digite um código ou assunto na barra acima para pesquisar.</div>
+
+            <div id="areaTabela" style="display: none; max-height: 60vh; overflow-y: auto; border-radius: 8px; border: 1px solid var(--border);">
+                <table class="tabela-regras">
+                    <thead><tr><th style="width: 15%;">Código</th><th style="width: 50%;">Assunto / Tipo de Documento</th><th style="width: 15%; text-align: center;">Fase Intermediária</th><th style="width: 20%; text-align: center;">Destinação Final</th></tr></thead>
+                    <tbody id="corpoTabela"></tbody>
                 </table>
             </div>
             
             <footer class="site-footer">
-                <p><strong>Defensoria Pública do Estado do Rio de Janeiro</strong><br>
-                Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
+                <p><strong>Defensoria Pública do Estado do Rio de Janeiro</strong><br>Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
                 <p class="desenvolvedor">Desenvolvido por Rafael do N. Vieira e Gemini</p>
             </footer>
-            </main>
+        </main>
     </div>
-    <script>
+
+    <script type="module">
+        import { auth } from "./firebase.js";
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
         const tabelaOficialDPRJ = [
-            { cod: "021.1", ass: "Comunicação Externa e Interna", anos: 5, dest: "Eliminação" }, { cod: "022.1", ass: "Relatórios de Atividades Setoriais", anos: 3, dest: "Eliminação" },
-            { cod: "022.2", ass: "Relatórios Institucionais e Gestão", anos: 5, dest: "Guarda Permanente" }, { cod: "031.1", ass: "Atendimento ao Público (Triagem)", anos: 5, dest: "Eliminação" },
-            { cod: "031.2", ass: "Fichas de Assistidos", anos: 20, dest: "Eliminação" }, { cod: "051.1", ass: "Frequência e Ponto", anos: 5, dest: "Eliminação" },
-            { cod: "051.2", ass: "Assentamento Funcional", anos: 100, dest: "Guarda Permanente" }, { cod: "041.1", ass: "Contratos e Convénios", anos: 10, dest: "Guarda Permanente" },
-            { cod: "061.1", ass: "Compras e Licitações", anos: 10, dest: "Eliminação" }, { cod: "091.1", ass: "Termos de Eliminação/Transferência", anos: 5, dest: "Guarda Permanente" }
+            { cod: "0-0-1", ass: "Modernização e Reestruturação Administrativa", anos: 2, dest: "Guarda Permanente" }, { cod: "0-0-2-1", ass: "Planos, Programas e Projetos de Trabalho", anos: 5, dest: "Guarda Permanente" }, { cod: "0-0-3-1", ass: "Relatório de Atividades Institucional (Final)", anos: 5, dest: "Guarda Permanente" }, { cod: "0-0-3-2", ass: "Relatório de Atividades Setorial", anos: 5, dest: "Eliminação" }, { cod: "0-0-3-3", ass: "Estatística para Elaboração de Relatórios", anos: 2, dest: "Eliminação" }, { cod: "0-0-4", ass: "Acordo, Ajuste, Contrato e/ou Convênio", anos: 10, dest: "Guarda Permanente" }, { cod: "0-0-5-1", ass: "Fiscalização Decorrente de Acordo/Contrato", anos: 25, dest: "Eliminação" }, { cod: "0-0-5-2", ass: "Apuração de Irregularidade Licitante/Fornecedor", anos: 25, dest: "Eliminação" }, { cod: "0-0-6-1-1", ass: "Correição Ordinária e Extraordinária", anos: 25, dest: "Eliminação" }, { cod: "0-0-6-1-2", ass: "Inspeção Ordinária e Extraordinária de Corregedoria", anos: 25, dest: "Eliminação" }, { cod: "0-0-6-1-3", ass: "Apuração de Possível Desvio de Conduta", anos: 52, dest: "Eliminação" }, { cod: "0-0-6-2-1", ass: "Auditoria de Controle Interno", anos: 25, dest: "Eliminação" }, { cod: "0-0-6-2-2", ass: "Inspeção de Controle Interno", anos: 25, dest: "Eliminação" }, { cod: "0-0-6-2-3", ass: "Acompanhamento de Controle Interno", anos: 25, dest: "Eliminação" }, { cod: "0-0-6-3-1-1", ass: "Manifestação de Interesse do Cidadão", anos: 5, dest: "Eliminação" }, { cod: "0-0-6-3-1-2", ass: "Manifestação de Interesse Administrativo", anos: 25, dest: "Eliminação" }, { cod: "0-0-6-3-1-3", ass: "Manifestação sobre Suposta Irregularidade Interna", anos: 52, dest: "Eliminação" }, { cod: "0-0-6-3-2", ass: "Comunicação de Ouvidoria", anos: 25, dest: "Eliminação" }, { cod: "0-0-7", ass: "Sanção Administrativa", anos: 25, dest: "Guarda Permanente" }, { cod: "0-0-8-1", ass: "Acompanhamento e Instrução de Ação Judicial", anos: 5, dest: "Guarda Permanente" }, { cod: "0-0-9", ass: "Atuação de Defensor Público", anos: 5, dest: "Guarda Permanente" }, { cod: "0-1-0", ass: "Organização e Funcionamento (Geral)", anos: 2, dest: "Guarda Permanente" }, { cod: "0-1-0-1", ass: "Registro nos Órgãos Competentes", anos: 5, dest: "Eliminação" }, { cod: "0-1-0-2", ass: "Regimento, Regulamento, Estatuto, Organograma", anos: 5, dest: "Guarda Permanente" }, { cod: "0-1-0-3", ass: "Audiência, Despacho, Reunião", anos: 3, dest: "Eliminação" }, { cod: "0-1-1-1", ass: "Comissão, Conselho, Grupo de Trabalho (Geral)", anos: 10, dest: "Eliminação" }, { cod: "0-1-1-1-1", ass: "Ato de Criação/Extinção, Ata de Comissão", anos: 10, dest: "Guarda Permanente" }, { cod: "0-1-1-1-2", ass: "Comunicação de Afastamento de Membro", anos: 10, dest: "Guarda Permanente" }, { cod: "0-1-2-1-1", ass: "Credenciamento de Jornalistas", anos: 1, dest: "Eliminação" }, { cod: "0-1-2-1-2", ass: "Entrevista, Noticiário, Reportagem", anos: 2, dest: "Eliminação" }, { cod: "0-1-2-1-3", ass: "Release de Matérias e Notas", anos: 2, dest: "Guarda Permanente" }, { cod: "0-1-2-1-4", ass: "Diário Oficial Eletrônico da DPRJ", anos: 0, dest: "Guarda Permanente" }, { cod: "0-1-2-2-1", ass: "Informativo Interno e Boletins", anos: 2, dest: "Guarda Permanente" }, { cod: "0-1-2-2-2", ass: "Clipping (Compilação de Notícias)", anos: 2, dest: "Guarda Permanente" }, { cod: "0-1-2-3", ass: "Campanha Institucional / Publicidade", anos: 15, dest: "Guarda Permanente" }, { cod: "0-1-2-4", ass: "Registro Sonoro, Fotográfico e Audiovisual", anos: 15, dest: "Guarda Permanente" }, { cod: "0-1-3-1-1", ass: "Solenidade, Comemoração, Homenagem", anos: 10, dest: "Guarda Permanente" }, { cod: "0-1-3-2-1", ass: "Feira, Exposição, Palestra", anos: 10, dest: "Guarda Permanente" }, { cod: "0-1-3-2-2", ass: "Concurso (Habilitação, Julgamento, Recursos)", anos: 10, dest: "Guarda Permanente" }, { cod: "0-1-3-3", ass: "Felicitação, Convite, Pêsames", anos: 2, dest: "Eliminação" }, { cod: "0-1-3-4", ass: "Visita e Visitante", anos: 2, dest: "Eliminação" }, { cod: "0-1-3-4-1", ass: "Livro de Registro de Presença", anos: 5, dest: "Guarda Permanente" }, { cod: "0-1-3-5", ass: "Protesto, Reivindicação, Reclamação", anos: 2, dest: "Eliminação" }, { cod: "0-1-3-6", ass: "Pedido e Informação Diversa", anos: 2, dest: "Eliminação" }, { cod: "0-1-3-7", ass: "Premiação / Elogios à DPRJ", anos: 2, dest: "Guarda Permanente" }, { cod: "0-1-4-1", ass: "Gestão Ambiental", anos: 5, dest: "Eliminação" }, { cod: "0-1-4-2", ass: "Responsabilidade Social", anos: 5, dest: "Eliminação" }, { cod: "0-1-4-3", ass: "Assistência Social", anos: 5, dest: "Eliminação" }, { cod: "0-2-0-1", ass: "Identificação Funcional", anos: 2, dest: "Eliminação" }, { cod: "0-2-0-2", ass: "Relação com Órgão Normatizador", anos: 10, dest: "Eliminação" }, { cod: "0-2-0-3", ass: "Relação com o Conselho Profissional", anos: 2, dest: "Eliminação" }, { cod: "0-2-0-4", ass: "Relação com Sindicato / Associação", anos: 5, dest: "Guarda Permanente" }, { cod: "0-2-0-4-1", ass: "Movimento Reivindicatório (Greve/Paralisação)", anos: 5, dest: "Guarda Permanente" }, { cod: "0-2-0-5", ass: "Relação com Entidades de Financiamento", anos: 20, dest: "Eliminação" }, { cod: "0-2-0-5-1", ass: "Adiantamento e Empréstimo a Defensor/Servidor", anos: 5, dest: "Eliminação" }, { cod: "0-2-0-6", ass: "Assentamento Funcional / Cadastro", anos: 95, dest: "Eliminação" }, { cod: "0-2-0-6-1", ass: "Dados Cadastrais (Atualização)", anos: 2, dest: "Eliminação" }, { cod: "0-2-0-6-2", ass: "Comunicação de Endereço Eventual", anos: 1, dest: "Eliminação" }, { cod: "0-2-0-6-3", ass: "Solicitação de Certidões e Averbação", anos: 2, dest: "Eliminação" }, { cod: "0-2-0-6-4", ass: "Carta de Apresentação / Recomendação", anos: 1, dest: "Eliminação" }, { cod: "0-2-0-7", ass: "Horário de Expediente / Escala", anos: 5, dest: "Eliminação" }, { cod: "0-2-0-7-1", ass: "Controle de Frequência / Ponto Eletrônico", anos: 70, dest: "Eliminação" }, { cod: "0-2-0-8-1", ass: "Prêmio, Medalha e Honra ao Mérito", anos: 5, dest: "Guarda Permanente" }, { cod: "0-2-0-8-2", ass: "Elogio a Defensor / Servidor", anos: 95, dest: "Eliminação" }, { cod: "0-2-0-9", ass: "Comunicado e Informe Diverso (RH)", anos: 2, dest: "Eliminação" }, { cod: "0-2-0-9-1", ass: "Pedidos de Informações sobre Gestão de Pessoas", anos: 5, dest: "Eliminação" }, { cod: "0-2-1-1", ass: "Candidato a Cargo Público / Inscrição", anos: 3, dest: "Eliminação" }, { cod: "0-2-1-2", ass: "Concurso Público (Assuntos Gerais)", anos: 5, dest: "Eliminação" }, { cod: "0-2-1-2-1", ass: "Provas, Testes Psicotécnicos, Exames Médicos", anos: 6, dest: "Eliminação" }, { cod: "0-2-1-2-2", ass: "Concurso: Edital, Gabarito, Recurso, Resultado", anos: 5, dest: "Guarda Permanente" }, { cod: "0-2-2-1-1", ass: "Curso Promovido pela DPRJ (Geral)", anos: 3, dest: "Eliminação" }, { cod: "0-2-2-1-1-1", ass: "Curso DPRJ: Proposta, Edital, Relatório Final", anos: 3, dest: "Guarda Permanente" }, { cod: "0-2-2-1-2", ass: "Curso por Outra Instituição com Ônus", anos: 10, dest: "Eliminação" }, { cod: "0-2-2-1-3-1", ass: "Curso Sem Ônus", anos: 5, dest: "Eliminação" }, { cod: "0-2-2-1-4", ass: "Comprovação de Certificação / Graduação / Pós", anos: 100, dest: "Eliminação" }, { cod: "0-2-2-1-5", ass: "Processo Seletivo Interno de Capacitação", anos: 100, dest: "Eliminação" }, { cod: "0-2-2-2-1", ass: "Estágio Promovido pela DPRJ / Residência", anos: 5, dest: "Eliminação" }, { cod: "0-2-2-2-1-1", ass: "Estágio: Programa, Relatório, Avaliação", anos: 3, dest: "Guarda Permanente" }, { cod: "0-2-2-2-2", ass: "Concurso para Residência / Estágio", anos: 5, dest: "Eliminação" }, { cod: "0-2-2-3-1", ass: "Congresso, Seminário, Simpósio", anos: 10, dest: "Guarda Permanente" }, { cod: "0-2-3-0-1", ass: "Estudo e Previsão de Pessoal", anos: 5, dest: "Guarda Permanente" }, { cod: "0-2-3-0-2", ass: "Criação/Transformação de Cargos e Funções", anos: 5, dest: "Guarda Permanente" }, { cod: "0-2-3-0-3", ass: "Reestruturação e Alteração Salarial", anos: 52, dest: "Eliminação" }, { cod: "0-2-3-0-3-1", ass: "Lista de Antiguidade", anos: 5, dest: "Guarda Permanente" }, { cod: "0-2-3-0-4", ass: "Estágio Probatório", anos: 52, dest: "Eliminação" }, { cod: "0-2-3-1-1", ass: "Admissão, Nomeação, Readaptação", anos: 52, dest: "Eliminação" }, { cod: "0-2-3-1-2", ass: "Demissão, Exoneração, Falecimento", anos: 52, dest: "Eliminação" }, { cod: "0-2-3-1-3", ass: "Lotação, Remoção, Transferência, Permuta", anos: 10, dest: "Eliminação" }, { cod: "0-2-3-1-4", ass: "Designação, Disponibilidade, Substituição", anos: 52, dest: "Eliminação" }, { cod: "0-2-3-1-5", ass: "Requisição, Cessão", anos: 52, dest: "Eliminação" }, { cod: "0-2-3-2", ass: "Eleição Administrativa", anos: 5, dest: "Guarda Permanente" }, { cod: "0-2-4-1", ass: "Folha de Pagamento / Ficha Financeira", anos: 100, dest: "Eliminação" }, { cod: "0-2-4-1-2-1", ass: "Gratificação de Função", anos: 52, dest: "Eliminação" }, { cod: "0-2-4-1-2-3", ass: "Gratificação Natalina (13º Salário)", anos: 7, dest: "Eliminação" }, { cod: "0-2-4-1-3-1", ass: "Adicional de Tempo de Serviço (Triênio/Quinquênio)", anos: 35, dest: "Guarda Permanente" }, { cod: "0-2-4-1-3-6", ass: "Adicional por Serviço Extraordinário", anos: 52, dest: "Eliminação" }, { cod: "0-2-4-1-4-4", ass: "Desconto de Pensão Alimentícia", anos: 100, dest: "Eliminação" }, { cod: "0-2-4-2", ass: "Férias (Assuntos Gerais / Escala / Adiantamento)", anos: 7, dest: "Eliminação" }, { cod: "0-2-4-2-1", ass: "Concessão Individual de Férias", anos: 95, dest: "Eliminação" }, { cod: "0-2-4-3", ass: "Licenças (Geral - Saúde, Maternidade, Prêmio)", anos: 52, dest: "Eliminação" }, { cod: "0-2-4-4", ass: "Afastamentos (Geral - Estudo, Mandato, Júri)", anos: 52, dest: "Eliminação" }, { cod: "0-2-4-5-1", ass: "Reembolso de Despesas (Geral)", anos: 3, dest: "Eliminação" }, { cod: "0-2-4-7", ass: "Auxílios (Alimentação, Transporte, Moradia)", anos: 10, dest: "Eliminação" }, { cod: "0-2-5-1-1", ass: "Processo Administrativo Disciplinar / Sindicância", anos: 100, dest: "Guarda Permanente" }, { cod: "0-2-6-1-5", ass: "Aposentadoria / Revisão", anos: 35, dest: "Guarda Permanente" }, { cod: "0-2-6-1-6-1", ass: "Prontuário Médico do Defensor / Servidor", anos: 95, dest: "Eliminação" }, { cod: "0-2-7-2", ass: "Missão Fora da Sede / Viagem (Com Ônus)", anos: 10, dest: "Eliminação" }, { cod: "0-2-9", ass: "Serviço Profissional Transitório (Terceirizados)", anos: 51, dest: "Eliminação" }, { cod: "0-3-1-1-1", ass: "Compra / Aluguel de Material Permanente", anos: 10, dest: "Eliminação" }, { cod: "0-3-1-2-1", ass: "Compra de Material de Consumo", anos: 10, dest: "Eliminação" }, { cod: "0-3-2-0-1", ass: "Termo de Responsabilidade / Mov. de Bens (RMB)", anos: 10, dest: "Guarda Permanente" }, { cod: "0-3-3-5", ass: "Baixa Patrimonial de Material", anos: 5, dest: "Guarda Permanente" }, { cod: "0-4-1-1-1", ass: "Compra de Imóvel", anos: 10, dest: "Guarda Permanente" }, { cod: "0-4-1-3", ass: "Desapropriação, Reintegração, Tombamento", anos: 10, dest: "Guarda Permanente" }, { cod: "0-4-1-4-1", ass: "Obra: Reforma, Recuperação, Construção", anos: 10, dest: "Guarda Permanente" }, { cod: "0-4-1-5", ass: "Manutenção Predial (Limpeza, Elétrica)", anos: 3, dest: "Eliminação" }, { cod: "0-4-2-1-1", ass: "Compra ou Aluguel de Veículo", anos: 10, dest: "Eliminação" }, { cod: "0-4-4-2", ass: "Serviço de Vigilância", anos: 10, dest: "Eliminação" }, { cod: "0-4-4-6", ass: "Sinistro / Apuração", anos: 5, dest: "Eliminação" }, { cod: "0-5-0-1", ass: "Auditoria Financeira", anos: 10, dest: "Guarda Permanente" }, { cod: "0-5-1-1-2", ass: "Proposta Orçamentária", anos: 10, dest: "Guarda Permanente" }, { cod: "0-5-2-2-1", ass: "Receita (Créditos, Taxas, Multas)", anos: 10, dest: "Eliminação" }, { cod: "0-5-6", ass: "Balanços / Balancetes", anos: 10, dest: "Guarda Permanente" }, { cod: "0-5-7-1", ass: "Tomada de Contas", anos: 10, dest: "Guarda Permanente" }, { cod: "0-5-7-2", ass: "Prestação de Contas", anos: 10, dest: "Guarda Permanente" }, { cod: "0-6-0-1-1-2", ass: "Publicação Diário Oficial e Veículos Oficiais", anos: 10, dest: "Eliminação" }, { cod: "0-6-2-0", ass: "Normas e Manuais de Gestão Documental", anos: 5, dest: "Guarda Permanente" }, { cod: "0-6-2-2-2", ass: "Registro e Autuação de Processos (Protocolo)", anos: 5, dest: "Guarda Permanente" }, { cod: "0-6-2-5-2", ass: "Eliminação de Documentos (Termo e Edital)", anos: 5, dest: "Guarda Permanente" }, { cod: "0-6-2-5-3", ass: "Transferência e Recolhimento de Documentos", anos: 5, dest: "Guarda Permanente" }, { cod: "0-7-1", ass: "Plano e Projeto de Informática", anos: 5, dest: "Guarda Permanente" }, { cod: "0-7-2-3", ass: "Aquisição de Soluções de TI (Softwares)", anos: 10, dest: "Guarda Permanente" }, { cod: "0-7-2-4", ass: "Sistemas Corporativos Desenvolvidos pela DPRJ", anos: 2, dest: "Guarda Permanente" }, { cod: "0-7-4-1", ass: "Incidente de Segurança da Informação", anos: 52, dest: "Eliminação" }, { cod: "0-8-0", ass: "Associações Culturais e de Defensores", anos: 5, dest: "Guarda Permanente" }
         ];
-        const tbody = document.getElementById("tabelaRegras");
-        tabelaOficialDPRJ.forEach(r => { const destCor = r.dest === "Eliminação" ? "#e74c3c" : "#3498db";
-            tbody.innerHTML += `<tr style="border-bottom: 1px solid #eee;"><td style="padding: 12px; font-weight: bold; color: #003366;">${r.cod}</td><td style="padding: 12px;">${r.ass}</td><td style="padding: 12px;">${r.anos} anos</td><td style="padding: 12px; font-weight: bold; color: ${destCor};">${r.dest}</td></tr>`;
-        });
+
+        function renderizarTabela(lista, buscaVazia = false) {
+            const tbody = document.getElementById("corpoTabela");
+            const areaTabela = document.getElementById("areaTabela");
+            const msgVazio = document.getElementById("msgVazio");
+            
+            tbody.innerHTML = "";
+            if (buscaVazia) { areaTabela.style.display = "none"; msgVazio.style.display = "block"; msgVazio.innerHTML = "☝️ Digite um código ou assunto na barra acima para pesquisar."; msgVazio.style.color = "#7f8c8d"; return; }
+            if (lista.length === 0) { areaTabela.style.display = "none"; msgVazio.style.display = "block"; msgVazio.innerHTML = "❌ Nenhuma regra ou código encontrado com esse termo."; msgVazio.style.color = "#e74c3c"; return; }
+
+            areaTabela.style.display = "block"; msgVazio.style.display = "none";
+            lista.forEach(regra => {
+                const badgeClass = regra.dest === "Eliminação" ? "badge-elim" : "badge-guarda";
+                tbody.innerHTML += `<tr><td><strong>${regra.cod}</strong></td><td style="color: #34495e;">${regra.ass}</td><td style="text-align: center; font-weight: bold; color: #555;">${regra.anos} anos</td><td style="text-align: center;"><span class="badge-dest ${badgeClass}">${regra.dest}</span></td></tr>`;
+            });
+        }
+
+        window.filtrarTabela = () => {
+            const termo = document.getElementById("buscaRegra").value.toLowerCase().trim();
+            if (termo === "") { renderizarTabela([], true); return; }
+            const filtrado = tabelaOficialDPRJ.filter(r => r.cod.toLowerCase().includes(termo) || r.ass.toLowerCase().includes(termo));
+            renderizarTabela(filtrado, false);
+        };
+
+        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else renderizarTabela([], true); });
+        document.getElementById("btnLogout").onclick = () => signOut(auth);
     </script>
 </body>
 </html>
