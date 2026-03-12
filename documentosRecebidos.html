@@ -153,14 +153,13 @@
             const areaDocs = document.getElementById("areaDocumentosArquivar"); document.getElementById("modalArquivar").style.display = "block";
             try {
                 const gSnap = await getDoc(doc(db, "guias", id)); dadosGuiaOriginal = gSnap.data(); const snap = await getDocs(collection(db, "guias", id, "documentos"));
-                let html = `<table class="tabela-docs-arquivamento"><thead><tr><th>Nº Ordem</th><th>Documento / Processo Orig.</th><th style="width:70px">Folhas*</th><th style="width:130px">Protocolo SEI*</th><th style="width:130px">Ref. Hiperlink SEI</th><th style="width:120px">Data Digitaliz.*</th><th style="width:90px">Mídia</th><th style="width:120px">Prot. Mídia</th><th>Obs.</th></tr></thead><tbody>`;
+                let html = `<table class="tabela-docs-arquivamento"><thead><tr><th>Nº Ordem</th><th>Documento / Processo Orig.</th><th style="width:70px">Folhas*</th><th style="width:130px">Protocolo SEI*</th><th style="width:120px">Data Digitaliz.*</th><th style="width:90px">Mídia</th><th style="width:120px">Prot. Mídia</th><th>Obs.</th></tr></thead><tbody>`;
                 let i = 1; let faltaProcessoSEI = false; 
                 snap.forEach(docSnap => {
                     const d = docSnap.data(); if (!d.numeroProcesso || d.numeroProcesso.trim() === "") { faltaProcessoSEI = true; }
                     documentosDaGuia.push(docSnap.id); listaDocumentosCache.push({ id: docSnap.id, processoOriginal: d.numeroProcesso });
                     html += `<tr><td style="text-align:center"><b>${i++}</b></td><td><small><b>${d.nomeDocumento}</b><br>Processo: <span style="color:${d.numeroProcesso ? '#333' : 'red'}">${d.numeroProcesso || 'FALTANTE ⚠️'}</span></small></td>
                         <td><input type="number" id="pags_${docSnap.id}" class="campo-obrigatorio" required></td><td><input type="text" id="sei_${docSnap.id}" class="campo-obrigatorio" placeholder="Nº Protocolo" required></td>
-                        <td><input type="text" id="linkSei_${docSnap.id}" placeholder="#{...|...}#" title="Cole aqui a referência #{...}# do SEI"></td>
                         <td><input type="date" id="data_${docSnap.id}" class="campo-obrigatorio" onchange="window.sincronizarDatas(this.value)" required></td><td><select id="tAnexo_${docSnap.id}"><option value="Nenhum">Não</option><option value="CD">CD</option><option value="DVD">DVD</option><option value="Pen Drive">Pen Drive</option></select></td>
                         <td><input type="text" id="protAnexo_${docSnap.id}" placeholder="Se houver"></td><td><input type="text" id="obs_${docSnap.id}"></td></tr>`;
                 });
@@ -179,7 +178,7 @@
                 await updateDoc(doc(db, "guias", guiaAtualId), { status: "Digitalizada", operadorDigitalizacao: auth.currentUser.email, nomeOperador: nomeOp, matriculaOperador: document.getElementById("matriculaOperador").value });
                 const promessas = documentosDaGuia.map(docId => {
                     return updateDoc(doc(db, "guias", guiaAtualId, "documentos", docId), {
-                        protocoloSeiDigitalizado: document.getElementById(`sei_${docId}`).value, linkSei: document.getElementById(`linkSei_${docId}`).value || "", paginasPdf: document.getElementById(`pags_${docId}`).value,
+                        protocoloSeiDigitalizado: document.getElementById(`sei_${docId}`).value, paginasPdf: document.getElementById(`pags_${docId}`).value,
                         dataDigitalizacao: document.getElementById(`data_${docId}`).value, tipoAnexo: document.getElementById(`tAnexo_${docId}`).value, protocoloAnexo: document.getElementById(`protAnexo_${docId}`).value || "", observacaoDigitalizacao: document.getElementById(`obs_${docId}`).value || ""
                     });
                 });
