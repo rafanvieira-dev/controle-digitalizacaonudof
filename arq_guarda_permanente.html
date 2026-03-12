@@ -3,8 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guarda Permanente - Documentos</title>
+    <title>Guarda Permanente - NUDOF</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .tabela-eliminacao { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; }
+        .tabela-eliminacao th, .tabela-eliminacao td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .tabela-eliminacao th { background: #2980b9; color: white; font-weight: bold; }
+        .tabela-eliminacao tr:hover { background: #f9f9f9; }
+        .painel-aviso { background: #e8f4f8; border-left: 5px solid #3498db; padding: 15px 20px; border-radius: 4px; margin-bottom: 25px; }
+        .acoes-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .detalhes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-top: 15px; }
+        .detalhes-grid div { margin-bottom: 10px; }
+        .detalhes-grid span { display: block; font-size: 0.85em; color: #666; font-weight: bold; text-transform: uppercase; margin-bottom: 3px; }
+        .detalhes-grid strong { font-size: 1.1em; color: var(--text-dark); }
+        .destaque-azul { background: #e8f4fd; border-left: 4px solid #2980b9; padding: 15px; grid-column: span 2; margin-top: 10px; border-radius: 4px; }
+        
+        @media print {
+            #sidebar, .acoes-topo, button, .col-acoes { display: none !important; }
+            body { background: white; } #content { padding: 0; }
+            .tabela-eliminacao { box-shadow: none; border: 1px solid #ddd; }
+            .tabela-eliminacao th { background: #eee !important; color: #000 !important; }
+        }
+    </style>
 </head>
 <body>
     <div id="appInterface">
@@ -27,22 +47,50 @@
                 <button id="btnLogout" class="btn-sair" style="margin-top: 20px;">🚪 Sair do Sistema</button>
             </nav>
         </aside>
-
+        
         <main id="content">
-            <h2 class="page-title">🏛️ Relatório de Guarda Permanente</h2>
-            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #ddd;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead><tr style="background: #003366; color: white;"><th style="padding: 12px;">Documento</th><th style="padding: 12px;">Guia</th><th style="padding: 12px;">Transferência Prevista</th></tr></thead>
-                    <tbody id="listaGuarda"><tr><td colspan="3" style="padding:20px; text-align:center;">A carregar dados...</td></tr></tbody>
-                </table>
+            <h2 class="page-title" style="color: #2980b9; border-bottom-color: #2980b9;">Relatório de Recolhimento - Guarda Permanente</h2>
+            <div class="painel-aviso"><p style="color: #2980b9; font-weight: bold; margin: 0;">ℹ️ Estes documentos possuem valor histórico e DEVEM SER PRESERVADOS. Estão aptos para transferência ao Arquivo Central/Histórico.</p></div>
+
+            <div class="acoes-topo">
+                <div><strong>Total aptos para recolhimento histórico:</strong> <span id="totalVencidos" style="font-size: 1.2rem; font-weight: bold; color: #2980b9; margin-left: 5px;">...</span></div>
+                <button class="btn-primary" style="background:#2c3e50; width:auto;" onclick="window.print()">🖨️ Imprimir Termo de Recolhimento</button>
             </div>
             
+            <table class="tabela-eliminacao">
+                <thead><tr><th>Documento Físico</th><th>Protocolo SEI Origem</th><th>Regra de Classificação</th><th>Data Ref. (Digitalização)</th><th>Apto desde</th><th class="col-acoes" style="text-align: center;">Ações</th></tr></thead>
+                <tbody id="listaVencidos"><tr><td colspan="6" style="text-align:center; padding: 20px;">A procurar documentos históricos no acervo...</td></tr></tbody>
+            </table>
+            
             <footer class="site-footer">
-                <p><strong>Defensoria Pública do Estado do Rio de Janeiro</strong><br>
-                Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
+                <p><strong>Defensoria Pública do Estado do Rio de Janeiro</strong><br>Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
                 <p class="desenvolvedor">Desenvolvido por Rafael do N. Vieira e Gemini</p>
             </footer>
-            </main>
+        </main>
+    </div>
+
+    <div id="modalDetalhesDocumento" class="modal">
+        <div class="modal-content" style="width: 95%; max-width: 800px;">
+            <span class="close-btn" onclick="document.getElementById('modalDetalhesDocumento').style.display='none'" style="float: right; cursor: pointer; font-size: 1.5em;">&times;</span>
+            <h3 style="color: #2980b9; margin-bottom: 5px;">👁️ Detalhes do Documento Histórico</h3>
+            <div class="detalhes-grid">
+                <div style="grid-column: span 2;"><span>Nome do Documento</span><strong id="detNomeDoc" style="color: #2980b9; font-size: 1.3em;">--</strong></div>
+                <div><span>Processo Original (SEI)</span><strong id="detProcessoSei">--</strong></div>
+                <div><span>Protocolo Digitalizado (SEI)</span><strong id="detProtocoloSei">--</strong></div>
+                <div><span>Localização: Guia</span><strong id="detGuia">--</strong></div>
+                <div><span>Caixa (Guia/Docs)</span><strong id="detCaixas">--</strong></div>
+                
+                <div class="destaque-azul">
+                    <span style="color: #2980b9;">📋 Enquadramento Arquivístico (e-ARQ)</span>
+                    <strong id="detRegra" style="display: block; margin-bottom: 10px;">--</strong>
+                    <div style="display: flex; gap: 30px;">
+                        <div><span style="color: #2980b9;">Data Base (Digitalização):</span><strong id="detDataAb">--</strong></div>
+                        <div><span style="color: #2980b9;">Apto p/ Transferência desde:</span><strong id="detDataVenc">--</strong></div>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-primary" style="margin-top: 20px; background: #7f8c8d;" onclick="document.getElementById('modalDetalhesDocumento').style.display='none'">Fechar Detalhes</button>
+        </div>
     </div>
 
     <script type="module">
@@ -50,27 +98,62 @@
         import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregarGuarda(); });
+        window.documentosVencidosMap = {};
+
+        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregarLista(); });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
-        async function carregarGuarda() {
-            const tbody = document.getElementById("listaGuarda");
+        async function carregarLista() {
+            const tbody = document.getElementById("listaVencidos");
             try {
-                const guiasQ = query(collection(db, "guias"), where("status", "==", "Arquivada"));
-                const guiasSnap = await getDocs(guiasQ); let html = "";
-                const promessas = []; guiasSnap.forEach(g => { promessas.push( getDocs(collection(db, "guias", g.id, "documentos")).then(docs => ({ guiaData: g.data(), docs })) ); });
-                const resultados = await Promise.all(promessas);
-                
-                let docs = [];
-                resultados.forEach(res => { res.docs.forEach(dItem => { const d = dItem.data(); if (d.metadadosArquivisticos && d.metadadosArquivisticos.destinacaoFinal === "Guarda Permanente") {
-                            docs.push({ guia: res.guiaData.numero || res.guiaData.numeroGuia, nome: d.nomeDocumento, prev: d.metadadosArquivisticos.dataPrevistaDestinacaoFinal });
-                } }); });
-                
-                if(docs.length === 0) { tbody.innerHTML = `<tr><td colspan="3" style="padding:20px; text-align:center;">Nenhum documento para Guarda Permanente.</td></tr>`; return; }
-                docs.forEach(d => { html += `<tr style="border-bottom: 1px solid #eee;"><td style="padding: 12px;">${d.nome}</td><td style="padding: 12px;">Guia ${d.guia}</td><td style="padding: 12px; color:#3498db; font-weight:bold;">${d.prev.split('-').reverse().join('/')}</td></tr>`; });
-                tbody.innerHTML = html;
-            } catch(e) { tbody.innerHTML = `<tr><td colspan="3">Erro.</td></tr>`; }
+                const guiasSnap = await getDocs(query(collection(db, "guias"), where("status", "==", "Arquivada")));
+                const dataHoje = new Date(); dataHoje.setHours(0, 0, 0, 0);
+                let html = ""; let contagem = 0; window.documentosVencidosMap = {};
+
+                for (const guiaDoc of guiasSnap.docs) {
+                    const guiaData = guiaDoc.data();
+                    const docsSnap = await getDocs(collection(db, "guias", guiaDoc.id, "documentos"));
+                    
+                    docsSnap.forEach(docSnap => {
+                        const d = docSnap.data(); const docId = docSnap.id;
+                        if (d.metadadosArquivisticos && d.metadadosArquivisticos.destinacaoFinal === "Guarda Permanente") {
+                            const dataVencimento = new Date(d.metadadosArquivisticos.dataPrevistaDestinacaoFinal);
+                            dataVencimento.setHours(0, 0, 0, 0);
+
+                            if (dataHoje >= dataVencimento) {
+                                contagem++; window.documentosVencidosMap[docId] = { doc: d, guia: guiaData };
+                                const dataBaseBR = d.dataDigitalizacao ? d.dataDigitalizacao.split('-').reverse().join('/') : "--";
+                                const dataVencimentoBR = d.metadadosArquivisticos.dataPrevistaDestinacaoFinal.split('-').reverse().join('/');
+                                
+                                html += `<tr>
+                                    <td><strong>${d.nomeDocumento}</strong><br><small style="color:#666;">Guia: ${guiaData.numero || guiaData.numeroGuia}</small></td>
+                                    <td>${d.numeroProcesso || '--'}</td>
+                                    <td><strong>${d.metadadosArquivisticos.codigoClassificacaoRef}</strong><br><small>${d.metadadosArquivisticos.assuntoTemporalidade}</small></td>
+                                    <td>${dataBaseBR}</td><td style="color: #2980b9; font-weight: bold;">${dataVencimentoBR}</td>
+                                    <td class="col-acoes" style="text-align: center;"><button class="btn-primary" style="background: #3498db; padding: 8px 15px; width: auto;" onclick="window.abrirDetalhes('${docId}')">👁️ Detalhes</button></td>
+                                </tr>`;
+                            }
+                        }
+                    });
+                }
+                document.getElementById("totalVencidos").innerText = contagem;
+                tbody.innerHTML = contagem === 0 ? `<tr><td colspan="6" style="text-align:center; padding: 30px; color:#7f8c8d;">Nenhum documento aguardando recolhimento histórico.</td></tr>` : html;
+            } catch (error) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">Erro ao aceder aos dados no sistema.</td></tr>`; }
         }
+
+        window.abrirDetalhes = function(docId) {
+            const dados = window.documentosVencidosMap[docId]; if (!dados) return;
+            const d = dados.doc; const g = dados.guia;
+            document.getElementById("detNomeDoc").innerText = d.nomeDocumento || "--";
+            document.getElementById("detProcessoSei").innerText = d.numeroProcesso || "--";
+            document.getElementById("detProtocoloSei").innerText = d.protocoloSeiDigitalizado || "--";
+            document.getElementById("detGuia").innerText = g.numero || g.numeroGuia || "--";
+            document.getElementById("detCaixas").innerText = `G: ${g.locCaixaFinal || '--'} | D: ${g.locCaixaDocumentos || '--'}`;
+            document.getElementById("detRegra").innerText = `${d.metadadosArquivisticos.codigoClassificacaoRef} - ${d.metadadosArquivisticos.assuntoTemporalidade}`;
+            document.getElementById("detDataAb").innerText = d.dataDigitalizacao ? d.dataDigitalizacao.split('-').reverse().join('/') : "--";
+            document.getElementById("detDataVenc").innerText = d.metadadosArquivisticos.dataPrevistaDestinacaoFinal.split('-').reverse().join('/');
+            document.getElementById("modalDetalhesDocumento").style.display = "block";
+        };
     </script>
 </body>
 </html>
