@@ -97,6 +97,7 @@
                 <div style="display: flex; gap: 15px;">
                     <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#f39c12; padding: 15px; font-weight: bold; flex: 2;">✅ CONCLUIR DIGITALIZAÇÃO</button>
                     <button type="button" class="btn-primary" id="btnGerarFolhaRosto" style="background:#003366; padding: 15px; font-weight: bold; flex: 1; display: none;">📄 GERAR FOLHA DE ROSTO</button>
+                    <button type="button" class="btn-primary" id="btnFinalizar" style="background:#27ae60; padding: 15px; font-weight: bold; flex: 1; display: none;">✅ FINALIZAR (SEM IMPRIMIR)</button>
                 </div>
             </form>
         </div>
@@ -202,9 +203,22 @@
 
         window.abrirArq = async (id, num) => {
             guiaAtualId = id; documentosDaGuia = []; listaDocumentosCache = [];
-            document.getElementById("btnGerarFolhaRosto").style.display = "none"; document.getElementById("btnConfirmarArq").disabled = false; document.getElementById("btnConfirmarArq").innerText = "✅ CONCLUIR DIGITALIZAÇÃO"; document.getElementById("btnConfirmarArq").style.background = "#f39c12"; 
-            document.getElementById("tituloModalArquivar").innerText = "Digitalização e SEI - Guia: " + num; document.getElementById("nomeOperador").value = auth.currentUser.displayName || ""; document.getElementById("avisoProcessoSei").style.display = "none"; 
-            const areaDocs = document.getElementById("areaDocumentosArquivar"); document.getElementById("modalArquivar").style.display = "block";
+            
+            // Exibe e habilita apenas o botão principal ao abrir
+            document.getElementById("btnConfirmarArq").style.display = "block";
+            document.getElementById("btnConfirmarArq").disabled = false;
+            document.getElementById("btnConfirmarArq").innerText = "✅ CONCLUIR DIGITALIZAÇÃO";
+            
+            // Oculta os botões complementares (Folha e Finalizar)
+            document.getElementById("btnGerarFolhaRosto").style.display = "none"; 
+            document.getElementById("btnFinalizar").style.display = "none";
+            
+            document.getElementById("tituloModalArquivar").innerText = "Digitalização e SEI - Guia: " + num; 
+            document.getElementById("nomeOperador").value = auth.currentUser.displayName || ""; 
+            document.getElementById("avisoProcessoSei").style.display = "none"; 
+            
+            const areaDocs = document.getElementById("areaDocumentosArquivar"); 
+            document.getElementById("modalArquivar").style.display = "block";
             try {
                 const gSnap = await getDoc(doc(db, "guias", id)); dadosGuiaOriginal = gSnap.data(); const snap = await getDocs(collection(db, "guias", id, "documentos"));
                 let html = `<table class="tabela-docs-arquivamento"><thead><tr><th>Nº Ordem</th><th>Documento / Processo Orig.</th><th style="width:70px">Folhas*</th><th style="width:130px">Protocolo SEI*</th><th style="width:120px">Data Digitaliz.*</th><th style="width:90px">Mídia</th><th style="width:120px">Prot. Mídia</th><th>Obs.</th></tr></thead><tbody>`;
@@ -237,8 +251,13 @@
                     });
                 });
                 await Promise.all(promessas);
-                alert("Digitalização Concluída! Gere a Folha de Rosto abaixo. A guia foi enviada para o setor de Arquivamento Físico.");
-                document.getElementById("btnGerarFolhaRosto").style.display = "block"; btn.innerText = "FINALIZADO ✅";
+                alert("Digitalização Concluída! Você pode gerar a Folha de Rosto ou apenas finalizar.\nA guia foi enviada para o setor de Arquivamento Físico.");
+                
+                // Oculta o botão de confirmar, exibe os novos botões para o operador
+                document.getElementById("btnConfirmarArq").style.display = "none";
+                document.getElementById("btnGerarFolhaRosto").style.display = "block"; 
+                document.getElementById("btnFinalizar").style.display = "block";
+                
             } catch (err) { alert("Erro ao salvar."); btn.disabled = false; btn.innerText = "CONCLUIR DIGITALIZAÇÃO"; }
         };
 
@@ -247,16 +266,43 @@
             const matricula = document.getElementById("matriculaOperador").value; const nomeDoOperador = document.getElementById("nomeOperador").value.toUpperCase();
             docPdf.setFontSize(14); docPdf.setFont("helvetica", "bold"); docPdf.text("FOLHA DE ROSTO DE DIGITALIZAÇÃO PARA GUIA DE REMESSA DE DOCUMENTOS", 148.5, 15, { align: "center" });
             let rows = [];
+            
             listaDocumentosCache.forEach((item, idx) => {
-                const midiaSel = document.getElementById(`tAnexo_${item.id}`).value; const contemMidia = midiaSel !== "Nenhum" ? "S" : "N";
-                rows.push([ idx + 1, document.getElementById(`pags_${item.id}`).value, document.getElementById(`data_${item.id}`).value.split('-').reverse().join('/'), item.processoOriginal, document.getElementById(`sei_${item.id}`).value, contemMidia, midiaSel === "Nenhum" ? "" : midiaSel, document.getElementById(`protAnexo_${item.id}`).value || "" ]);
+                const midiaSel = document.getElementById(`tAnexo_${item.id}`).value; 
+                const contemMidia = midiaSel !== "Nenhum" ? "S" : "N";
+                const tipoMidiaStr = midiaSel === "Nenhum" ? "X" : midiaSel;
+                const protMidiaStr = document.getElementById(`protAnexo_${item.id}`).value || "X";
+                const protSeiDoc = document.getElementById(`sei_${item.id}`).value || "X";
+                const numProcessoOrig = item.processoOriginal || "X";
+                
+                rows.push([ 
+                    idx + 1, 
+                    document.getElementById(`pags_${item.id}`).value, 
+                    document.getElementById(`data_${item.id}`).value.split('-').reverse().join('/'), 
+                    numProcessoOrig, 
+                    protSeiDoc, 
+                    contemMidia, 
+                    tipoMidiaStr, 
+                    protMidiaStr 
+                ]);
             });
-            while(rows.length < 7) { rows.push([rows.length + 1, "", "", "", "", "N", "", ""]); }
+            
+            // Preenche as linhas vazias com X caso não tenha chegado a 7 documentos
+            while(rows.length < 7) { 
+                rows.push([rows.length + 1, "X", "X", "X", "X", "N", "X", "X"]); 
+            }
+            
             docPdf.autoTable({ startY: 25, head: [['Nº ORDEM', 'QTD FOLHAS', 'DATA DIGIT.', 'Nº PROCESSO SEI', 'Nº PROTOCOLO DO DOCUMENTO', 'MÍDIA', 'TIPO MÍDIA', 'PROT. MÍDIA']], body: rows, theme: 'grid', styles: { fontSize: 10, halign: 'center', textColor: 0, cellPadding: 4, lineColor: [0, 0, 0], lineWidth: 0.5 }, headStyles: { fillColor: [60, 60, 60], textColor: 255, fontStyle: 'bold', fontSize: 11 }, alternateRowStyles: { fillColor: [220, 220, 220] } });
             const finalY = docPdf.lastAutoTable.finalY + 20; docPdf.setFontSize(12);
             docPdf.text(`GUIA Nº: ${dadosGuiaOriginal.numero || dadosGuiaOriginal.numeroGuia}`, 20, finalY); docPdf.text(`RECEBIDO EM: ${dadosGuiaOriginal.dataRecebimento.split('-').reverse().join('/')}`, 20, finalY + 10);
             docPdf.text(`OPERADOR: ${nomeDoOperador}`, 20, finalY + 20); docPdf.text(`MATRÍCULA: ${matricula}`, 20, finalY + 30);
             window.open(docPdf.output('bloburl'), '_blank'); location.reload();
+        };
+
+        // Função do botão finalizar (apenas fecha e recarrega a página)
+        document.getElementById("btnFinalizar").onclick = () => {
+            document.getElementById("modalArquivar").style.display = "none";
+            location.reload();
         };
 
         document.getElementById("closeArquivar").onclick = () => document.getElementById("modalArquivar").style.display = "none";
