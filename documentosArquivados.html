@@ -50,7 +50,13 @@
                 <a href="arq_eliminacao.html">🔥 Lista de Eliminação</a>
                 <a href="arq_guarda_permanente.html">🏛️ Guarda Permanente</a>
 
-                <button id="btnToggleLgpd" class="btn-lgpd" style="display: none;">🙈 Ocultar Dados (LGPD)</button>
+                <div id="lgpdToggleContainer" class="lgpd-toggle-container" style="display: none;">
+                    <span id="lgpdLabelTexto" class="lgpd-label">🙈 Ocultar (LGPD)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="btnToggleLgpd">
+                        <span class="slider"></span>
+                    </label>
+                </div>
                 <button id="btnLogout" class="btn-sair" style="margin-top: 20px;">🚪 Sair do Sistema</button>
             </nav>
         </aside>
@@ -139,32 +145,43 @@
         let todasAsGuiasArquivadas = []; let estatisticasGlobais = []; let chartProducao = null;
 
         function inicializarModoLGPD(user) {
-            const btnLgpd = document.getElementById("btnToggleLgpd");
-            if (!btnLgpd || !user) return;
+            const toggleContainer = document.getElementById("lgpdToggleContainer");
+            const checkboxLgpd = document.getElementById("btnToggleLgpd");
+            const labelLgpd = document.getElementById("lgpdLabelTexto");
+            
+            if (!toggleContainer || !checkboxLgpd || !user) return;
+
             if (ADMIN_USERS.includes(user.email)) {
-                btnLgpd.style.display = "flex";
+                toggleContainer.style.display = "flex";
+                
                 const isLgpdActive = localStorage.getItem("lgpdMode") === "true";
+                
                 const atualizarVisualBotao = (ativo) => {
+                    checkboxLgpd.checked = ativo;
                     if (ativo) {
                         document.body.classList.add("modo-lgpd");
-                        btnLgpd.innerHTML = "👁️ Revelar Dados (LGPD)";
-                        btnLgpd.style.backgroundColor = "#27ae60";
+                        labelLgpd.innerHTML = "👁️ Revelar (LGPD)";
+                        labelLgpd.style.color = "#27ae60";
                     } else {
                         document.body.classList.remove("modo-lgpd");
-                        btnLgpd.innerHTML = "🙈 Ocultar Dados (LGPD)";
-                        btnLgpd.style.backgroundColor = "#8e44ad";
+                        labelLgpd.innerHTML = "🙈 Ocultar (LGPD)";
+                        labelLgpd.style.color = "#003366";
                     }
                 };
+
                 atualizarVisualBotao(isLgpdActive);
-                const novoBtnLgpd = btnLgpd.cloneNode(true);
-                btnLgpd.parentNode.replaceChild(novoBtnLgpd, btnLgpd);
-                novoBtnLgpd.addEventListener("click", () => {
-                    const isNowActive = !document.body.classList.contains("modo-lgpd");
+
+                const novoCheckbox = checkboxLgpd.cloneNode(true);
+                checkboxLgpd.parentNode.replaceChild(novoCheckbox, checkboxLgpd);
+
+                novoCheckbox.addEventListener("change", (e) => {
+                    const isNowActive = e.target.checked;
                     localStorage.setItem("lgpdMode", isNowActive);
                     atualizarVisualBotao(isNowActive);
                 });
+
             } else {
-                btnLgpd.style.display = "none";
+                toggleContainer.style.display = "none";
                 document.body.classList.remove("modo-lgpd");
             }
         }
