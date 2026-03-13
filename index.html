@@ -52,6 +52,7 @@
                 <a href="arq_eliminacao.html">🔥 Lista de Eliminação</a>
                 <a href="arq_guarda_permanente.html">🏛️ Guarda Permanente</a>
 
+                <button id="btnToggleLgpd" class="btn-lgpd" style="display: none;">🙈 Ocultar Dados (LGPD)</button>
                 <button id="btnLogout" class="btn-sair" style="margin-top: 20px;">🚪 Sair do Sistema</button>
             </nav>
         </aside>
@@ -75,13 +76,46 @@
                 Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
                 <p class="desenvolvedor">Desenvolvido por Rafael do N. Vieira e Gemini</p>
             </footer>
-            </main>
+        </main>
     </div>
 
     <script type="module">
         import { auth, db } from "./firebase.js";
         import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
         import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+        const ADMIN_USERS = ["rafael.nascimento-vieira@defensoria.rj.def.br"]; 
+
+        function inicializarModoLGPD(user) {
+            const btnLgpd = document.getElementById("btnToggleLgpd");
+            if (!btnLgpd || !user) return;
+            if (ADMIN_USERS.includes(user.email)) {
+                btnLgpd.style.display = "flex";
+                const isLgpdActive = localStorage.getItem("lgpdMode") === "true";
+                const atualizarVisualBotao = (ativo) => {
+                    if (ativo) {
+                        document.body.classList.add("modo-lgpd");
+                        btnLgpd.innerHTML = "👁️ Revelar Dados (LGPD)";
+                        btnLgpd.style.backgroundColor = "#27ae60";
+                    } else {
+                        document.body.classList.remove("modo-lgpd");
+                        btnLgpd.innerHTML = "🙈 Ocultar Dados (LGPD)";
+                        btnLgpd.style.backgroundColor = "#8e44ad";
+                    }
+                };
+                atualizarVisualBotao(isLgpdActive);
+                const novoBtnLgpd = btnLgpd.cloneNode(true);
+                btnLgpd.parentNode.replaceChild(novoBtnLgpd, btnLgpd);
+                novoBtnLgpd.addEventListener("click", () => {
+                    const isNowActive = !document.body.classList.contains("modo-lgpd");
+                    localStorage.setItem("lgpdMode", isNowActive);
+                    atualizarVisualBotao(isNowActive);
+                });
+            } else {
+                btnLgpd.style.display = "none";
+                document.body.classList.remove("modo-lgpd");
+            }
+        }
 
         const nomeMeses = { "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril", "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto", "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro" };
 
@@ -90,6 +124,7 @@
             if (user && user.email.endsWith("@defensoria.rj.def.br")) {
                 document.getElementById("loginSection").style.display = "none";
                 document.getElementById("appInterface").style.display = "flex";
+                inicializarModoLGPD(user);
                 carregarHistorico();
             } else {
                 if (user) signOut(auth);
@@ -179,7 +214,7 @@
                                 guiasDoDia.forEach(g => {
                                     const card = document.createElement("div"); card.className = "card-historico";
                                     card.style.borderLeft = `4px solid ${g.status === "Arquivada" ? "#27ae60" : (g.status === "Digitalizada" ? "#f39c12" : "#3498db")}`;
-                                    card.innerHTML = `<div><strong>Guia: ${g.numero || g.numeroGuia}</strong><br><small>${g.unidade}</small></div><div style="text-align:right"><span class="status-badge badge-${g.status.toLowerCase()}">${g.status}</span></div>`;
+                                    card.innerHTML = `<div><strong>Guia: <span class="dado-sensivel">${g.numero || g.numeroGuia}</span></strong><br><small><span class="dado-sensivel">${g.unidade}</span></small></div><div style="text-align:right"><span class="status-badge badge-${g.status.toLowerCase()}">${g.status}</span></div>`;
                                     divDia.appendChild(card);
                                 });
                             });
