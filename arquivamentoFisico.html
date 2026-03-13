@@ -37,6 +37,7 @@
                 <a href="arq_eliminacao.html">🔥 Lista de Eliminação</a>
                 <a href="arq_guarda_permanente.html">🏛️ Guarda Permanente</a>
 
+                <button id="btnToggleLgpd" class="btn-lgpd" style="display: none;">🙈 Ocultar Dados (LGPD)</button>
                 <button id="btnLogout" class="btn-sair" style="margin-top: 20px;">🚪 Sair do Sistema</button>
             </nav>
         </aside>
@@ -51,7 +52,7 @@
                 Av. Marechal Câmara, 314 - Centro, Rio de Janeiro - RJ, 20020-080</p>
                 <p class="desenvolvedor">Desenvolvido por Rafael do N. Vieira e Gemini</p>
             </footer>
-            </main>
+        </main>
     </div>
 
     <div id="modalArquivar" class="modal">
@@ -90,9 +91,45 @@
         import { collection, getDocs, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
+        const ADMIN_USERS = ["rafael.nascimento-vieira@defensoria.rj.def.br"]; 
+
+        function inicializarModoLGPD(user) {
+            const btnLgpd = document.getElementById("btnToggleLgpd");
+            if (!btnLgpd || !user) return;
+            if (ADMIN_USERS.includes(user.email)) {
+                btnLgpd.style.display = "flex";
+                const isLgpdActive = localStorage.getItem("lgpdMode") === "true";
+                const atualizarVisualBotao = (ativo) => {
+                    if (ativo) {
+                        document.body.classList.add("modo-lgpd");
+                        btnLgpd.innerHTML = "👁️ Revelar Dados (LGPD)";
+                        btnLgpd.style.backgroundColor = "#27ae60";
+                    } else {
+                        document.body.classList.remove("modo-lgpd");
+                        btnLgpd.innerHTML = "🙈 Ocultar Dados (LGPD)";
+                        btnLgpd.style.backgroundColor = "#8e44ad";
+                    }
+                };
+                atualizarVisualBotao(isLgpdActive);
+                const novoBtnLgpd = btnLgpd.cloneNode(true);
+                btnLgpd.parentNode.replaceChild(novoBtnLgpd, btnLgpd);
+                novoBtnLgpd.addEventListener("click", () => {
+                    const isNowActive = !document.body.classList.contains("modo-lgpd");
+                    localStorage.setItem("lgpdMode", isNowActive);
+                    atualizarVisualBotao(isNowActive);
+                });
+            } else {
+                btnLgpd.style.display = "none";
+                document.body.classList.remove("modo-lgpd");
+            }
+        }
+
         let guiaAtualId = "";
 
-        onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else carregar(); });
+        onAuthStateChanged(auth, (user) => { 
+            if (!user) window.location.href = "index.html"; 
+            else { inicializarModoLGPD(user); carregar(); } 
+        });
         document.getElementById("btnLogout").onclick = () => signOut(auth);
 
         async function carregar() {
@@ -138,7 +175,7 @@
 
                     const num = g.numero || g.numeroGuia || "S/N";
                     const div = document.createElement("div"); div.className = "guia-card-arquivar";
-                    div.innerHTML = `<div><strong>Guia ${num}</strong><br><small>${g.unidade}</small></div><button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#27ae60; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📦 Registrar Arquivamento</button>`;
+                    div.innerHTML = `<div><strong>Guia <span class="dado-sensivel">${num}</span></strong><br><small><span class="dado-sensivel">${g.unidade}</span></small></div><button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#27ae60; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📦 Registrar Arquivamento</button>`;
                     window.grupoTemp.appendChild(div);
                 });
             } catch (err) { console.error(err); }
