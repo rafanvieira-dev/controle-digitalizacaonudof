@@ -11,6 +11,7 @@
         .grid-dash { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 20px; }
         @media (max-width: 1200px) { .grid-dash { grid-template-columns: repeat(2, 1fr); } }
     </style>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
     <div id="appInterface">
@@ -115,5 +116,57 @@
         }
         document.getElementById("btnLogout").onclick = () => signOut(auth);
     </script>
+<script>
+(function () {
+  const icons = {
+    "🏠":"house","➕":"plus-circle","📄":"file-text","🖨️":"printer","📦":"package",
+    "📚":"library-big","📊":"chart-no-axes-column-increasing","📋":"clipboard-list","🔥":"flame",
+    "🏛️":"landmark","🚪":"log-out","🌐":"globe","🔗":"link","📂":"folder-open",
+    "➖":"minus","👁️":"eye","🙈":"eye-off","📅":"calendar-days","🔍":"search",
+    "✏️":"pencil","🗑️":"trash-2","💾":"save","✅":"check-circle","❌":"x-circle",
+    "⚠️":"triangle-alert","⏳":"hourglass","📁":"folder","🔒":"lock","🔓":"lock-open",
+    "⬇️":"download","⬆️":"upload","📝":"file-pen","📤":"send","📥":"inbox",
+    "🔄":"refresh-cw","🔎":"search","🧾":"receipt-text","🗃️":"archive","🖊️":"pen-line",
+    "📌":"map-pin","🧹":"brush","🧠":"brain","⭐":"star","➡️":"arrow-right",
+    "⬅️":"arrow-left","🔔":"bell","📈":"chart-no-axes-combined","🛡️":"shield-check",
+    "🔑":"key","📑":"files","🗂️":"folder-kanban","🧮":"calculator","🕒":"clock",
+    "📃":"file-text","🗓️":"calendar-days","💼":"briefcase","🔔":"bell","🌎":"earth",
+    "🧷":"paperclip","🖇️":"paperclip","📇":"contact","🔖":"bookmark","🧭":"compass"
+  };
+  function convert(root) {
+    if (!window.lucide || !root) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(node => {
+      if (!node.parentElement || node.parentElement.closest("script,style,svg,textarea,input,option")) return;
+      let value = node.nodeValue;
+      for (const [emoji, name] of Object.entries(icons)) {
+        if (value.includes(emoji)) value = value.split(emoji).join('<' + 'icon:' + name + '>');
+      }
+      if (value === node.nodeValue) return;
+      const fragment = document.createDocumentFragment();
+      const parts = value.split(/(<icon:[a-z0-9-]+>)/g);
+      parts.forEach(part => {
+        const match = part.match(/^<icon:([a-z0-9-]+)>$/);
+        if (match) {
+          const span = document.createElement("i");
+          span.setAttribute("data-lucide", match[1]); span.className = "ui-icon";
+          fragment.appendChild(span);
+        } else if (part) fragment.appendChild(document.createTextNode(part));
+      });
+      node.parentNode.replaceChild(fragment, node);
+    });
+    window.lucide.createIcons({attrs:{class:"ui-icon", "stroke-width":1.9}});
+  }
+  function start() {
+    convert(document.body);
+    const observer = new MutationObserver(records => records.forEach(record => {
+      record.addedNodes.forEach(node => { if (node.nodeType === 1 || node.nodeType === 3) convert(node.nodeType === 1 ? node : node.parentElement); });
+    }));
+    observer.observe(document.body, {childList:true,subtree:true});
+  }
+  if (window.lucide) start(); else window.addEventListener("load", start, {once:true});
+})();
+</script>
 </body>
 </html>
