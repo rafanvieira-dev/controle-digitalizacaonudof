@@ -8,6 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
+.ui-icon{width:18px;height:18px;flex:0 0 18px;margin-right:9px;display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.btn-sair .ui-icon{margin-right:10px}#sidebar nav a span{min-width:0}
+\n.ui-icon{width:18px;height:18px;flex:0 0 18px;margin-right:9px;display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.btn-sair .ui-icon{margin-right:10px}#sidebar nav a span{min-width:0}\n
         .guia-card-arquivar { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 6px solid #f39c12; }
         .data-header-btn { width: 100%; background: #003366; color: white; padding: 12px; border: none; border-radius: 5px; text-align: left; font-weight: bold; margin: 15px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .data-header-btn:hover { background: #004080; }
@@ -30,27 +32,27 @@
             <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
             <nav>
                 <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase;">Fluxo Operacional</div>
-                <a href="index.html">🏠 Início / Histórico</a>
-                <a href="guia.html">➕ Nova Guia</a>
-                <a href="documentos.html">📄 Inserir Documentos</a>
-                <a href="documentosRecebidos.html" class="ativo">🖨️ Digitalização e SEI</a>
-                <a href="arquivamentoFisico.html">📦 Arquivar Guia Físico</a>
-                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
+                <a href="index.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9v12h14V9M9 21v-7h6v7"/></svg><span>Início / Histórico</span></a>
+                <a href="guia.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Nova Guia</span></a>
+                <a href="documentos.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg><span>Inserir Documentos</span></a>
+                <a href="documentosRecebidos.html" class="ativo"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3"/><path d="M4 12h16M7 9h10M7 15h10"/></svg><span>Digitalização e SEI</span></a>
+                <a href="arquivamentoFisico.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v4H3zM5 8v12h14V8M9 12h6"/></svg><span>Arquivar Guia Físico</span></a>
+                <a href="documentosArquivados.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h5v15H4zM10 5h5v15h-5zM16 5h4v15h-4z"/></svg><span>Guias Arquivadas</span></a>
 
                 <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase; margin-top: 15px; border-top: 1px solid var(--border);">Gestão Arquivística (e-ARQ)</div>
-                <a href="arq_dashboard.html">📊 Painel Temporalidade</a>
-                <a href="arq_temporalidade.html">📋 Regras e Tabela</a>
-                <a href="arq_eliminacao.html">🔥 Lista de Eliminação</a>
-                <a href="arq_guarda_permanente.html">🏛️ Guarda Permanente</a>
+                <a href="arq_dashboard.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7"/></svg><span>Painel Temporalidade</span></a>
+                <a href="arq_temporalidade.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M8 10h8M8 14h8M8 18h5"/></svg><span>Regras e Tabela</span></a>
+                <a href="arq_eliminacao.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22c4 0 7-3 7-7 0-3-2-5-4-7 0 3-2 4-2 4 0-5-3-8-5-10 0 5-4 8-4 13 0 4 3 7 8 7z"/><path d="M12 22c-2 0-3-2-3-4 0-2 2-3 3-5 2 2 3 3 3 5 0 2-1 4-3 4z"/></svg><span>Lista de Eliminação</span></a>
+                <a href="arq_guarda_permanente.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-6 9 6M4 10h16M5 10v9M9 10v9M15 10v9M19 10v9M3 21h18M2 19h20"/></svg><span>Guarda Permanente</span></a>
                 
                 <div id="lgpdToggleContainer" class="lgpd-toggle-container" style="display: none;">
-                    <span id="lgpdLabelTexto" class="lgpd-label">🙈 Ocultar (LGPD)</span>
+                    <span id="lgpdLabelTexto" class="lgpd-label"> Ocultar (LGPD)</span>
                     <label class="switch">
                         <input type="checkbox" id="btnToggleLgpd">
                         <span class="slider"></span>
                     </label>
                 </div>
-                <button id="btnLogout" class="btn-sair" style="margin-top: 20px;">🚪 Sair do Sistema</button>
+                <button id="btnLogout" class="btn-sair" style="margin-top: 20px;"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg><span>Sair do Sistema</span></button>
             </nav>
         </aside>
 
@@ -75,7 +77,7 @@
                 <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b6d4fe; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     <h4 style="grid-column: 1 / -1; color: #003366; margin: 0 0 5px 0;">1. Informações do Operador (Para Folha de Rosto)</h4>
                     <div class="input-group">
-                        <label>👤 Nome Completo:</label>
+                        <label> Nome Completo:</label>
                         <input type="text" id="nomeOperador" placeholder="Digite seu nome completo" required>
                     </div>
                     <div class="input-group">
@@ -85,7 +87,7 @@
                 </div>
 
                 <div id="avisoProcessoSei" style="display: none; background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; border: 1px solid #f5c6cb; margin-top: 5px; font-weight: bold; text-align: center;">
-                    ⚠️ ATENÇÃO: Há documentos nesta guia sem o "Nº do Processo SEI" preenchido.<br>
+                     ATENÇÃO: Há documentos nesta guia sem o "Nº do Processo SEI" preenchido.<br>
                     Não é possível digitalizar. Volte à aba "Inserir Documentos", edite os documentos desta guia e preencha o número do processo.
                 </div>
 
@@ -95,9 +97,9 @@
                 </div>
 
                 <div style="display: flex; gap: 15px;">
-                    <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#f39c12; padding: 15px; font-weight: bold; flex: 2;">✅ CONCLUIR DIGITALIZAÇÃO</button>
-                    <button type="button" class="btn-primary" id="btnGerarFolhaRosto" style="background:#003366; padding: 15px; font-weight: bold; flex: 1; display: none;">📄 GERAR FOLHA DE ROSTO</button>
-                    <button type="button" class="btn-primary" id="btnFinalizar" style="background:#27ae60; padding: 15px; font-weight: bold; flex: 1; display: none;">✅ FINALIZAR (SEM IMPRIMIR)</button>
+                    <button type="submit" class="btn-primary" id="btnConfirmarArq" style="background:#f39c12; padding: 15px; font-weight: bold; flex: 2;"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg><span>CONCLUIR DIGITALIZAÇÃO</span></button>
+                    <button type="button" class="btn-primary" id="btnGerarFolhaRosto" style="background:#003366; padding: 15px; font-weight: bold; flex: 1; display: none;"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8"/></svg><span>GERAR FOLHA DE ROSTO</span></button>
+                    <button type="button" class="btn-primary" id="btnFinalizar" style="background:#27ae60; padding: 15px; font-weight: bold; flex: 1; display: none;"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg><span>FINALIZAR (SEM IMPRIMIR)</span></button>
                 </div>
             </form>
         </div>
@@ -126,11 +128,11 @@
                     checkboxLgpd.checked = ativo;
                     if (ativo) {
                         document.body.classList.add("modo-lgpd");
-                        labelLgpd.innerHTML = "👁️ Revelar (LGPD)";
+                        labelLgpd.innerHTML = " Revelar (LGPD)";
                         labelLgpd.style.color = "#27ae60";
                     } else {
                         document.body.classList.remove("modo-lgpd");
-                        labelLgpd.innerHTML = "🙈 Ocultar (LGPD)";
+                        labelLgpd.innerHTML = " Ocultar (LGPD)";
                         labelLgpd.style.color = "#003366";
                     }
                 };
@@ -184,16 +186,16 @@
                 const contagem = {}; guias.forEach(g => { const dRec = g.dataRecebimento || "Sem Data"; contagem[dRec] = (contagem[dRec] || 0) + 1; });
                 container.innerHTML = ""; let dataAtual = "";
                 guias.forEach(g => {
-                    let alertaHtml = verificarAtraso(g.dataRecebimento) ? `<span class="alerta-atraso">⚠️ EM ATRASO</span>` : "";
+                    let alertaHtml = verificarAtraso(g.dataRecebimento) ? `<span class="alerta-atraso"> EM ATRASO</span>` : "";
                     if (g.dataRecebimento !== dataAtual) {
                         dataAtual = g.dataRecebimento; const dataF = dataAtual !== "Sem Data" ? dataAtual.split('-').reverse().join('/') : "Sem Data";
-                        const btnData = document.createElement("button"); btnData.className = "data-header-btn"; btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span><span class="contador-pendentes">${contagem[dataAtual]} pendente(s)</span> ${alertaHtml}</div><span class="toggle-icon">➕</span>`;
+                        const btnData = document.createElement("button"); btnData.className = "data-header-btn"; btnData.innerHTML = `<div><span> Recebidas em: ${dataF}</span><span class="contador-pendentes">${contagem[dataAtual]} pendente(s)</span> ${alertaHtml}</div><span class="toggle-icon"></span>`;
                         const divGrupoSendoCriado = document.createElement("div"); divGrupoSendoCriado.className = "grupo-pendentes";
-                        btnData.onclick = () => { const estaAberto = divGrupoSendoCriado.style.display === "block"; divGrupoSendoCriado.style.display = estaAberto ? "none" : "block"; btnData.querySelector('.toggle-icon').innerText = estaAberto ? "➕" : "➖"; };
+                        btnData.onclick = () => { const estaAberto = divGrupoSendoCriado.style.display === "block"; divGrupoSendoCriado.style.display = estaAberto ? "none" : "block"; btnData.querySelector('.toggle-icon').innerText = estaAberto ? "+" : "−"; };
                         container.appendChild(btnData); container.appendChild(divGrupoSendoCriado); window.grupoTemp = divGrupoSendoCriado;
                     }
                     const num = g.numero || g.numeroGuia || "S/N"; const div = document.createElement("div"); div.className = "guia-card-arquivar";
-                    div.innerHTML = `<div><strong>Guia <span class="dado-sensivel">${num}</span></strong><br><small><span class="dado-sensivel">${g.unidade}</span></small></div><button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#f39c12; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">🖨️ Iniciar Digitalização</button>`;
+                    div.innerHTML = `<div><strong>Guia <span class="dado-sensivel">${num}</span></strong><br><small><span class="dado-sensivel">${g.unidade}</span></small></div><button class="btn-ver" onclick="window.abrirArq('${g.id}', '${num}')" style="background:#f39c12; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3M4 12h16M7 9h10M7 15h10"/></svg><span>Iniciar Digitalização</span></button>`;
                     window.grupoTemp.appendChild(div);
                 });
             } catch (err) { console.error(err); }
@@ -207,7 +209,7 @@
             // Exibe e habilita apenas o botão principal ao abrir
             document.getElementById("btnConfirmarArq").style.display = "block";
             document.getElementById("btnConfirmarArq").disabled = false;
-            document.getElementById("btnConfirmarArq").innerText = "✅ CONCLUIR DIGITALIZAÇÃO";
+            document.getElementById("btnConfirmarArq").innerText = " CONCLUIR DIGITALIZAÇÃO";
             
             // Oculta os botões complementares (Folha e Finalizar)
             document.getElementById("btnGerarFolhaRosto").style.display = "none"; 
@@ -226,13 +228,13 @@
                 snap.forEach(docSnap => {
                     const d = docSnap.data(); if (!d.numeroProcesso || d.numeroProcesso.trim() === "") { faltaProcessoSEI = true; }
                     documentosDaGuia.push(docSnap.id); listaDocumentosCache.push({ id: docSnap.id, processoOriginal: d.numeroProcesso });
-                    html += `<tr><td style="text-align:center"><b>${i++}</b></td><td><small><b><span class="dado-sensivel">${d.nomeDocumento}</span></b><br>Processo: <span class="dado-sensivel" style="color:${d.numeroProcesso ? '#333' : 'red'}">${d.numeroProcesso || 'FALTANTE ⚠️'}</span></small></td>
+                    html += `<tr><td style="text-align:center"><b>${i++}</b></td><td><small><b><span class="dado-sensivel">${d.nomeDocumento}</span></b><br>Processo: <span class="dado-sensivel" style="color:${d.numeroProcesso ? '#333' : 'red'}">${d.numeroProcesso || 'FALTANTE '}</span></small></td>
                         <td><input type="number" id="pags_${docSnap.id}" class="campo-obrigatorio" required></td><td><input type="text" id="sei_${docSnap.id}" class="campo-obrigatorio dado-sensivel" placeholder="Nº Protocolo" required></td>
                         <td><input type="date" id="data_${docSnap.id}" class="campo-obrigatorio" onchange="window.sincronizarDatas(this.value)" required></td><td><select id="tAnexo_${docSnap.id}"><option value="Nenhum">Não</option><option value="CD">CD</option><option value="DVD">DVD</option><option value="Pen Drive">Pen Drive</option></select></td>
                         <td><input type="text" id="protAnexo_${docSnap.id}" placeholder="Se houver" class="dado-sensivel"></td><td><input type="text" id="obs_${docSnap.id}"></td></tr>`;
                 });
                 areaDocs.innerHTML = html + "</tbody></table>";
-                if (faltaProcessoSEI) { document.getElementById("avisoProcessoSei").style.display = "block"; document.getElementById("btnConfirmarArq").disabled = true; document.getElementById("btnConfirmarArq").style.background = "#95a5a6"; document.getElementById("btnConfirmarArq").innerText = "⛔ PREENCHA O SEI NA ETAPA ANTERIOR"; }
+                if (faltaProcessoSEI) { document.getElementById("avisoProcessoSei").style.display = "block"; document.getElementById("btnConfirmarArq").disabled = true; document.getElementById("btnConfirmarArq").style.background = "#95a5a6"; document.getElementById("btnConfirmarArq").innerText = " PREENCHA O SEI NA ETAPA ANTERIOR"; }
             } catch (e) { areaDocs.innerHTML = "<p>Erro ao carregar documentos.</p>"; }
         };
 

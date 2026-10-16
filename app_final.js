@@ -84,7 +84,7 @@ async function carregarGuiasAtivas() {
             if (g.dataRecebimento !== dataAtual) {
                 dataAtual = g.dataRecebimento;
                 const dataFormatada = dataAtual ? dataAtual.split('-').reverse().join('/') : "Sem Data";
-                html += `<tr><td colspan="4" style="background:#e8f4fd; color:#003366; font-weight:bold; padding:10px; text-align:center;">📅 Registradas em: ${dataFormatada}</td></tr>`;
+                html += `<tr><td colspan="4" style="background:#e8f4fd; color:#003366; font-weight:bold; padding:10px; text-align:center;"> Registradas em: ${dataFormatada}</td></tr>`;
             }
 
             const num = g.numero || g.numeroGuia || "S/N";
@@ -92,7 +92,7 @@ async function carregarGuiasAtivas() {
                 <td style="padding:10px; border-bottom:1px solid #eee;">${num}</td>
                 <td style="padding:10px; border-bottom:1px solid #eee;">${g.unidade}</td>
                 <td style="padding:10px; border-bottom:1px solid #eee;"><span class="status-badge" style="background: #e8f4fd; color: #003366; padding: 5px 10px; border-radius: 4px; font-weight: bold;">${g.status}</span></td>
-                <td style="padding:10px; border-bottom:1px solid #eee;"><button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${num}')" style="background:#4682B4; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;">👁 Ver</button></td>
+                <td style="padding:10px; border-bottom:1px solid #eee;"><button class="btn-ver" onclick="window.verDetalhes('${g.id}', '${num}')" style="background:#4682B4; color:white; padding:8px 12px; border:none; border-radius:4px; cursor:pointer;"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>Ver</span></button></td>
             </tr>`;
         });
         mainDisplay.innerHTML = html + "</tbody></table>";

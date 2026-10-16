@@ -11,20 +11,20 @@
             <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
             <nav>
                 <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase;">Fluxo Operacional</div>
-                <a href="index.html">🏠 Início / Histórico</a>
-                <a href="guia.html" class="ativo">➕ Nova Guia</a>
-                <a href="documentos.html">📄 Inserir Documentos</a>
-                <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
-                <a href="arquivamentoFisico.html">📦 Arquivar Guia Físico</a>
-                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
+                <a href="index.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9v12h14V9M9 21v-7h6v7"/></svg><span>Início / Histórico</span></a>
+                <a href="guia.html" class="ativo"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Nova Guia</span></a>
+                <a href="documentos.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg><span>Inserir Documentos</span></a>
+                <a href="documentosRecebidos.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3"/><path d="M4 12h16M7 9h10M7 15h10"/></svg><span>Digitalização e SEI</span></a>
+                <a href="arquivamentoFisico.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v4H3zM5 8v12h14V8M9 12h6"/></svg><span>Arquivar Guia Físico</span></a>
+                <a href="documentosArquivados.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h5v15H4zM10 5h5v15h-5zM16 5h4v15h-4z"/></svg><span>Guias Arquivadas</span></a>
 
                 <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase; margin-top: 15px; border-top: 1px solid var(--border);">Gestão Arquivística (e-ARQ)</div>
-                <a href="arq_dashboard.html">📊 Painel Temporalidade</a>
-                <a href="arq_temporalidade.html">📋 Regras e Tabela</a>
-                <a href="arq_eliminacao.html">🔥 Lista de Eliminação</a>
-                <a href="arq_guarda_permanente.html">🏛️ Guarda Permanente</a>
+                <a href="arq_dashboard.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7"/></svg><span>Painel Temporalidade</span></a>
+                <a href="arq_temporalidade.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M8 10h8M8 14h8M8 18h5"/></svg><span>Regras e Tabela</span></a>
+                <a href="arq_eliminacao.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22c4 0 7-3 7-7 0-3-2-5-4-7 0 3-2 4-2 4 0-5-3-8-5-10 0 5-4 8-4 13 0 4 3 7 8 7z"/><path d="M12 22c-2 0-3-2-3-4 0-2 2-3 3-5 2 2 3 3 3 5 0 2-1 4-3 4z"/></svg><span>Lista de Eliminação</span></a>
+                <a href="arq_guarda_permanente.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-6 9 6M4 10h16M5 10v9M9 10v9M15 10v9M19 10v9M3 21h18M2 19h20"/></svg><span>Guarda Permanente</span></a>
 
-                <button id="btnLogout" class="btn-sair" style="margin-top: 20px;">🚪 Sair do Sistema</button>
+                <button id="btnLogout" class="btn-sair" style="margin-top: 20px;"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg><span>Sair do Sistema</span></button>
             </nav>
         </aside>
 
@@ -36,7 +36,7 @@
                     <label>Número da Guia:</label>
                     
                     <div id="balaoSugestao" style="display: none; position: absolute; top: -5px; left: 140px; background-color: #f39c12; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; box-shadow: 0 3px 6px rgba(0,0,0,0.3); cursor: pointer; z-index: 10;">
-                        💡 Sugestão: <span id="textoSugestao">...</span> (Clique para usar)
+                         Sugestão: <span id="textoSugestao">...</span> (Clique para usar)
                         <div style="position: absolute; bottom: -6px; left: 20px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #f39c12;"></div>
                     </div>
 
@@ -57,7 +57,7 @@
                     </div>
                 </div>
 
-                <button class="btn-primary" id="btnSalvarGuia">Salvar Guia</button>
+                <button class="btn-primary" id="btnSalvarGuia"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l4 4v14H3V3zM7 3v6h10V3M7 21v-7h10v7"/></svg><span>Salvar Guia</span></button>
             </div>
             
             <footer class="site-footer">
