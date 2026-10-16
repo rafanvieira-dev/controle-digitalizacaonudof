@@ -6,6 +6,10 @@
     <title>Inserir Documentos - NUDOF</title>
     <link rel="stylesheet" href="style.css">
     <style>
+.ui-icon{width:18px;height:18px;flex:0 0 18px;margin-right:9px;display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.btn-sair .ui-icon{margin-right:10px}#sidebar nav a span{min-width:0}
+
+.ui-icon{width:18px;height:18px;flex:0 0 18px;margin-right:9px;display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.btn-sair .ui-icon{margin-right:10px}#sidebar nav a span{min-width:0}
+
         .data-header-btn { width: 100%; background: #003366; color: white; padding: 12px; border: none; border-radius: 5px; text-align: left; font-weight: bold; margin: 15px 0 5px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .data-header-btn:hover { background: #004080; }
         .contador-abas { background: #4682B4; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85em; margin-left: 10px; font-weight: normal; }
@@ -22,20 +26,20 @@
             <div class="sidebar-logo">CONTROLE DIGITALIZAÇÃO DE DOCUMENTOS NUDOF</div>
             <nav>
                 <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase;">Fluxo Operacional</div>
-                <a href="index.html">🏠 Início / Histórico</a>
-                <a href="guia.html">➕ Nova Guia</a>
-                <a href="documentos.html" class="ativo">📄 Inserir Documentos</a>
-                <a href="documentosRecebidos.html">🖨️ Digitalização e SEI</a>
-                <a href="arquivamentoFisico.html">📦 Arquivar Guia Físico</a>
-                <a href="documentosArquivados.html">📚 Guias Arquivadas</a>
+                <a href="index.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9v12h14V9M9 21v-7h6v7"/></svg><span>Início / Histórico</span></a>
+                <a href="guia.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Nova Guia</span></a>
+                <a href="documentos.html" class="ativo"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg><span>Inserir Documentos</span></a>
+                <a href="documentosRecebidos.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3"/><path d="M4 12h16M7 9h10M7 15h10"/></svg><span>Digitalização e SEI</span></a>
+                <a href="arquivamentoFisico.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v4H3zM5 8v12h14V8M9 12h6"/></svg><span>Arquivar Guia Físico</span></a>
+                <a href="documentosArquivados.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h5v15H4zM10 5h5v15h-5zM16 5h4v15h-4z"/></svg><span>Guias Arquivadas</span></a>
 
                 <div style="padding: 10px 15px; font-size: 0.8em; color: var(--secondary); font-weight: bold; text-transform: uppercase; margin-top: 15px; border-top: 1px solid var(--border);">Gestão Arquivística (e-ARQ)</div>
-                <a href="arq_dashboard.html">📊 Painel Temporalidade</a>
-                <a href="arq_temporalidade.html">📋 Regras e Tabela</a>
-                <a href="arq_eliminacao.html">🔥 Lista de Eliminação</a>
-                <a href="arq_guarda_permanente.html">🏛️ Guarda Permanente</a>
+                <a href="arq_dashboard.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7"/></svg><span>Painel Temporalidade</span></a>
+                <a href="arq_temporalidade.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M8 10h8M8 14h8M8 18h5"/></svg><span>Regras e Tabela</span></a>
+                <a href="arq_eliminacao.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22c4 0 7-3 7-7 0-3-2-5-4-7 0 3-2 4-2 4 0-5-3-8-5-10 0 5-4 8-4 13 0 4 3 7 8 7z"/><path d="M12 22c-2 0-3-2-3-4 0-2 2-3 3-5 2 2 3 3 3 5 0 2-1 4-3 4z"/></svg><span>Lista de Eliminação</span></a>
+                <a href="arq_guarda_permanente.html"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-6 9 6M4 10h16M5 10v9M9 10v9M15 10v9M19 10v9M3 21h18M2 19h20"/></svg><span>Guarda Permanente</span></a>
 
-                <button id="btnLogout" class="btn-sair" style="margin-top: 20px;">🚪 Sair do Sistema</button>
+                <button id="btnLogout" class="btn-sair" style="margin-top: 20px;"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg><span>Sair do Sistema</span></button>
             </nav>
         </aside>
 
@@ -50,13 +54,9 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #ccc; padding-top: 20px; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <h3 id="tituloGuia" style="color: #003366; margin: 0;"></h3>
-                        <button type="button" id="btnEditarGuia" onclick="window.editarGuiaAtual()" style="display: none; background: #f39c12; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em;">
-                            ✏️ Editar Dados da Guia
-                        </button>
+                        <button type="button" id="btnEditarGuia" onclick="window.editarGuiaAtual()" style="display: none; background: #f39c12; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em;"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-.8L19 8a2.8 2.8 0 0 0-4-4L4 15z"/></svg><span>Editar Dados da Guia</span></button>
                     </div>
-                    <button type="button" onclick="window.fecharAreaDocumentos()" style="background: #7f8c8d; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
-                        ❌ Fechar Guia
-                    </button>
+                    <button type="button" onclick="window.fecharAreaDocumentos()" style="background: #7f8c8d; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Fechar Guia</span></button>
                 </div>
 
                 <div class="form-container">
@@ -76,7 +76,7 @@
                             </div>
                         </div>
                         <div style="display: flex; gap: 10px;">
-                            <button type="submit" class="btn-primary" id="btnSalvar">Gravar Documento</button>
+                            <button type="submit" class="btn-primary" id="btnSalvar"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l4 4v14H3V3zM7 3v6h10V3M7 21v-7h10v7"/></svg><span>Gravar Documento</span></button>
                             <button type="button" id="btnCancelarEdicao" onclick="window.cancelarEdicao()" style="display: none; background: #7f8c8d; color: white; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">Cancelar Edição</button>
                         </div>
                     </form>
@@ -165,23 +165,23 @@
                         if (mesAnoStr !== "Sem Data") { const [a, m] = mesAnoStr.split('-'); nomeMesExibicao = `${nomeMeses[m] || m}/${a}`; }
 
                         const btnMes = document.createElement("button"); btnMes.className = "data-header-btn"; btnMes.style.background = "#2c3e50"; 
-                        btnMes.innerHTML = `<div><span>📂 ${nomeMesExibicao}</span> <span class="contador-abas" style="background:#16a085;">${mesObj.total} guia(s)</span></div><span class="toggle-icon">➕</span>`;
+                        btnMes.innerHTML = `<div><span> ${nomeMesExibicao}</span> <span class="contador-abas" style="background:#16a085;">${mesObj.total} guia(s)</span></div><span class="toggle-icon"></span>`;
                         const divMes = document.createElement("div"); divMes.className = "grupo-guias-inserir"; divMes.style.display = "none"; divMes.style.flexDirection = "column";
 
-                        btnMes.onclick = () => { const estaFechado = divMes.style.display === "none"; divMes.style.display = estaFechado ? "flex" : "none"; btnMes.querySelector('.toggle-icon').innerText = estaFechado ? "➖" : "➕"; };
+                        btnMes.onclick = () => { const estaFechado = divMes.style.display === "none"; divMes.style.display = estaFechado ? "flex" : "none"; btnMes.querySelector('.toggle-icon').innerText = estaFechado ? "−" : "+"; };
                         lista.appendChild(btnMes); lista.appendChild(divMes);
 
                         const diasOrdenados = Object.keys(mesObj.dias).sort((a,b) => a.localeCompare(b));
                         diasOrdenados.forEach(diaStr => {
                             const guiasDoDia = mesObj.dias[diaStr]; const dataF = diaStr !== "Sem Data" ? diaStr.split('-').reverse().join('/') : "Sem Data";
-                            let alertaHtml = verificarAtraso(diaStr) ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
+                            let alertaHtml = verificarAtraso(diaStr) ? `<span class="alerta-atraso"> ATENÇÃO</span>` : "";
 
                             const btnDia = document.createElement("button"); btnDia.className = "data-header-btn"; btnDia.style.background = "#7f8c8d"; btnDia.style.width = "calc(100% - 20px)"; btnDia.style.marginLeft = "20px";
-                            btnDia.innerHTML = `<div><span>📅 ${dataF}</span> <span class="contador-abas">${guiasDoDia.length} guia(s)</span> ${alertaHtml}</div><span class="toggle-icon">➕</span>`;
+                            btnDia.innerHTML = `<div><span> ${dataF}</span> <span class="contador-abas">${guiasDoDia.length} guia(s)</span> ${alertaHtml}</div><span class="toggle-icon"></span>`;
 
                             const divDia = document.createElement("div"); divDia.className = "grupo-guias-inserir"; divDia.style.display = "none"; divDia.style.flexWrap = "wrap"; divDia.style.gap = "10px"; divDia.style.width = "calc(100% - 20px)"; divDia.style.marginLeft = "20px";
 
-                            btnDia.onclick = () => { const estaFechado = divDia.style.display === "none" || divDia.style.display === ""; divDia.style.display = estaFechado ? "flex" : "none"; btnDia.querySelector('.toggle-icon').innerText = estaFechado ? "➖" : "➕"; };
+                            btnDia.onclick = () => { const estaFechado = divDia.style.display === "none" || divDia.style.display === ""; divDia.style.display = estaFechado ? "flex" : "none"; btnDia.querySelector('.toggle-icon').innerText = estaFechado ? "−" : "+"; };
                             divMes.appendChild(btnDia); divMes.appendChild(divDia);
 
                             guiasDoDia.forEach(g => {
@@ -194,16 +194,16 @@
                 } else {
                     let dataAtual = ""; let divGrupo = null;
                     guias.forEach(g => {
-                        const recVal = g.dataRecebimento || "Sem Data"; let alertaHtml = verificarAtraso(recVal) ? `<span class="alerta-atraso">⚠️ ATENÇÃO</span>` : "";
+                        const recVal = g.dataRecebimento || "Sem Data"; let alertaHtml = verificarAtraso(recVal) ? `<span class="alerta-atraso"> ATENÇÃO</span>` : "";
                         if (recVal !== dataAtual) {
                             dataAtual = recVal; const dataF = dataAtual !== "Sem Data" ? dataAtual.split('-').reverse().join('/') : "Sem Data";
                             const idGrupo = `grupo-ins-${dataAtual.replace(/-/g, '_').replace(/ /g, '')}`; const totalGuias = contagemPorData[dataAtual];
 
                             const btnData = document.createElement("button"); btnData.className = "data-header-btn";
-                            btnData.innerHTML = `<div><span>📅 Recebidas em: ${dataF}</span> <span class="contador-abas">${totalGuias} guia(s)</span> ${alertaHtml}</div><span class="toggle-icon">➕</span>`;
+                            btnData.innerHTML = `<div><span> Recebidas em: ${dataF}</span> <span class="contador-abas">${totalGuias} guia(s)</span> ${alertaHtml}</div><span class="toggle-icon"></span>`;
                             divGrupo = document.createElement("div"); divGrupo.className = "grupo-guias-inserir"; divGrupo.id = idGrupo; divGrupo.style.flexWrap = "wrap"; divGrupo.style.gap = "10px";
 
-                            btnData.onclick = () => { const target = document.getElementById(idGrupo); const icon = btnData.querySelector('.toggle-icon'); const estaFechado = target.style.display === "none" || target.style.display === ""; target.style.display = estaFechado ? "flex" : "none"; icon.innerText = estaFechado ? "➖" : "➕"; };
+                            btnData.onclick = () => { const target = document.getElementById(idGrupo); const icon = btnData.querySelector('.toggle-icon'); const estaFechado = target.style.display === "none" || target.style.display === ""; target.style.display = estaFechado ? "flex" : "none"; icon.innerText = estaFechado ? "−" : "+"; };
                             lista.appendChild(btnData); lista.appendChild(divGrupo);
                         }
                         const numGuia = g.numero || g.numeroGuia || "S/N"; const btnGuia = document.createElement("button"); btnGuia.className = "btn-guia-item";
@@ -250,7 +250,7 @@
                     const d = docSnap.data(); const li = document.createElement("li"); li.className = "sei-table li";
                     li.style.display = "flex"; li.style.justifyContent = "space-between"; li.style.padding = "10px"; li.style.background = "#fff"; li.style.marginBottom = "5px"; li.style.borderRadius = "4px";
                     li.innerHTML = `<div><strong>${numItem}º. ${d.nomeDocumento}</strong><br><small>SEI: ${d.numeroProcesso || '---'}</small></div>
-                                    <button class="btn-primary" onclick="window.prepararEdicao('${docSnap.id}', ${JSON.stringify(d).replace(/"/g, '&quot;')})" style="width:auto; background:#f39c12">✏️ Editar</button>`;
+                                    <button class="btn-primary" onclick="window.prepararEdicao('${docSnap.id}', ${JSON.stringify(d).replace(/"/g, '&quot;')})" style="width:auto; background:#f39c12"> Editar</button>`;
                     containerReal.appendChild(li); numItem++;
                 });
                 if(snap.size >= 7) { contador.style.color = "#e74c3c"; contador.innerText = `LIMITE MÁXIMO ATINGIDO: ${snap.size} / 7 documentos`;
@@ -261,7 +261,7 @@
         window.prepararEdicao = (id, d) => {
             docEmEdicaoId = id; document.getElementById("nomeDocumento").value = d.nomeDocumento; document.getElementById("numeroProcesso").value = d.numeroProcesso;
             document.getElementById("dataRecebimento").value = d.dataRecebimento; document.getElementById("guiaRemessa").value = d.guiaRemessa; 
-            document.getElementById("btnSalvar").innerText = "🔄 Atualizar Documento"; document.getElementById("btnCancelarEdicao").style.display = "block"; document.getElementById("formDocumento").scrollIntoView({ behavior: 'smooth' });
+            document.getElementById("btnSalvar").innerText = " Atualizar Documento"; document.getElementById("btnCancelarEdicao").style.display = "block"; document.getElementById("formDocumento").scrollIntoView({ behavior: 'smooth' });
         };
 
         window.cancelarEdicao = () => {
